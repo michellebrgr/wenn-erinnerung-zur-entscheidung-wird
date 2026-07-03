@@ -1,0 +1,528 @@
+/**
+ * style.css — Gemeinsame Gestaltung für Archiv- und Projektionsansicht
+ *
+ * Zwei Kontexte über body-Klassen:
+ * - .archive-view  → Laptop-Interface (index.html)
+ * - .projection-view → Beamer-Projektion (projection.html)
+ */
+
+/* --- Design-Tokens --- */
+:root {
+  --color-paper: #f4f0e8;
+  --color-paper-dark: #e8e2d6;
+  --color-ink: #2a2520;
+  --color-ink-muted: #5c554c;
+  --color-stamp: #8b2e2e;
+  --color-accent: #6b5b4f;
+  --color-border: #c9bfb0;
+  --color-shadow: rgba(42, 37, 32, 0.12);
+
+  --font-serif: Georgia, 'Times New Roman', serif;
+  --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --radius-card: 4px;
+  --transition-fast: 0.25s ease;
+  --slot-count: 6;
+}
+
+/* --- Basis --- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-serif);
+  color: var(--color-ink);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+a {
+  color: var(--color-stamp);
+}
+
+a:hover {
+  text-decoration: none;
+}
+
+/* --- Archivansicht (Laptop) --- */
+body.archive-view {
+  background: var(--color-paper);
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.4) 0%, transparent 120px);
+}
+
+.site-header {
+  padding: 2rem 2rem 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.site-header h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.75rem;
+  color: var(--color-ink);
+}
+
+.intro {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--color-ink-muted);
+  max-width: 60ch;
+}
+
+.archive-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem 3rem;
+}
+
+.offer-section h2,
+.preview-section h2 {
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-ink-muted);
+  margin: 0 0 1rem;
+}
+
+.room-count {
+  font-weight: 400;
+  font-size: 0.9em;
+}
+
+.offer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2.5rem;
+}
+
+/* --- Akten-Karte --- */
+.akte-card {
+  position: relative;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 1.25rem 1.25rem 1rem;
+  box-shadow: 0 2px 8px var(--color-shadow);
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.akte-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 1rem;
+  width: 2rem;
+  height: 0.5rem;
+  background: var(--color-accent);
+  border-radius: 0 0 2px 2px;
+  opacity: 0.6;
+}
+
+.akte-card:hover,
+.akte-card:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px var(--color-shadow);
+  outline: 2px solid var(--color-stamp);
+  outline-offset: 2px;
+}
+
+.akte-card--selectable {
+  cursor: pointer;
+}
+
+.akte-card--displacement {
+  cursor: pointer;
+  border-color: var(--color-stamp);
+}
+
+.akte-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.akte-card__reference {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-stamp);
+  letter-spacing: 0.04em;
+}
+
+.akte-card__category {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-ink-muted);
+}
+
+.akte-card__fragment {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  color: var(--color-ink);
+}
+
+.akte-card__criteria {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px dashed var(--color-border);
+  padding-top: 0.75rem;
+}
+
+.criterion {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.4rem;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+}
+
+.criterion__label {
+  color: var(--color-ink-muted);
+}
+
+.criterion__bar {
+  display: flex;
+  gap: 2px;
+}
+
+.criterion__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-paper-dark);
+  border: 1px solid var(--color-border);
+}
+
+.criterion__dot--filled {
+  background: var(--color-stamp);
+  border-color: var(--color-stamp);
+}
+
+.akte-card__action-hint {
+  margin: 0.75rem 0 0;
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  color: var(--color-stamp);
+  text-align: center;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.akte-card:hover .akte-card__action-hint {
+  opacity: 1;
+}
+
+/* --- Erinnerungsraum-Vorschau (Archiv) --- */
+.memory-preview {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.preview-slot {
+  min-height: 100px;
+  background: var(--color-paper-dark);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 0.75rem;
+  font-size: 0.8rem;
+}
+
+.preview-slot--filled {
+  background: #fff;
+  border-style: solid;
+  border-color: var(--color-border);
+}
+
+.preview-slot--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-ink-muted);
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  text-align: center;
+}
+
+.preview-slot__ref {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  color: var(--color-stamp);
+  font-size: 0.7rem;
+  margin-bottom: 0.25rem;
+}
+
+.preview-slot__text {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* --- Modal (Verdrängungsdialog) --- */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modal[hidden] {
+  display: none;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(42, 37, 32, 0.55);
+}
+
+.modal-content {
+  position: relative;
+  background: var(--color-paper);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 1.5rem;
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-content h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+}
+
+.modal-hint {
+  margin: 0 0 1.25rem;
+  color: var(--color-ink-muted);
+  font-size: 0.95rem;
+}
+
+.displacement-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.btn-cancel {
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  cursor: pointer;
+  color: var(--color-ink-muted);
+}
+
+.btn-cancel:hover {
+  background: var(--color-paper-dark);
+  color: var(--color-ink);
+}
+
+.site-footer {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem 2rem 2rem;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  color: var(--color-ink-muted);
+  border-top: 1px solid var(--color-border);
+}
+
+/* --- Projektionsansicht (Beamer) --- */
+body.projection-view {
+  background: #1a1816;
+  color: #f4f0e8;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.projection-header {
+  text-align: center;
+  padding: 2rem 2rem 1rem;
+  flex-shrink: 0;
+}
+
+.projection-header h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-weight: 300;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f4f0e8;
+}
+
+.projection-subtitle {
+  margin: 0.5rem 0 0;
+  font-family: var(--font-serif);
+  font-size: clamp(1rem, 2vw, 1.35rem);
+  font-style: italic;
+  color: #a89f94;
+}
+
+.projection-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 2rem 2rem;
+}
+
+.memory-room {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 1.25rem;
+  width: 100%;
+  max-width: 1400px;
+  min-height: 60vh;
+}
+
+.memory-slot {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(244, 240, 232, 0.15);
+  border-radius: var(--radius-card);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+
+.memory-slot--empty {
+  align-items: center;
+  justify-content: center;
+  border-style: dashed;
+  opacity: 0.5;
+}
+
+.memory-slot--filled {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(244, 240, 232, 0.25);
+}
+
+.memory-slot--enter {
+  animation: slotEnter 0.5s ease forwards;
+}
+
+@keyframes slotEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.memory-slot__placeholder {
+  font-family: var(--font-sans);
+  font-size: clamp(0.75rem, 1.2vw, 0.9rem);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #6b6560;
+  text-align: center;
+}
+
+.memory-slot__reference {
+  font-family: var(--font-sans);
+  font-size: clamp(0.8rem, 1.3vw, 1rem);
+  font-weight: 700;
+  color: #c97a7a;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.35rem;
+}
+
+.memory-slot__category {
+  font-family: var(--font-sans);
+  font-size: clamp(0.65rem, 1vw, 0.8rem);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #a89f94;
+  margin-bottom: 0.75rem;
+}
+
+.memory-slot__fragment {
+  margin: 0 0 auto;
+  font-size: clamp(0.9rem, 1.5vw, 1.15rem);
+  line-height: 1.45;
+  flex: 1;
+}
+
+.memory-slot__criteria {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0.75rem 0 0;
+  border-top: 1px solid rgba(244, 240, 232, 0.12);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.memory-slot__criterion {
+  font-family: var(--font-sans);
+  font-size: clamp(0.6rem, 0.9vw, 0.75rem);
+  color: #a89f94;
+}
+
+.memory-slot__criterion strong {
+  color: #d4cfc6;
+  font-weight: 600;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+  .memory-preview {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .memory-room {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    min-height: auto;
+  }
+
+  .site-header,
+  .archive-main,
+  .site-footer {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}

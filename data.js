@@ -2,7 +2,6 @@
  * data.js — Statische Inhalte für die Installation
  *
  * Diese Datei enthält ausschließlich Daten, keine Logik.
- * Neue Fragmente: Eintrag in FRAGMENT_POOL ergänzen (String).
  * Neue Kategorien: Eintrag in CATEGORIES ergänzen (String).
  * Neue Bewertungskriterien: Eintrag in CRITERIA_DEFINITIONS ergänzen.
  */
@@ -12,64 +11,136 @@ const REFERENCE_PREFIX = 'WEZ';
 
 /**
  * Kategorien für Archivakten.
- * Werden zufällig einer Akte zugewiesen.
+ * Gesellschaftliche Themenfelder des kulturellen Gedächtnisses (keine Bewertung, keine Objektarten).
  */
 const CATEGORIES = [
-  'Familie',
-  'Ort',
-  'Klang',
-  'Alltag',
-  'Verlust',
-  'Kindheit',
-  'Reise',
-  'Gemeinschaft',
+  'Alltagskultur',
+  'Protest',
+  'Migration / Arbeit',
+  'Öffentlicher Raum',
+  'Digitale Spuren',
 ];
 
 /**
- * Pool von Erinnerungsfragmenten.
- * Der Generator wählt 1–2 Fragmente und fügt sie zu einem Akten-Text zusammen.
+ * ObjectType beschreibt die Form des Archivfragments (nicht Kategorie, nicht Bewertung).
  */
-const FRAGMENT_POOL = [
-  'Ich erinnere mich an das Geräusch der Schritte auf dem alten Holzboden, wenn niemand zusah.',
-  'Es war ein Nachmittag im Spätsommer. Die Luft roch nach Regen und frisch gemähtem Gras.',
-  'Meine Großmutter legte immer die Hände auf den Tisch, bevor sie zu sprechen begann.',
-  'Wir standen am Fenster und warteten, ob der Brief noch kommen würde.',
-  'Das Foto war verblasst, aber die Umrisse der Gesichter blieben erkennbar.',
-  'In der Küche hing der Geruch von Kaffee und etwas Süßem, das ich nicht benennen kann.',
-  'Ich weiß nicht mehr genau, was gesagt wurde — nur, dass danach alles anders war.',
-  'Der Gang war lang und die Türen standen alle offen, als wäre jemand gerade gegangen.',
-  'Es gab ein Lied, das immer gespielt wurde, wenn wir uns versöhnen wollten.',
-  'Die Stadt war fremd und doch vertraut, als hätte ich sie schon einmal geträumt.',
-  'Ich bewahre noch immer den Zettel auf, auf dem eine Adresse in unleserlicher Schrift stand.',
-  'Das Lachen war laut, aber irgendwo darin lag eine leise Angst.',
-  'Wir haben nie darüber gesprochen, was in dieser Nacht passiert ist.',
-  'Der Geruch von Staub und alten Büchern begleitet mich bis heute.',
-  'Sie sagte: „Das vergisst man nicht." Ich glaube ihr erst jetzt.',
-  'Der Platz war leer, aber ich spürte noch die Wärme der vielen Stimmen.',
-  'Ich erinnere mich an das Licht, das durch die Vorhänge fiel — schräg und golden.',
-  'Es war das letzte Mal, dass wir alle am selben Tisch saßen.',
-  'Manchmal höre ich noch das Klappern der Schreibmaschine im Nebenzimmer.',
-  'Die Straße war nass, und die Laternen spiegelten sich wie kleine Inseln.',
-  'Ich wusste nicht, dass dies der Moment war, an den ich zurückkehren würde.',
-  'Ein Name wurde genannt, und plötzlich war die Vergangenheit wieder gegenwärtig.',
-  'Wir pflückten Kirschen, obwohl es eigentlich zu früh im Jahr war.',
-  'Die Stille nach dem Auflegen des Telefons war schwerer als die Worte davor.',
-  'Ich trage diesen Satz seit Jahren mit mir, ohne ihn je auszusprechen.',
-  'Der Blick aus dem Zugfenster — Felder, Häuser, ein kurzes Aufblitzen von Rot.',
-  'Es roch nach Benzin und nassem Asphalt, als wir losfuhren.',
-  'Sie hat mir die Haare gestrichen und dabei leise gesungen.',
-  'Ich finde noch immer Dinge in Schubladen, die ich nicht mehr zuordnen kann.',
-  'Der Winter war kalt, aber in der Küche war es immer warm genug.',
-  'Wir haben gelacht, obwohl wir beide wussten, dass es nicht lange so bleiben würde.',
-  'Die Uhr an der Wand schlug anders als alle anderen Uhren, die ich kenne.',
-  'Ich erinnere mich an den Geschmack von Brot, das noch zu heiß war zum Schneiden.',
-  'Es war einer dieser Tage, an denen die Zeit stehen zu bleiben schien.',
-  'Die Nachbarn haben gewunken, und ich habe zu lange nicht zurückgewunken.',
-  'Ich habe den Ort nie wieder betreten, aber ich träume manchmal davon.',
-  'Das Geräusch der Gartentür, die knarrt — ich hörte es jahrelang, bevor ich wegzog.',
-  'Ein Fotoalbum ohne Beschriftung. Die Reihenfolge der Bilder war die einzige Erzählung.',
-  'Sie sagte meinen Namen auf eine Art, die ich seitdem von niemandem mehr gehört habe.',
-  'Der Regen trommelte auf das Blechdach, und wir mussten nichts entscheiden.',
+const OBJECT_TYPES = [
+  'Gegenstandsfragment',
+  'Raumfragment',
+  'Tonspur',
+  'Gesprächsfragment',
+  'Plakatrest',
+  'Notizzettel',
+  'digitaler Scan',
+  'Fotokopie',
+  'Markierung',
+  'Abdruck',
+  'Protokollfragment',
+  'beschädigte Datei',
+  'Wandspur',
+  'Alltagsobjekt',
+  'Fundstück',
+];
+
+/**
+ * Material/Technik — offene Materialbegriffe.
+ */
+const MATERIALS = [
+  'Papier',
+  'Fotokopie',
+  'Stoff',
+  'Holz',
+  'Glas',
+  'Tonband',
+  'digitaler Scan',
+  'Wandspur',
+  'handschriftliche Notiz',
+  'beschädigte Datei',
+  'unbekanntes Material',
+  'Screenshot',
+  'Ausdruck',
+  'Klebestreifen',
+  'Karton',
+  'Audiofragment',
+];
+
+/**
+ * Zustand — feste Werte.
+ */
+const CONDITIONS = [
+  'intakt',
+  'fragil',
+  'beschädigt',
+  'fragmentarisch',
+];
+
+/**
+ * Sichtbarkeit — feste Werte.
+ */
+const VISIBILITIES = [
+  'gering',
+  'mittel',
+  'hoch',
+];
+
+/**
+ * Herkunft/Provenienz — feste Werte.
+ */
+const ORIGINS = [
+  'kommunale Sammlung',
+  'private Überlieferung',
+  'institutionelles Archiv',
+  'unbekannte Provenienz',
+  'mündliche Überlieferung',
+  'digitaler Bestand',
+];
+
+/**
+ * Titel-Schablonen für künstlerische, nicht-historisierende Akten.
+ * Unterstützte Platzhalter: {objectType}, {material}, {category}, {year}
+ */
+const TITLE_TEMPLATES = [
+  'Rest von {objectType} ({year})',
+  'Aufzeichnung: {category}',
+  '{objectType} — {material}',
+  'Notiz zu {category}',
+  'Spur in {material}',
+  'Fragment: {objectType}',
+  'Vermerk ({year})',
+  'Nachtrag: {category}',
+  'Ausschnitt aus {objectType}',
+  '{objectType} / {category}',
+];
+
+/**
+ * Kurze Beschreibungstexte (1–2 Sätze) im Ton generierter Erinnerungsfragmente.
+ * Der Generator kann 1–2 Bausteine kombinieren und leicht variieren.
+ */
+const SHORTTEXT_POOL = [
+  'Nur ein Teil ist lesbar geblieben; der Rest wirkt wie nachträglich überdeckt.',
+  'Die Ränder tragen Spuren von Berührung, als wäre etwas mehrfach umgeschichtet worden.',
+  'Es gibt ein Detail, das sich widersetzt: nicht ganz Beweis, nicht ganz Erfindung.',
+  'Der Inhalt taucht in Gesprächen auf, ohne dass sich eine Quelle nennen lässt.',
+  'Was sichtbar ist, wirkt zufällig — als hätte jemand genau hier aufgehört.',
+  'Der Eintrag passt in keine Ordnung, aber er bleibt wiedererkennbar.',
+  'Mehrere Schichten liegen übereinander; keine erklärt die andere vollständig.',
+  'Ein kurzer Ton, eine Pause, dann Stille — als hätte die Datei sich selbst gelöscht.',
+  'Die Oberfläche ist markiert, doch die Bedeutung bleibt unentschieden.',
+  'Ein Rest von Öffentlichkeit: zu eindeutig, um privat zu sein; zu vage, um offiziell zu wirken.',
+  'Die Notiz nennt keinen Ort, aber der Raum ist darin spürbar.',
+  'Das Fragment trägt einen Hinweis auf Arbeit, aber keine Tätigkeit lässt sich rekonstruieren.',
+  'Die Aufnahme klingt, als wäre sie in Bewegung entstanden.',
+  'Eine Geste ist festgehalten, ohne dass klar wird, wem sie galt.',
+  'Der Scan wirkt zu sauber, um echt zu sein — und zu beschädigt, um nur Kopie zu bleiben.',
+  'Eine Spur von Protest, die nicht sagt, wogegen; nur, dass etwas nicht mehr still blieb.',
+  'Das Material scheint vertraut, aber die Verwendung bleibt offen.',
+  'Die Datei endet mitten im Satz. Danach: nur noch Metadaten.',
+  'Etwas wurde entfernt, aber die Leerstelle ist das eigentlich Gespeicherte.',
+  'Ein Abdruck, als wäre ein Gegenstand kurz dagewesen und dann wieder verschwunden.',
+  'Der Text wirkt wie eine Erinnerung, die man sich ausgeliehen hat.',
+  'Die Markierung zeigt auf etwas, das nicht mehr vorhanden ist.',
+  'Ein Protokollfragment ohne Protokoll: Zeitpunkt und Ton, aber keine Entscheidung.',
+  'Die Herkunft ist unklar, doch die Wiederholung macht es glaubwürdig.',
 ];
 
 /**

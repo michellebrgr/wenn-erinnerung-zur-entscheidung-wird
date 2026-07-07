@@ -2,7 +2,8 @@
  * generator.js — Erzeugt Archivakten aus statischen Inhalten
  *
  * Rein funktionale Logik ohne DOM oder localStorage.
- * Nutzt Daten aus data.js (CATEGORIES, FRAGMENT_POOL, CRITERIA_DEFINITIONS, REFERENCE_PREFIX).
+ * Nutzt Daten aus data.js (CATEGORIES, OBJECT_TYPES, MATERIALS, ORIGINS, CONDITIONS, VISIBILITIES,
+ * TITLE_TEMPLATES, SHORTTEXT_POOL, CRITERIA_DEFINITIONS, REFERENCE_PREFIX).
  */
 
 /**
@@ -25,6 +26,21 @@ function pickRandom(arr, count) {
 }
 
 /**
+ * Ersetzt Platzhalter in einer Template-String.
+ * Unterstützt: {objectType}, {material}, {category}, {year}
+ * @param {string} template
+ * @param {Object} vars
+ * @returns {string}
+ */
+function fillTemplate(template, vars) {
+  return String(template)
+    .replaceAll('{objectType}', vars.objectType)
+    .replaceAll('{material}', vars.material)
+    .replaceAll('{category}', vars.category)
+    .replaceAll('{year}', String(vars.year));
+}
+
+/**
  * Erzeugt eine eindeutige ID für eine Akte.
  * @returns {string}
  */
@@ -36,12 +52,12 @@ function generateId() {
 }
 
 /**
- * Erzeugt ein Aktenzeichen im Format WEZ-JAHR-NUMMER.
+ * Erzeugt eine Inventarnummer im Format WEZ-JAHR-NUMMER.
  * @returns {string}
  */
-function generateReference() {
+function generateInventoryNumber() {
   const year = new Date().getFullYear();
-  const number = Math.floor(Math.random() * 900) + 100;
+  const number = String(Math.floor(Math.random() * 900) + 100);
   return REFERENCE_PREFIX + '-' + year + '-' + number;
 }
 
@@ -63,13 +79,36 @@ function generateCriteria() {
 }
 
 /**
- * Setzt 1–2 Fragmente aus dem Pool zu einem Erinnerungstext zusammen.
+ * Erzeugt ein plausibles Jahr, leicht auf jüngere Jahre gewichtet.
+ * @returns {number}
+ */
+function generateYear() {
+  const current = new Date().getFullYear();
+  const min = 1970;
+  const span = Math.max(0, current - min);
+  const r = Math.random();
+  const offset = Math.floor((r * r) * (span + 1));
+  return current - offset;
+}
+
+/**
+ * Setzt 1–2 Bausteine zu einem kurzen Beschreibungstext zusammen.
  * @returns {string}
  */
-function composeFragment() {
-  const count = Math.random() > 0.4 ? 2 : 1;
-  const parts = pickRandom(FRAGMENT_POOL, count);
+function composeShortText() {
+  const count = Math.random() > 0.45 ? 2 : 1;
+  const parts = pickRandom(SHORTTEXT_POOL, count);
   return parts.join(' ');
+}
+
+/**
+ * Erzeugt einen Titel aus Template + gewählten Variablen.
+ * @param {{objectType: string, material: string, category: string, year: number}} vars
+ * @returns {string}
+ */
+function generateTitle(vars) {
+  const template = pickRandom(TITLE_TEMPLATES, 1)[0];
+  return fillTemplate(template, vars);
 }
 
 /**
@@ -77,13 +116,32 @@ function composeFragment() {
  * @returns {Object} ArchiveFile-Objekt
  */
 function generateArchiveFile() {
+  const category = pickRandom(CATEGORIES, 1)[0];
+  const objectType = pickRandom(OBJECT_TYPES, 1)[0];
+  const material = pickRandom(MATERIALS, 1)[0];
+  const origin = pickRandom(ORIGINS, 1)[0];
+  const condition = pickRandom(CONDITIONS, 1)[0];
+  const visibility = pickRandom(VISIBILITIES, 1)[0];
+  const year = generateYear();
+
+  const title = generateTitle({ objectType: objectType, material: material, category: category, year: year });
+  const shortText = composeShortText();
+
   return {
     id: generateId(),
-    reference: generateReference(),
-    category: pickRandom(CATEGORIES, 1)[0],
-    fragment: composeFragment(),
+    inventoryNumber: generateInventoryNumber(),
+    title: title,
+    category: category,
+    objectType: objectType,
+    year: year,
+    material: material,
+    origin: origin,
+    condition: condition,
+    visibility: visibility,
+    shortText: shortText,
+
+    // intern: bleibt erhalten, wird aber nicht mehr gerendert
     criteria: generateCriteria(),
-    createdAt: Date.now(),
   };
 }
 

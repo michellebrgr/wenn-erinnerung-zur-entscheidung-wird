@@ -33,26 +33,6 @@
   }
 
   /**
-   * Rendert die Bewertungskriterien als Punkte-Balken.
-   * @param {Array} criteria
-   * @returns {string}
-   */
-  function renderCriteria(criteria) {
-    return criteria.map(function (c) {
-      let dots = '';
-      for (let i = 1; i <= 5; i++) {
-        dots += '<span class="criterion__dot' + (i <= c.value ? ' criterion__dot--filled' : '') + '"></span>';
-      }
-      return (
-        '<li class="criterion">' +
-        '<span class="criterion__label">' + escapeHtml(c.label) + '</span>' +
-        '<span class="criterion__bar" aria-label="' + c.value + ' von 5">' + dots + '</span>' +
-        '</li>'
-      );
-    }).join('');
-  }
-
-  /**
    * Rendert eine wählbare Akten-Karte.
    * @param {Object} akte
    * @returns {string}
@@ -61,11 +41,19 @@
     return (
       '<article class="akte-card akte-card--selectable" role="listitem" tabindex="0" data-id="' + escapeHtml(akte.id) + '">' +
       '<header class="akte-card__header">' +
-      '<span class="akte-card__reference">' + escapeHtml(akte.reference) + '</span>' +
+      '<span class="akte-card__reference">' + escapeHtml(akte.inventoryNumber) + '</span>' +
       '<span class="akte-card__category">' + escapeHtml(akte.category) + '</span>' +
       '</header>' +
-      '<p class="akte-card__fragment">' + escapeHtml(akte.fragment) + '</p>' +
-      '<ul class="akte-card__criteria" aria-label="Bewertungskriterien">' + renderCriteria(akte.criteria) + '</ul>' +
+      '<h3 class="akte-card__title">' + escapeHtml(akte.title) + '</h3>' +
+      '<ul class="akte-card__meta" aria-label="Archivdaten">' +
+      '<li><strong>Objekttyp</strong>: ' + escapeHtml(akte.objectType) + '</li>' +
+      '<li><strong>Jahr</strong>: ' + escapeHtml(String(akte.year)) + '</li>' +
+      '<li><strong>Material</strong>: ' + escapeHtml(akte.material) + '</li>' +
+      '<li><strong>Herkunft</strong>: ' + escapeHtml(akte.origin) + '</li>' +
+      '<li><strong>Zustand</strong>: ' + escapeHtml(akte.condition) + '</li>' +
+      '<li><strong>Sichtbarkeit</strong>: ' + escapeHtml(akte.visibility) + '</li>' +
+      '</ul>' +
+      '<p class="akte-card__fragment">' + escapeHtml(akte.shortText) + '</p>' +
       '<p class="akte-card__action-hint">Klicken zum Aufnehmen</p>' +
       '</article>'
     );
@@ -80,10 +68,17 @@
     return (
       '<article class="akte-card akte-card--displacement" role="listitem" tabindex="0" data-displace-id="' + escapeHtml(akte.id) + '">' +
       '<header class="akte-card__header">' +
-      '<span class="akte-card__reference">' + escapeHtml(akte.reference) + '</span>' +
+      '<span class="akte-card__reference">' + escapeHtml(akte.inventoryNumber) + '</span>' +
       '<span class="akte-card__category">' + escapeHtml(akte.category) + '</span>' +
       '</header>' +
-      '<p class="akte-card__fragment">' + escapeHtml(akte.fragment) + '</p>' +
+      '<h3 class="akte-card__title">' + escapeHtml(akte.title) + '</h3>' +
+      '<ul class="akte-card__meta" aria-label="Archivdaten">' +
+      '<li><strong>Objekttyp</strong>: ' + escapeHtml(akte.objectType) + '</li>' +
+      '<li><strong>Jahr</strong>: ' + escapeHtml(String(akte.year)) + '</li>' +
+      '<li><strong>Zustand</strong>: ' + escapeHtml(akte.condition) + '</li>' +
+      '<li><strong>Sichtbarkeit</strong>: ' + escapeHtml(akte.visibility) + '</li>' +
+      '</ul>' +
+      '<p class="akte-card__fragment">' + escapeHtml(akte.shortText) + '</p>' +
       '<p class="akte-card__action-hint">Zum Verdrängen wählen</p>' +
       '</article>'
     );
@@ -122,8 +117,8 @@
       if (akte) {
         slots.push(
           '<div class="preview-slot preview-slot--filled" role="listitem">' +
-          '<div class="preview-slot__ref">' + escapeHtml(akte.reference) + '</div>' +
-          '<p class="preview-slot__text">' + escapeHtml(akte.fragment) + '</p>' +
+          '<div class="preview-slot__ref">' + escapeHtml(akte.inventoryNumber) + '</div>' +
+          '<p class="preview-slot__text">' + escapeHtml(akte.shortText) + '</p>' +
           '</div>'
         );
       } else {

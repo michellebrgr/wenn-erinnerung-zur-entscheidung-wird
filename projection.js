@@ -28,20 +28,6 @@
   }
 
   /**
-   * Erzeugt HTML für ein Bewertungskriterium (kompakt).
-   * @param {{label: string, value: number}} criterion
-   * @returns {string}
-   */
-  function renderCriterionCompact(criterion) {
-    return (
-      '<li class="memory-slot__criterion">' +
-      '<strong>' + escapeHtml(criterion.label) + '</strong>: ' +
-      criterion.value + '/5' +
-      '</li>'
-    );
-  }
-
-  /**
    * Escaped HTML-Sonderzeichen.
    * @param {string} str
    * @returns {string}
@@ -63,7 +49,7 @@
     const slotClass = akte ? 'memory-slot--filled' : 'memory-slot--empty';
     const enterClass = isNew ? ' memory-slot--enter' : '';
     const ariaLabel = akte
-      ? 'Platz ' + (index + 1) + ': ' + akte.reference
+      ? 'Platz ' + (index + 1) + ': ' + akte.inventoryNumber
       : 'Platz ' + (index + 1) + ': frei';
 
     if (!akte) {
@@ -74,14 +60,20 @@
       );
     }
 
-    const criteriaHtml = akte.criteria.map(renderCriterionCompact).join('');
-
     return (
       '<article class="memory-slot ' + slotClass + enterClass + '" role="listitem" aria-label="' + ariaLabel + '" data-id="' + escapeHtml(akte.id) + '">' +
-      '<div class="memory-slot__reference">' + escapeHtml(akte.reference) + '</div>' +
+      '<div class="memory-slot__reference">' + escapeHtml(akte.inventoryNumber) + '</div>' +
       '<div class="memory-slot__category">' + escapeHtml(akte.category) + '</div>' +
-      '<p class="memory-slot__fragment">' + escapeHtml(truncateText(akte.fragment, 220)) + '</p>' +
-      '<ul class="memory-slot__criteria">' + criteriaHtml + '</ul>' +
+      '<div class="memory-slot__title">' + escapeHtml(akte.title) + '</div>' +
+      '<div class="memory-slot__meta">' +
+      '<span><strong>Objekttyp</strong>: ' + escapeHtml(akte.objectType) + '</span>' +
+      '<span><strong>Jahr</strong>: ' + escapeHtml(String(akte.year)) + '</span>' +
+      '<span><strong>Material</strong>: ' + escapeHtml(akte.material) + '</span>' +
+      '<span><strong>Herkunft</strong>: ' + escapeHtml(akte.origin) + '</span>' +
+      '<span><strong>Zustand</strong>: ' + escapeHtml(akte.condition) + '</span>' +
+      '<span><strong>Sichtbarkeit</strong>: ' + escapeHtml(akte.visibility) + '</span>' +
+      '</div>' +
+      '<p class="memory-slot__fragment">' + escapeHtml(truncateText(akte.shortText, 220)) + '</p>' +
       '</article>'
     );
   }

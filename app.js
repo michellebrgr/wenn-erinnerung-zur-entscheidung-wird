@@ -33,30 +33,167 @@
   }
 
   /**
+   * Gibt einen Anzeigewert zurück oder „—“ bei leeren Werten.
+   * @param {*} value
+   * @returns {string}
+   */
+  function formatValue(value) {
+    if (value === null || value === undefined || value === '') {
+      return '—';
+    }
+    return String(value);
+  }
+
+  /**
+   * Bereich 2: Bild oder Platzhalter.
+   * Bildpfad pro Akte in data.js im Feld `bild` eintragen.
+   * @param {string|null} bild
+   * @returns {string}
+   */
+  function renderAkteImage(bild) {
+    if (bild) {
+      return (
+        '<figure class="akte-card__figure">' +
+        '<img class="akte-card__image" src="' + escapeHtml(bild) + '" alt="">' +
+        '</figure>'
+      );
+    }
+
+    return (
+      '<figure class="akte-card__figure">' +
+      '<div class="akte-card__image-placeholder">Kein Bild vorhanden</div>' +
+      '</figure>'
+    );
+  }
+
+  /**
+   * Mappt Skalenwerte (gering/mittel/hoch) auf Punktanzahl (1–5).
+   * Skala hier anpassen, falls du andere Werte in data.js verwendest.
+   * @param {string} wert
+   * @returns {number}
+   */
+  function mapScaleToDots(wert) {
+    const scale = {
+      gering: 1,
+      mittel: 3,
+      hoch: 5,
+    };
+    return scale[wert] || 0;
+  }
+
+  /**
+   * Rendert einen Punkt-Balken für ein Kriterium.
+   * @param {string} label
+   * @param {number} value - Anzahl gefüllter Punkte (1–5)
+   * @returns {string}
+   */
+  function renderCriterionDots(label, value) {
+    let dots = '';
+    for (let i = 1; i <= 5; i++) {
+      dots += '<span class="criterion__dot' + (i <= value ? ' criterion__dot--filled' : '') + '"></span>';
+    }
+
+    return (
+      '<li class="criterion">' +
+      '<span class="criterion__label">' + escapeHtml(label) + '</span>' +
+      '<span class="criterion__bar" aria-label="' + value + ' von 5">' + dots + '</span>' +
+      '</li>'
+    );
+  }
+
+  /**
+   * Bereich 5: Institutionelle Relevanz, Dokumentationsgrad, Erhaltungszustand.
+   * @param {Object} akte
+   * @returns {string}
+   */
+  function renderCriteria(akte) {
+    const items = [
+      renderCriterionDots('Institutionelle Relevanz', mapScaleToDots(akte.institutionelleRelevanz)),
+      renderCriterionDots('Dokumentationsgrad', mapScaleToDots(akte.dokumentationsgrad)),
+      (
+        '<li class="criterion">' +
+        '<span class="criterion__label">Erhaltungszustand</span>' +
+        '<span class="criterion__value">' + escapeHtml(formatValue(akte.erhaltungszustand)) + '</span>' +
+        '</li>'
+      ),
+    ];
+
+    return items.join('');
+  }
+
+  /**
+   * Bereich 4: Objekttyp, Herkunft, Provenienz, Sammlung.
+   * @param {Object} akte
+   * @param {boolean} compact - Weniger Felder für den Verdrängungsdialog
+   * @returns {string}
+   */
+  function renderMetaList(akte, compact) {
+    const fields = compact
+      ? [
+          ['Objekttyp', akte.objekttyp],
+          ['Herkunft', akte.herkunft],
+        ]
+      : [
+          ['Objekttyp', akte.objekttyp],
+          ['Herkunft', akte.herkunft],
+          ['Provenienz', akte.provenienz],
+          ['Sammlung', akte.sammlung],
+        ];
+
+    const items = fields.map(function (field) {
+      return '<li><strong>' + escapeHtml(field[0]) + '</strong>: ' + escapeHtml(formatValue(field[1])) + '</li>';
+    });
+
+    return '<ul class="akte-card__meta" aria-label="Archivdaten">' + items.join('') + '</ul>';
+  }
+
+  /**
+   * Rendert eine Archivkarte mit fünf Bereichen.
+   * @param {Object} akte
+   * @param {Object} options
+   * @param {string} options.variant - 'selectable' oder 'displacement'
+   * @param {boolean} [options.compact=false]
+   * @returns {string}
+   */
+  function renderAkteCard(akte, options) {
+    const variant = options.variant;
+    const compact = options.compact || false;
+    const isSelectable = variant === 'selectable';
+    const cardClass = isSelectable ? 'akte-card--selectable' : 'akte-card--displacement';
+    const dataAttr = isSelectable
+      ? 'data-id="' + escapeHtml(akte.id) + '"'
+      : 'data-displace-id="' + escapeHtml(akte.id) + '"';
+    const actionHint = isSelectable ? 'Klicken zum Aufnehmen' : 'Zum Verdrängen wählen';
+
+    return (
+      '<article class="akte-card ' + cardClass + '" role="listitem" tabindex="0" ' + dataAttr + '>' +
+      // Bereich 1: Kopfdaten — Titel/Jahr in data.js pflegen
+      '<header class="akte-card__header">' +
+      '<span class="akte-card__reference">' + escapeHtml(formatValue(akte.archivsignatur)) + '</span>' +
+      '<span class="akte-card__category">' + escapeHtml(formatValue(akte.kategorie)) + '</span>' +
+      '</header>' +
+      '<h3 class="akte-card__title">' + escapeHtml(formatValue(akte.titel)) + '</h3>' +
+      '<p class="akte-card__year">' + escapeHtml(formatValue(akte.jahr)) + '</p>' +
+      // Bereich 2: Bild — Pfad in data.js Feld `bild`
+      renderAkteImage(akte.bild) +
+      // Bereich 3: Kurzbeschreibung — Text in data.js Feld `kurzbeschreibung`
+      '<p class="akte-card__fragment">' + escapeHtml(formatValue(akte.kurzbeschreibung)) + '</p>' +
+      // Bereich 4: Objekttyp, Herkunft, Provenienz, Sammlung
+      renderMetaList(akte, compact) +
+      // Bereich 5: Bewertungskriterien — Werte in data.js anpassen
+      '<ul class="akte-card__criteria" aria-label="Bewertungskriterien">' + renderCriteria(akte) + '</ul>' +
+      '<p class="akte-card__action-hint">' + actionHint + '</p>' +
+      '</article>'
+    );
+  }
+
+  /**
    * Rendert eine wählbare Akten-Karte.
    * @param {Object} akte
    * @returns {string}
    */
   function renderOfferCard(akte) {
-    return (
-      '<article class="akte-card akte-card--selectable" role="listitem" tabindex="0" data-id="' + escapeHtml(akte.id) + '">' +
-      '<header class="akte-card__header">' +
-      '<span class="akte-card__reference">' + escapeHtml(akte.inventoryNumber) + '</span>' +
-      '<span class="akte-card__category">' + escapeHtml(akte.category) + '</span>' +
-      '</header>' +
-      '<h3 class="akte-card__title">' + escapeHtml(akte.title) + '</h3>' +
-      '<ul class="akte-card__meta" aria-label="Archivdaten">' +
-      '<li><strong>Objekttyp</strong>: ' + escapeHtml(akte.objectType) + '</li>' +
-      '<li><strong>Jahr</strong>: ' + escapeHtml(String(akte.year)) + '</li>' +
-      '<li><strong>Material</strong>: ' + escapeHtml(akte.material) + '</li>' +
-      '<li><strong>Herkunft</strong>: ' + escapeHtml(akte.origin) + '</li>' +
-      '<li><strong>Zustand</strong>: ' + escapeHtml(akte.condition) + '</li>' +
-      '<li><strong>Sichtbarkeit</strong>: ' + escapeHtml(akte.visibility) + '</li>' +
-      '</ul>' +
-      '<p class="akte-card__fragment">' + escapeHtml(akte.shortText) + '</p>' +
-      '<p class="akte-card__action-hint">Klicken zum Aufnehmen</p>' +
-      '</article>'
-    );
+    return renderAkteCard(akte, { variant: 'selectable' });
   }
 
   /**
@@ -65,23 +202,7 @@
    * @returns {string}
    */
   function renderDisplacementCard(akte) {
-    return (
-      '<article class="akte-card akte-card--displacement" role="listitem" tabindex="0" data-displace-id="' + escapeHtml(akte.id) + '">' +
-      '<header class="akte-card__header">' +
-      '<span class="akte-card__reference">' + escapeHtml(akte.inventoryNumber) + '</span>' +
-      '<span class="akte-card__category">' + escapeHtml(akte.category) + '</span>' +
-      '</header>' +
-      '<h3 class="akte-card__title">' + escapeHtml(akte.title) + '</h3>' +
-      '<ul class="akte-card__meta" aria-label="Archivdaten">' +
-      '<li><strong>Objekttyp</strong>: ' + escapeHtml(akte.objectType) + '</li>' +
-      '<li><strong>Jahr</strong>: ' + escapeHtml(String(akte.year)) + '</li>' +
-      '<li><strong>Zustand</strong>: ' + escapeHtml(akte.condition) + '</li>' +
-      '<li><strong>Sichtbarkeit</strong>: ' + escapeHtml(akte.visibility) + '</li>' +
-      '</ul>' +
-      '<p class="akte-card__fragment">' + escapeHtml(akte.shortText) + '</p>' +
-      '<p class="akte-card__action-hint">Zum Verdrängen wählen</p>' +
-      '</article>'
-    );
+    return renderAkteCard(akte, { variant: 'displacement', compact: true });
   }
 
   /**
@@ -117,8 +238,8 @@
       if (akte) {
         slots.push(
           '<div class="preview-slot preview-slot--filled" role="listitem">' +
-          '<div class="preview-slot__ref">' + escapeHtml(akte.inventoryNumber) + '</div>' +
-          '<p class="preview-slot__text">' + escapeHtml(akte.shortText) + '</p>' +
+          '<div class="preview-slot__ref">' + escapeHtml(formatValue(akte.archivsignatur)) + '</div>' +
+          '<p class="preview-slot__text">' + escapeHtml(formatValue(akte.kurzbeschreibung)) + '</p>' +
           '</div>'
         );
       } else {

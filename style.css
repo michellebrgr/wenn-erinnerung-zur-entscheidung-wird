@@ -177,6 +177,64 @@ body.archive-view {
   color: var(--color-ink-muted);
 }
 
+.akte-card__title {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+}
+
+.akte-card__year {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  color: var(--color-ink-muted);
+}
+
+.akte-card__figure {
+  margin: 0 0 0.75rem;
+}
+
+.akte-card__image {
+  display: block;
+  width: 100%;
+  max-height: 160px;
+  object-fit: cover;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+.akte-card__image-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100px;
+  background: var(--color-paper-dark);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-card);
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  color: var(--color-ink-muted);
+  text-align: center;
+  padding: 1rem;
+}
+
+.akte-card__meta {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+}
+
+.akte-card__meta li {
+  margin-bottom: 0.35rem;
+  color: var(--color-ink);
+}
+
+.akte-card__meta strong {
+  color: var(--color-ink-muted);
+  font-weight: 600;
+}
+
 .akte-card__fragment {
   margin: 0 0 1rem;
   font-size: 0.95rem;
@@ -203,6 +261,12 @@ body.archive-view {
 
 .criterion__label {
   color: var(--color-ink-muted);
+}
+
+.criterion__value {
+  font-size: 0.75rem;
+  color: var(--color-ink);
+  text-align: right;
 }
 
 .criterion__bar {

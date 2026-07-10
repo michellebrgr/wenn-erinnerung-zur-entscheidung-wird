@@ -1,9 +1,12 @@
 /**
- * generator.js — Erzeugt Archivakten aus statischen Inhalten
+ * generator.js — Wählt Archivakten aus dem Datenbestand
  *
  * Rein funktionale Logik ohne DOM oder localStorage.
- * Nutzt Daten aus data.js (CATEGORIES, OBJECT_TYPES, MATERIALS, ORIGINS, CONDITIONS, VISIBILITIES,
- * TITLE_TEMPLATES, SHORTTEXT_POOL, CRITERIA_DEFINITIONS, REFERENCE_PREFIX).
+ * Nutzt ARCHIV_AKTEN aus data.js.
+ *
+ * Hinweis: app.js und projection.js erwarten noch alte Feldnamen
+ * (z. B. inventoryNumber, title). normalizeAkte() mappt die neuen
+ * Felder vorübergehend — bis die Darstellung angepasst wird.
  */
 
 /**
@@ -26,137 +29,64 @@ function pickRandom(arr, count) {
 }
 
 /**
- * Ersetzt Platzhalter in einer Template-String.
- * Unterstützt: {objectType}, {material}, {category}, {year}
- * @param {string} template
- * @param {Object} vars
- * @returns {string}
+ * Bereitet eine Akte aus ARCHIV_AKTEN für State und Darstellung vor.
+ * Kopiert alle neuen Felder und ergänzt vorübergehend alte Anzeigenamen.
+ * @param {Object} akte - Eintrag aus ARCHIV_AKTEN
+ * @returns {Object}
  */
-function fillTemplate(template, vars) {
-  return String(template)
-    .replaceAll('{objectType}', vars.objectType)
-    .replaceAll('{material}', vars.material)
-    .replaceAll('{category}', vars.category)
-    .replaceAll('{year}', String(vars.year));
-}
-
-/**
- * Erzeugt eine eindeutige ID für eine Akte.
- * @returns {string}
- */
-function generateId() {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return 'akte-' + crypto.randomUUID();
-  }
-  return 'akte-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9);
-}
-
-/**
- * Erzeugt eine Inventarnummer im Format WEZ-JAHR-NUMMER.
- * @returns {string}
- */
-function generateInventoryNumber() {
-  const year = new Date().getFullYear();
-  const number = String(Math.floor(Math.random() * 900) + 100);
-  return REFERENCE_PREFIX + '-' + year + '-' + number;
-}
-
-/**
- * Weist einer Akte 3–4 zufällige Bewertungskriterien mit Werten 1–5 zu.
- * @returns {Array<{key: string, label: string, value: number}>}
- */
-function generateCriteria() {
-  const count = Math.random() > 0.5 ? 4 : 3;
-  const selected = pickRandom(CRITERIA_DEFINITIONS, count);
-
-  return selected.map(function (def) {
-    return {
-      key: def.key,
-      label: def.label,
-      value: Math.floor(Math.random() * 5) + 1,
-    };
-  });
-}
-
-/**
- * Erzeugt ein plausibles Jahr, leicht auf jüngere Jahre gewichtet.
- * @returns {number}
- */
-function generateYear() {
-  const current = new Date().getFullYear();
-  const min = 1970;
-  const span = Math.max(0, current - min);
-  const r = Math.random();
-  const offset = Math.floor((r * r) * (span + 1));
-  return current - offset;
-}
-
-/**
- * Setzt 1–2 Bausteine zu einem kurzen Beschreibungstext zusammen.
- * @returns {string}
- */
-function composeShortText() {
-  const count = Math.random() > 0.45 ? 2 : 1;
-  const parts = pickRandom(SHORTTEXT_POOL, count);
-  return parts.join(' ');
-}
-
-/**
- * Erzeugt einen Titel aus Template + gewählten Variablen.
- * @param {{objectType: string, material: string, category: string, year: number}} vars
- * @returns {string}
- */
-function generateTitle(vars) {
-  const template = pickRandom(TITLE_TEMPLATES, 1)[0];
-  return fillTemplate(template, vars);
-}
-
-/**
- * Erzeugt eine vollständige Archivakte.
- * @returns {Object} ArchiveFile-Objekt
- */
-function generateArchiveFile() {
-  const category = pickRandom(CATEGORIES, 1)[0];
-  const objectType = pickRandom(OBJECT_TYPES, 1)[0];
-  const material = pickRandom(MATERIALS, 1)[0];
-  const origin = pickRandom(ORIGINS, 1)[0];
-  const condition = pickRandom(CONDITIONS, 1)[0];
-  const visibility = pickRandom(VISIBILITIES, 1)[0];
-  const year = generateYear();
-
-  const title = generateTitle({ objectType: objectType, material: material, category: category, year: year });
-  const shortText = composeShortText();
-
+function normalizeAkte(akte) {
   return {
-    id: generateId(),
-    inventoryNumber: generateInventoryNumber(),
-    title: title,
-    category: category,
-    objectType: objectType,
-    year: year,
-    material: material,
-    origin: origin,
-    condition: condition,
-    visibility: visibility,
-    shortText: shortText,
+    // Neue Felder aus data.js (unverändert übernehmen)
+    id: akte.id,
+    archivsignatur: akte.archivsignatur,
+    kategorie: akte.kategorie,
+    titel: akte.titel,
+    jahr: akte.jahr,
+    bild: akte.bild,
+    kurzbeschreibung: akte.kurzbeschreibung,
+    objekttyp: akte.objekttyp,
+    herkunft: akte.herkunft,
+    provenienz: akte.provenienz,
+    sammlung: akte.sammlung,
+    institutionelleRelevanz: akte.institutionelleRelevanz,
+    dokumentationsgrad: akte.dokumentationsgrad,
+    erhaltungszustand: akte.erhaltungszustand,
 
-    // intern: bleibt erhalten, wird aber nicht mehr gerendert
-    criteria: generateCriteria(),
+    // Vorübergehende Aliase für app.js / projection.js (noch nicht umgestellt)
+    inventoryNumber: akte.archivsignatur,
+    category: akte.kategorie,
+    title: akte.titel,
+    year: akte.jahr,
+    shortText: akte.kurzbeschreibung,
+    objectType: akte.objekttyp,
+    origin: akte.herkunft,
+    condition: akte.erhaltungszustand,
+    visibility: akte.dokumentationsgrad,
+    material: '—',
   };
 }
 
 /**
+ * Wählt zufällig mehrere unterschiedliche Akten aus ARCHIV_AKTEN.
+ * @param {number} count - Anzahl der Akten
+ * @returns {Array} Array von vorbereiteten Akten-Objekten
+ */
+function pickArchiveAkten(count) {
+  if (!Array.isArray(ARCHIV_AKTEN) || ARCHIV_AKTEN.length === 0) {
+    console.warn('ARCHIV_AKTEN ist leer oder nicht definiert.');
+    return [];
+  }
+
+  return pickRandom(ARCHIV_AKTEN, count).map(normalizeAkte);
+}
+
+/**
  * Erzeugt ein Set aus mehreren unterschiedlichen Akten.
+ * Öffentliche API — wird von state.js aufgerufen.
  * @param {number} count - Anzahl der Akten (Standard: 3)
- * @returns {Array} Array von ArchiveFile-Objekten
+ * @returns {Array} Array von Akten-Objekten
  */
 function generateOfferSet(count) {
   count = count || 3;
-  const files = [];
-
-  for (let i = 0; i < count; i++) {
-    files.push(generateArchiveFile());
-  }
-
-  return files;
+  return pickArchiveAkten(count);
 }

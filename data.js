@@ -1,171 +1,159 @@
 /**
- * data.js — Statische Inhalte für die Installation
+ * data.js — Archivdaten für die Installation
  *
  * Diese Datei enthält ausschließlich Daten, keine Logik.
- * Neue Kategorien: Eintrag in CATEGORIES ergänzen (String).
- * Neue Bewertungskriterien: Eintrag in CRITERIA_DEFINITIONS ergänzen.
+ *
+ * So ergänzt du später eigene Inhalte:
+ * 1. Neue Akte: Ein weiteres Objekt in ARCHIV_AKTEN anlegen (gleiche Felder wie unten).
+ * 2. Bilder: Datei in den Ordner assests/ legen und den Pfad im Feld `bild` eintragen.
+ * 3. Vokabulare: Listen in KONTROLLIERTE_WERTE bei Bedarf erweitern (optional, nur Orientierung).
  */
 
-/** Präfix für generierte Aktenzeichen, z. B. WEZ-2026-047 */
-const REFERENCE_PREFIX = 'WEZ';
+/** Präfix für Archivsignaturen, z. B. WEZ-2026-001 */
+const ARCHIV_PREFIX = 'WEZ';
 
-/**
- * Kategorien für Archivakten.
- * Gesellschaftliche Themenfelder des kulturellen Gedächtnisses (keine Bewertung, keine Objektarten).
- */
-const CATEGORIES = [
-  'Alltagskultur',
-  'Protest',
-  'Migration / Arbeit',
-  'Öffentlicher Raum',
-  'Digitale Spuren',
-];
 
 /**
- * ObjectType beschreibt die Form des Archivfragments (nicht Kategorie, nicht Bewertung).
+ * Kontrollierte Werte — Orientierung beim Befüllen neuer Akten.
+ * Diese Listen sind Vorschläge; du kannst auch abweichende Werte in einzelnen Akten eintragen.
  */
-const OBJECT_TYPES = [
-  'Gegenstandsfragment',
-  'Raumfragment',
-  'Tonspur',
-  'Gesprächsfragment',
-  'Plakatrest',
-  'Notizzettel',
-  'digitaler Scan',
-  'Fotokopie',
-  'Markierung',
-  'Abdruck',
-  'Protokollfragment',
-  'beschädigte Datei',
-  'Wandspur',
-  'Alltagsobjekt',
-  'Fundstück',
-];
+const KONTROLLIERTE_WERTE = {
+
+  /** Gesellschaftliche Themenfelder des kulturellen Gedächtnisses */
+  kategorien: [
+    'Alltagskultur',
+    'Protest',
+    'Migration / Arbeit',
+    'Öffentlicher Raum',
+    'Digitale Spuren',
+  ],
+
+  /** Form des Archivfragments (nicht identisch mit Kategorie) */
+  objekttypen: [
+    'Gegenstandsfragment',
+    'Raumfragment',
+    'Tonspur',
+    'Gesprächsfragment',
+    'Plakatrest',
+    'Notizzettel',
+    'digitaler Scan',
+    'Fotokopie',
+    'Markierung',
+    'Abdruck',
+    'Protokollfragment',
+    'beschädigte Datei',
+    'Wandspur',
+    'Alltagsobjekt',
+    'Fundstück',
+  ],
+
+  /** Herkunft des Materials oder der Überlieferung */
+  herkunft: [
+    'kommunale Sammlung',
+    'private Überlieferung',
+    'institutionelles Archiv',
+    'unbekannte Provenienz',
+    'mündliche Überlieferung',
+    'digitaler Bestand',
+  ],
+
+  /** Dokumentationsgrad — wie vollständig die Akte beschrieben ist */
+  dokumentationsgrad: [
+    'gering',
+    'mittel',
+    'hoch',
+  ],
+
+  /** Erhaltungszustand des Objekts oder Fragments */
+  erhaltungszustand: [
+    'intakt',
+    'fragil',
+    'beschädigt',
+    'fragmentarisch',
+  ],
+
+  /** Institutionelle Relevanz — Bedeutung für Sammlung oder Archiv */
+  institutionelleRelevanz: [
+    'gering',
+    'mittel',
+    'hoch',
+  ],
+};
+
 
 /**
- * Material/Technik — offene Materialbegriffe.
+ * Archivakten — Hauptdatenbestand der Installation.
+ *
+ * Jede Akte folgt dem gleichen Schema. Neue Akten einfach ans Array anhängen;
+ * die Reihenfolge bestimmt später die Anzeige.
+ *
+ * Felder pro Akte:
+ *   id                    — eindeutige interne Kennung
+ *   archivsignatur        — sichtbare Signatur, z. B. WEZ-1989-014
+ *   kategorie             — thematisches Feld (siehe KONTROLLIERTE_WERTE.kategorien)
+ *   titel                 — Anzeigetitel der Akte
+ *   jahr                  — Bezugsjahr (Zahl oder null)
+ *   bild                  — Pfad zum Bild, relativ zum Projektordner
+ *   kurzbeschreibung      — 1–3 Sätze für Vorschau und Auswahl
+ *   objekttyp             — Form des Fragments
+ *   herkunft              — woher das Material stammt
+ *   provenienz            — Überlieferungsgeschichte (freier Text)
+ *   sammlung              — zugehörige Sammlung oder Bestand
+ *   institutionelleRelevanz
+ *   dokumentationsgrad
+ *   erhaltungszustand
  */
-const MATERIALS = [
-  'Papier',
-  'Fotokopie',
-  'Stoff',
-  'Holz',
-  'Glas',
-  'Tonband',
-  'digitaler Scan',
-  'Wandspur',
-  'handschriftliche Notiz',
-  'beschädigte Datei',
-  'unbekanntes Material',
-  'Screenshot',
-  'Ausdruck',
-  'Klebestreifen',
-  'Karton',
-  'Audiofragment',
-];
+const ARCHIV_AKTEN = [
 
-/**
- * Zustand — feste Werte.
- */
-const CONDITIONS = [
-  'intakt',
-  'fragil',
-  'beschädigt',
-  'fragmentarisch',
-];
-
-/**
- * Sichtbarkeit — feste Werte.
- */
-const VISIBILITIES = [
-  'gering',
-  'mittel',
-  'hoch',
-];
-
-/**
- * Herkunft/Provenienz — feste Werte.
- */
-const ORIGINS = [
-  'kommunale Sammlung',
-  'private Überlieferung',
-  'institutionelles Archiv',
-  'unbekannte Provenienz',
-  'mündliche Überlieferung',
-  'digitaler Bestand',
-];
-
-/**
- * Titel-Schablonen für künstlerische, nicht-historisierende Akten.
- * Unterstützte Platzhalter: {objectType}, {material}, {category}, {year}
- */
-const TITLE_TEMPLATES = [
-  'Rest von {objectType} ({year})',
-  'Aufzeichnung: {category}',
-  '{objectType} — {material}',
-  'Notiz zu {category}',
-  'Spur in {material}',
-  'Fragment: {objectType}',
-  'Vermerk ({year})',
-  'Nachtrag: {category}',
-  'Ausschnitt aus {objectType}',
-  '{objectType} / {category}',
-];
-
-/**
- * Kurze Beschreibungstexte (1–2 Sätze) im Ton generierter Erinnerungsfragmente.
- * Der Generator kann 1–2 Bausteine kombinieren und leicht variieren.
- */
-const SHORTTEXT_POOL = [
-  'Nur ein Teil ist lesbar geblieben; der Rest wirkt wie nachträglich überdeckt.',
-  'Die Ränder tragen Spuren von Berührung, als wäre etwas mehrfach umgeschichtet worden.',
-  'Es gibt ein Detail, das sich widersetzt: nicht ganz Beweis, nicht ganz Erfindung.',
-  'Der Inhalt taucht in Gesprächen auf, ohne dass sich eine Quelle nennen lässt.',
-  'Was sichtbar ist, wirkt zufällig — als hätte jemand genau hier aufgehört.',
-  'Der Eintrag passt in keine Ordnung, aber er bleibt wiedererkennbar.',
-  'Mehrere Schichten liegen übereinander; keine erklärt die andere vollständig.',
-  'Ein kurzer Ton, eine Pause, dann Stille — als hätte die Datei sich selbst gelöscht.',
-  'Die Oberfläche ist markiert, doch die Bedeutung bleibt unentschieden.',
-  'Ein Rest von Öffentlichkeit: zu eindeutig, um privat zu sein; zu vage, um offiziell zu wirken.',
-  'Die Notiz nennt keinen Ort, aber der Raum ist darin spürbar.',
-  'Das Fragment trägt einen Hinweis auf Arbeit, aber keine Tätigkeit lässt sich rekonstruieren.',
-  'Die Aufnahme klingt, als wäre sie in Bewegung entstanden.',
-  'Eine Geste ist festgehalten, ohne dass klar wird, wem sie galt.',
-  'Der Scan wirkt zu sauber, um echt zu sein — und zu beschädigt, um nur Kopie zu bleiben.',
-  'Eine Spur von Protest, die nicht sagt, wogegen; nur, dass etwas nicht mehr still blieb.',
-  'Das Material scheint vertraut, aber die Verwendung bleibt offen.',
-  'Die Datei endet mitten im Satz. Danach: nur noch Metadaten.',
-  'Etwas wurde entfernt, aber die Leerstelle ist das eigentlich Gespeicherte.',
-  'Ein Abdruck, als wäre ein Gegenstand kurz dagewesen und dann wieder verschwunden.',
-  'Der Text wirkt wie eine Erinnerung, die man sich ausgeliehen hat.',
-  'Die Markierung zeigt auf etwas, das nicht mehr vorhanden ist.',
-  'Ein Protokollfragment ohne Protokoll: Zeitpunkt und Ton, aber keine Entscheidung.',
-  'Die Herkunft ist unklar, doch die Wiederholung macht es glaubwürdig.',
-];
-
-/**
- * Bewertungskriterien für Archivakten.
- * key: interner Bezeichner | label: Anzeigename | description: Kurzerklärung
- */
-const CRITERIA_DEFINITIONS = [
   {
-    key: 'authenticity',
-    label: 'Authentizität',
-    description: 'Wie unmittelbar und glaubwürdig wirkt die Erinnerung?',
+    id: 'akte-beispiel-001',
+    archivsignatur: 'WEZ-1989-014',
+    kategorie: 'Protest',
+    titel: '[Platzhalter] Fragment eines Plakatrests',
+    jahr: 1989,
+    bild: 'assests/fotosammlung_01.jpg',
+    kurzbeschreibung: '[Platzhalter] Kurzbeschreibung der ersten Beispielakte. Hier später 1–3 Sätze eintragen.',
+    objekttyp: 'Plakatrest',
+    herkunft: 'private Überlieferung',
+    provenienz: '[Platzhalter] Überlieferungsgeschichte — wer, wann, wie ins Archiv gelangt.',
+    sammlung: '[Platzhalter] Name der Sammlung oder des Bestands',
+    institutionelleRelevanz: 'mittel',
+    dokumentationsgrad: 'gering',
+    erhaltungszustand: 'fragmentarisch',
   },
+
   {
-    key: 'emotionalWeight',
-    label: 'Emotionalität',
-    description: 'Wie stark ist die emotionale Ladung des Fragments?',
+    id: 'akte-beispiel-002',
+    archivsignatur: 'WEZ-2003-087',
+    kategorie: 'Migration / Arbeit',
+    titel: '[Platzhalter] Notizzettel aus einem Gesprächsfragment',
+    jahr: 2003,
+    bild: null,
+    kurzbeschreibung: '[Platzhalter] Zweite Beispielakte ohne Bild — `bild` kann null sein, bis ein Foto vorliegt.',
+    objekttyp: 'Notizzettel',
+    herkunft: 'mündliche Überlieferung',
+    provenienz: '[Platzhalter] Provenienzangabe',
+    sammlung: '[Platzhalter] Sammlungsname',
+    institutionelleRelevanz: 'hoch',
+    dokumentationsgrad: 'mittel',
+    erhaltungszustand: 'fragil',
   },
+
   {
-    key: 'clarity',
-    label: 'Klarheit',
-    description: 'Wie deutlich und fassbar ist die Erinnerung beschrieben?',
+    id: 'akte-beispiel-003',
+    archivsignatur: 'WEZ-2018-203',
+    kategorie: 'Digitale Spuren',
+    titel: '[Platzhalter] Beschädigte Datei — Tonspur',
+    jahr: 2018,
+    bild: null,
+    kurzbeschreibung: '[Platzhalter] Dritte Beispielakte. Zeigt, wie weitere Akten ergänzt werden können.',
+    objekttyp: 'beschädigte Datei',
+    herkunft: 'digitaler Bestand',
+    provenienz: '[Platzhalter] Digitale Herkunft und Übernahme ins Archiv',
+    sammlung: '[Platzhalter] Digitaler Bestand / Sammlung',
+    institutionelleRelevanz: 'gering',
+    dokumentationsgrad: 'hoch',
+    erhaltungszustand: 'beschädigt',
   },
-  {
-    key: 'connection',
-    label: 'Verbindung',
-    description: 'Wie stark verbindet das Fragment Vergangenheit und Gegenwart?',
-  },
+
 ];

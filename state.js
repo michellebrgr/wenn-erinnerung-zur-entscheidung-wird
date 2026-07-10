@@ -26,6 +26,17 @@ function createDefaultState() {
 }
 
 /**
+ * Normalisiert alle Akten im State (neue Feldnamen, aktuelle data.js-Inhalte).
+ * @param {Object} state
+ * @returns {Object}
+ */
+function normalizeStateAkten(state) {
+  state.currentOffer = (state.currentOffer || []).map(normalizeAkte);
+  state.memoryRoom = (state.memoryRoom || []).map(normalizeAkte);
+  return state;
+}
+
+/**
  * Liest den State aus localStorage oder initialisiert einen neuen.
  * @returns {Object}
  */
@@ -42,7 +53,7 @@ function loadState() {
       return createDefaultState();
     }
 
-    return parsed;
+    return normalizeStateAkten(parsed);
   } catch (err) {
     console.warn('State konnte nicht geladen werden, Default wird verwendet:', err);
     return createDefaultState();
@@ -125,9 +136,12 @@ function needsDisplacement(state) {
  * @returns {Object} Aktualisierter State
  */
 function ensureOfferSet(state) {
+  state = normalizeStateAkten(state);
+
   if (!state.currentOffer || state.currentOffer.length < OFFER_COUNT) {
     state.currentOffer = generateOfferSet(OFFER_COUNT);
   }
+
   return state;
 }
 

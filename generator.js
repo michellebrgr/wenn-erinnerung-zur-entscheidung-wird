@@ -3,10 +3,6 @@
  *
  * Rein funktionale Logik ohne DOM oder localStorage.
  * Nutzt ARCHIV_AKTEN aus data.js.
- *
- * Hinweis: app.js und projection.js erwarten noch alte Feldnamen
- * (z. B. inventoryNumber, title). normalizeAkte() mappt die neuen
- * Felder vorübergehend — bis die Darstellung angepasst wird.
  */
 
 /**
@@ -30,39 +26,33 @@ function pickRandom(arr, count) {
 
 /**
  * Bereitet eine Akte aus ARCHIV_AKTEN für State und Darstellung vor.
- * Kopiert alle neuen Felder und ergänzt vorübergehend alte Anzeigenamen.
- * @param {Object} akte - Eintrag aus ARCHIV_AKTEN
+ * Liest aktuelle Daten aus ARCHIV_AKTEN (per id) und mappt ggf. alte Feldnamen.
+ * @param {Object} akte - Eintrag aus ARCHIV_AKTEN oder aus localStorage
  * @returns {Object}
  */
 function normalizeAkte(akte) {
-  return {
-    // Neue Felder aus data.js (unverändert übernehmen)
-    id: akte.id,
-    archivsignatur: akte.archivsignatur,
-    kategorie: akte.kategorie,
-    titel: akte.titel,
-    jahr: akte.jahr,
-    bild: akte.bild,
-    kurzbeschreibung: akte.kurzbeschreibung,
-    objekttyp: akte.objekttyp,
-    herkunft: akte.herkunft,
-    provenienz: akte.provenienz,
-    sammlung: akte.sammlung,
-    institutionelleRelevanz: akte.institutionelleRelevanz,
-    dokumentationsgrad: akte.dokumentationsgrad,
-    erhaltungszustand: akte.erhaltungszustand,
+  const fromData = Array.isArray(ARCHIV_AKTEN)
+    ? ARCHIV_AKTEN.find(function (a) {
+        return a.id === akte.id;
+      })
+    : null;
+  const src = fromData || akte;
 
-    // Vorübergehende Aliase für app.js / projection.js (noch nicht umgestellt)
-    inventoryNumber: akte.archivsignatur,
-    category: akte.kategorie,
-    title: akte.titel,
-    year: akte.jahr,
-    shortText: akte.kurzbeschreibung,
-    objectType: akte.objekttyp,
-    origin: akte.herkunft,
-    condition: akte.erhaltungszustand,
-    visibility: akte.dokumentationsgrad,
-    material: '—',
+  return {
+    id: src.id || akte.id,
+    archivsignatur: src.archivsignatur || akte.archivsignatur || akte.inventoryNumber || akte.reference || null,
+    kategorie: src.kategorie || akte.kategorie || akte.category || null,
+    titel: src.titel || akte.titel || akte.title || null,
+    jahr: src.jahr != null ? src.jahr : (akte.jahr != null ? akte.jahr : (akte.year != null ? akte.year : null)),
+    bild: src.bild !== undefined ? src.bild : (akte.bild !== undefined ? akte.bild : null),
+    kurzbeschreibung: src.kurzbeschreibung || akte.kurzbeschreibung || akte.shortText || akte.fragment || null,
+    objekttyp: src.objekttyp || akte.objekttyp || akte.objectType || null,
+    herkunft: src.herkunft || akte.herkunft || akte.origin || null,
+    provenienz: src.provenienz || akte.provenienz || null,
+    sammlung: src.sammlung || akte.sammlung || null,
+    institutionelleRelevanz: src.institutionelleRelevanz || akte.institutionelleRelevanz || null,
+    dokumentationsgrad: src.dokumentationsgrad || akte.dokumentationsgrad || akte.visibility || null,
+    erhaltungszustand: src.erhaltungszustand || akte.erhaltungszustand || akte.condition || null,
   };
 }
 

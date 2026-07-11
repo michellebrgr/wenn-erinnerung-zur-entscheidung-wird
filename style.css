@@ -592,6 +592,47 @@ body.archive-view {
   padding: 0 0 2rem;
 }
 
+/* --- Bestätigungsbildschirm nach Auswahl --- */
+.confirmation-section[hidden] {
+  display: none;
+}
+
+.confirmation-section {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 0 3rem;
+}
+
+.confirmation-card {
+  background: var(--color-paper-dark);
+  border-radius: 6px;
+  padding: 2.5rem 2.5rem 2rem;
+  text-align: center;
+}
+
+.confirmation-card__primary {
+  margin: 0 0 1.25rem;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--color-ink);
+}
+
+.confirmation-card__secondary {
+  margin: 0 0 2rem;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--color-ink);
+}
+
+.confirmation-card .btn-start {
+  margin-top: 0.5rem;
+}
+
 /* --- Startbildschirm --- */
 #start-screen[hidden],
 #archive-interface[hidden] {

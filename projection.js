@@ -72,6 +72,16 @@
       );
     }
 
+    const kriterien = Array.isArray(akte.bewertungskriterien) ? akte.bewertungskriterien : [];
+    const kriterienHtml = kriterien.length > 0
+      ? kriterien.map(function (item) {
+        if (typeof item === 'string') {
+          return '<span>' + escapeHtml(item) + '</span>';
+        }
+        return '<span><strong>' + escapeHtml(item.label) + '</strong>: ' + escapeHtml(item.text) + '</span>';
+      }).join('')
+      : '<span>—</span>';
+
     return (
       '<article class="memory-slot ' + slotClass + enterClass + '" role="listitem" aria-label="' + ariaLabel + '" data-id="' + escapeHtml(akte.id) + '">' +
       '<div class="memory-slot__reference">' + escapeHtml(formatValue(akte.archivsignatur)) + '</div>' +
@@ -81,9 +91,8 @@
       '<span><strong>Objekttyp</strong>: ' + escapeHtml(formatValue(akte.objekttyp)) + '</span>' +
       '<span><strong>Jahr</strong>: ' + escapeHtml(formatValue(akte.jahr)) + '</span>' +
       '<span><strong>Herkunft</strong>: ' + escapeHtml(formatValue(akte.herkunft)) + '</span>' +
-      '<span><strong>Zustand</strong>: ' + escapeHtml(formatValue(akte.erhaltungszustand)) + '</span>' +
-      '<span><strong>Dokumentation</strong>: ' + escapeHtml(formatValue(akte.dokumentationsgrad)) + '</span>' +
       '</div>' +
+      '<div class="memory-slot__criteria">' + kriterienHtml + '</div>' +
       '<p class="memory-slot__fragment">' + escapeHtml(truncateText(formatValue(akte.kurzbeschreibung), 220)) + '</p>' +
       '</article>'
     );

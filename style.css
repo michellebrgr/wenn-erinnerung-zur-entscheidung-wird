@@ -119,6 +119,14 @@ body.archive-view {
 
 .archive-main {
   width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.archive-main:has(.confirmation-section:not([hidden])) {
+  align-items: center;
+  justify-content: center;
 }
 
 .offer-section h2:not(.sr-only) {
@@ -601,14 +609,24 @@ body.archive-view {
   width: 100%;
   max-width: 720px;
   margin: 0 auto;
-  padding: 2rem 0 3rem;
+  padding: 1rem 0 2rem;
 }
 
 .confirmation-card {
+  width: 100%;
   background: var(--color-paper-dark);
   border-radius: 6px;
-  padding: 2.5rem 2.5rem 2rem;
+  padding: 3rem 2.75rem 2.5rem;
   text-align: center;
+}
+
+.confirmation-card__intro {
+  margin: 0 0 2rem;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-style: italic;
+  line-height: 1.55;
+  color: var(--color-ink-muted);
 }
 
 .confirmation-card__primary {
@@ -630,6 +648,58 @@ body.archive-view {
 }
 
 .confirmation-card .btn-start {
+  margin-top: 0.5rem;
+}
+
+/* --- Pop-up bei vollem Erinnerungsraum --- */
+.memory-full-modal[hidden] {
+  display: none;
+}
+
+.memory-full-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.memory-full-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(42, 37, 32, 0.45);
+}
+
+.memory-full-modal__card {
+  position: relative;
+  width: 100%;
+  max-width: 720px;
+  background: var(--color-paper-dark);
+  border-radius: 6px;
+  padding: 2.5rem 2.5rem 2rem;
+  text-align: center;
+}
+
+.memory-full-modal__primary {
+  margin: 0 0 1.25rem;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--color-ink);
+}
+
+.memory-full-modal__secondary {
+  margin: 0 0 2rem;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--color-ink);
+}
+
+.memory-full-modal__card .btn-start {
   margin-top: 0.5rem;
 }
 

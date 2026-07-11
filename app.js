@@ -1,16 +1,13 @@
 /**
  * app.js — Steuert das Archivinterface (Laptop)
  *
- * Zeigt 3 wählbare Akten, Vorschau des Erinnerungsraums
- * und den Verdrängungsdialog bei vollem Speicher.
+ * Zeigt 3 wählbare Akten und den Verdrängungsdialog bei vollem Speicher.
  */
 
 (function () {
   'use strict';
 
   const offerContainer = document.getElementById('offer-container');
-  const memoryPreview = document.getElementById('memory-preview');
-  const roomCountEl = document.getElementById('room-count');
   const modal = document.getElementById('displacement-modal');
   const displacementOptions = document.getElementById('displacement-options');
   const modalCancel = document.getElementById('modal-cancel');
@@ -226,36 +223,6 @@
   }
 
   /**
-   * Rendert die Vorschau des Erinnerungsraums (6 Plätze).
-   * @param {Array} memoryRoom
-   */
-  function renderMemoryPreview(memoryRoom) {
-    const slots = [];
-
-    for (let i = 0; i < MAX_MEMORY_SLOTS; i++) {
-      const akte = memoryRoom[i];
-
-      if (akte) {
-        slots.push(
-          '<div class="preview-slot preview-slot--filled" role="listitem">' +
-          '<div class="preview-slot__ref">' + escapeHtml(formatValue(akte.archivsignatur)) + '</div>' +
-          '<p class="preview-slot__text">' + escapeHtml(formatValue(akte.kurzbeschreibung)) + '</p>' +
-          '</div>'
-        );
-      } else {
-        slots.push(
-          '<div class="preview-slot preview-slot--empty" role="listitem">' +
-          '<span>frei</span>' +
-          '</div>'
-        );
-      }
-    }
-
-    memoryPreview.innerHTML = slots.join('');
-    roomCountEl.textContent = '(' + memoryRoom.length + ' / ' + MAX_MEMORY_SLOTS + ')';
-  }
-
-  /**
    * Öffnet den Verdrängungsdialog.
    * @param {Object} akte - Die neu gewählte Akte
    * @param {Array} memoryRoom - Aktuell belegte Plätze
@@ -338,7 +305,6 @@
     currentState = state;
     state = ensureOfferSet(state);
     renderOfferSet(state.currentOffer);
-    renderMemoryPreview(state.memoryRoom);
   }
 
   /**

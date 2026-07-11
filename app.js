@@ -14,6 +14,9 @@
   const archiveMemoryRoom = document.getElementById('archive-memory-room');
   const displacementCancel = document.getElementById('displacement-cancel');
   const resetInstallation = document.getElementById('reset-installation');
+  const startScreen = document.getElementById('start-screen');
+  const archiveInterface = document.getElementById('archive-interface');
+  const openArchiveBtn = document.getElementById('open-archive-btn');
 
   /** Aktuell im Speicher gehaltener State (Referenz) */
   let currentState = null;
@@ -21,8 +24,8 @@
   /** Akte, die auf Verdrängung wartet (wenn Speicher voll) */
   let pendingAkte = null;
 
-  /** 'offer' | 'displacement' */
-  let viewMode = 'offer';
+  /** 'start' | 'offer' | 'displacement' */
+  let viewMode = 'start';
 
   /**
    * Escaped HTML-Sonderzeichen.
@@ -224,14 +227,29 @@
   }
 
   /**
-   * Wechselt zwischen Angebots- und Verdrängungsansicht.
-   * @param {'offer'|'displacement'} mode
+   * Wechselt zwischen Start-, Angebots- und Verdrängungsansicht.
+   * @param {'start'|'offer'|'displacement'} mode
    */
   function setViewMode(mode) {
     viewMode = mode;
+    const isStart = mode === 'start';
     const isDisplacement = mode === 'displacement';
-    offerSection.hidden = isDisplacement;
+
+    startScreen.hidden = !isStart;
+    archiveInterface.hidden = isStart;
+    offerSection.hidden = isStart || isDisplacement;
     displacementSection.hidden = !isDisplacement;
+  }
+
+  /**
+   * Blendet das Archiv-Interface ein und zeigt die aktuellen Angebots-Akten.
+   */
+  function openArchive() {
+    setViewMode('offer');
+
+    if (currentState) {
+      renderOfferSet(ensureOfferSet(currentState).currentOffer);
+    }
   }
 
   /**
@@ -297,6 +315,7 @@
     let state = loadState();
     state = addToMemoryRoom(state, akte);
     state = refreshOfferSet(state);
+    setViewMode('start');
     saveState(state);
   }
 
@@ -310,11 +329,14 @@
     }
 
     const newAkte = pendingAkte;
-    exitDisplacementView();
+    pendingAkte = null;
+    pendingAktePreview.innerHTML = '';
+    archiveMemoryRoom.innerHTML = '';
 
     let state = loadState();
     state = replaceInMemoryRoom(state, newAkte, oldAkteId);
     state = refreshOfferSet(state);
+    setViewMode('start');
     saveState(state);
   }
 
@@ -325,6 +347,10 @@
   function render(state) {
     currentState = state;
     state = ensureOfferSet(state);
+
+    if (viewMode === 'start') {
+      return;
+    }
 
     if (viewMode === 'displacement' && pendingAkte) {
       showDisplacementView(pendingAkte, state.memoryRoom);
@@ -347,9 +373,12 @@
     }
 
     if (viewMode === 'displacement') {
-      exitDisplacementView();
+      pendingAkte = null;
+      pendingAktePreview.innerHTML = '';
+      archiveMemoryRoom.innerHTML = '';
     }
 
+    setViewMode('start');
     resetState();
   }
 
@@ -357,6 +386,8 @@
    * Initialisierung.
    */
   function init() {
+    setViewMode('start');
+    openArchiveBtn.addEventListener('click', openArchive);
     displacementCancel.addEventListener('click', exitDisplacementView);
     resetInstallation.addEventListener('click', handleResetInstallation);
 

@@ -2,7 +2,7 @@
  * generator.js — Wählt Archivakten aus dem Datenbestand
  *
  * Rein funktionale Logik ohne DOM oder localStorage.
- * Nutzt ARCHIV_AKTEN aus data.js.
+ * Nutzt ARCHIV_BILDER aus data.js.
  */
 
 /**
@@ -81,23 +81,77 @@ function pickRandom(arr, count) {
 }
 
 /**
- * Bereitet eine Akte aus ARCHIV_AKTEN für State und Darstellung vor.
- * Liest aktuelle Daten aus ARCHIV_AKTEN (per id) und mappt ggf. alte Feldnamen.
- * @param {Object} akte - Eintrag aus ARCHIV_AKTEN oder aus localStorage
+ * Findet Bild und Variante in ARCHIV_BILDER anhand gespeicherter Referenzen.
+ * @param {string} bildId
+ * @param {string} varianteId
+ * @returns {{ bild: Object|null, variante: Object|null }}
+ */
+function findBildAndVariante(bildId, varianteId) {
+  if (!Array.isArray(ARCHIV_BILDER) || !bildId || !varianteId) {
+    return { bild: null, variante: null };
+  }
+
+  const bild = ARCHIV_BILDER.find(function (b) {
+    return b.id === bildId;
+  });
+
+  if (!bild || !Array.isArray(bild.varianten)) {
+    return { bild: null, variante: null };
+  }
+
+  const variante = bild.varianten.find(function (v) {
+    return v.id === varianteId;
+  });
+
+  return { bild: bild, variante: variante || null };
+}
+
+/**
+ * Erzeugt ein Akten-Objekt aus Bild und Variante.
+ * @param {Object} bild - Eintrag aus ARCHIV_BILDER
+ * @param {Object} variante - Variante des Bildes
+ * @returns {Object}
+ */
+function buildAkte(bild, variante) {
+  const jahr = variante.jahr != null ? variante.jahr : null;
+
+  return {
+    id: bild.id + '--' + variante.id,
+    bildId: bild.id,
+    varianteId: variante.id,
+    archivsignatur: variante.archivsignatur || generateArchivsignatur(jahr),
+    kategorie: variante.kategorie || null,
+    titel: variante.titel || null,
+    jahr: jahr,
+    bild: bild.pfad != null ? bild.pfad : null,
+    kurzbeschreibung: variante.kurzbeschreibung || null,
+    objekttyp: variante.objekttyp || null,
+    herkunft: variante.herkunft || null,
+    provenienz: variante.provenienz || null,
+    sammlung: variante.sammlung || null,
+    institutionelleRelevanz: variante.institutionelleRelevanz || null,
+    dokumentationsgrad: variante.dokumentationsgrad || null,
+    erhaltungszustand: variante.erhaltungszustand || null,
+  };
+}
+
+/**
+ * Bereitet eine Akte für State und Darstellung vor.
+ * Liest aktuelle Daten aus ARCHIV_BILDER (per bildId/varianteId) und mappt ggf. alte Feldnamen.
+ * @param {Object} akte - Erzeugte Akte oder Eintrag aus localStorage
  * @returns {Object}
  */
 function normalizeAkte(akte) {
-  const fromData = Array.isArray(ARCHIV_AKTEN)
-    ? ARCHIV_AKTEN.find(function (a) {
-        return a.id === akte.id;
-      })
-    : null;
+  const lookup = findBildAndVariante(akte.bildId, akte.varianteId);
+  const fromData = lookup.bild && lookup.variante ? buildAkte(lookup.bild, lookup.variante) : null;
   const src = fromData || akte;
   const jahr = src.jahr != null ? src.jahr : (akte.jahr != null ? akte.jahr : (akte.year != null ? akte.year : null));
 
   return {
     id: src.id || akte.id,
-    archivsignatur: src.archivsignatur || akte.archivsignatur || akte.inventoryNumber || akte.reference || generateArchivsignatur(jahr),
+    bildId: src.bildId || akte.bildId || null,
+    varianteId: src.varianteId || akte.varianteId || null,
+    archivsignatur: akte.archivsignatur || src.archivsignatur || akte.inventoryNumber || akte.reference || generateArchivsignatur(jahr),
     kategorie: src.kategorie || akte.kategorie || akte.category || null,
     titel: src.titel || akte.titel || akte.title || null,
     jahr: jahr,
@@ -114,26 +168,63 @@ function normalizeAkte(akte) {
 }
 
 /**
- * Wählt zufällig mehrere unterschiedliche Akten aus ARCHIV_AKTEN.
+ * Wählt zufällig Bilder aus ARCHIV_BILDER (ohne Duplikate).
+ * @param {Array} bilder - Quell-Array
+ * @param {number} count - Anzahl der Bilder
+ * @returns {Array}
+ */
+function pickArchiveBilder(bilder, count) {
+  return pickRandom(bilder, count);
+}
+
+/**
+ * Wählt zufällig mehrere Archivakten aus ARCHIV_BILDER.
+ * Zuerst Bilder mit Pfad, dann bei Bedarf Einträge ohne Bild.
  * @param {number} count - Anzahl der Akten
+ * @param {Array<string>} [excludedBildIds] - Bild-IDs, die bereits im Erinnerungsraum sind
  * @returns {Array} Array von vorbereiteten Akten-Objekten
  */
-function pickArchiveAkten(count) {
-  if (!Array.isArray(ARCHIV_AKTEN) || ARCHIV_AKTEN.length === 0) {
-    console.warn('ARCHIV_AKTEN ist leer oder nicht definiert.');
+function pickArchiveAkten(count, excludedBildIds) {
+  if (!Array.isArray(ARCHIV_BILDER) || ARCHIV_BILDER.length === 0) {
+    console.warn('ARCHIV_BILDER ist leer oder nicht definiert.');
     return [];
   }
 
-  return pickRandom(ARCHIV_AKTEN, count).map(normalizeAkte);
+  const excluded = new Set(excludedBildIds || []);
+
+  const mitBild = ARCHIV_BILDER.filter(function (b) {
+    return b.pfad && !excluded.has(b.id);
+  });
+  const ohneBild = ARCHIV_BILDER.filter(function (b) {
+    return !b.pfad && !excluded.has(b.id);
+  });
+
+  const pickedMitBild = pickArchiveBilder(mitBild, Math.min(count, mitBild.length));
+  let akten = pickedMitBild.map(function (bild) {
+    const variante = pickRandom(bild.varianten, 1)[0];
+    return buildAkte(bild, variante);
+  });
+
+  const remaining = count - akten.length;
+  if (remaining > 0 && ohneBild.length > 0) {
+    const pickedOhneBild = pickArchiveBilder(ohneBild, Math.min(remaining, ohneBild.length));
+    akten = akten.concat(pickedOhneBild.map(function (bild) {
+      const variante = pickRandom(bild.varianten, 1)[0];
+      return buildAkte(bild, variante);
+    }));
+  }
+
+  return akten.map(normalizeAkte);
 }
 
 /**
  * Erzeugt ein Set aus mehreren unterschiedlichen Akten.
  * Öffentliche API — wird von state.js aufgerufen.
  * @param {number} count - Anzahl der Akten (Standard: 3)
+ * @param {Array<string>} [excludedBildIds] - Bild-IDs, die bereits im Erinnerungsraum sind
  * @returns {Array} Array von Akten-Objekten
  */
-function generateOfferSet(count) {
+function generateOfferSet(count, excludedBildIds) {
   count = count || 3;
-  return pickArchiveAkten(count);
+  return pickArchiveAkten(count, excludedBildIds);
 }

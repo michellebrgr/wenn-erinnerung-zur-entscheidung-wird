@@ -13,6 +13,21 @@ const OFFER_COUNT = 3;
 const subscribers = new Set();
 
 /**
+ * Sammelt Bild-IDs aus dem Erinnerungsraum für die Angebots-Auswahl.
+ * @param {Array} memoryRoom
+ * @returns {Array<string>}
+ */
+function getExcludedBildIds(memoryRoom) {
+  return (memoryRoom || [])
+    .map(function (akte) {
+      return akte.bildId;
+    })
+    .filter(function (id) {
+      return Boolean(id);
+    });
+}
+
+/**
  * Erzeugt den Default-State für einen frischen Start.
  * @returns {Object}
  */
@@ -20,7 +35,7 @@ function createDefaultState() {
   return {
     version: 1,
     memoryRoom: [],
-    currentOffer: generateOfferSet(OFFER_COUNT),
+    currentOffer: generateOfferSet(OFFER_COUNT, []),
     updatedAt: Date.now(),
   };
 }
@@ -131,15 +146,15 @@ function needsDisplacement(state) {
 }
 
 /**
- * Stellt sicher, dass currentOffer ein vollständiges 3er-Set enthält.
+ * Stellt sicher, dass currentOffer mindestens ein Angebot enthält.
  * @param {Object} state
  * @returns {Object} Aktualisierter State
  */
 function ensureOfferSet(state) {
   state = normalizeStateAkten(state);
 
-  if (!state.currentOffer || state.currentOffer.length < OFFER_COUNT) {
-    state.currentOffer = generateOfferSet(OFFER_COUNT);
+  if (!state.currentOffer || state.currentOffer.length === 0) {
+    state.currentOffer = generateOfferSet(OFFER_COUNT, getExcludedBildIds(state.memoryRoom));
   }
 
   return state;
@@ -151,7 +166,7 @@ function ensureOfferSet(state) {
  * @returns {Object} Aktualisierter State
  */
 function refreshOfferSet(state) {
-  state.currentOffer = generateOfferSet(OFFER_COUNT);
+  state.currentOffer = generateOfferSet(OFFER_COUNT, getExcludedBildIds(state.memoryRoom));
   return state;
 }
 

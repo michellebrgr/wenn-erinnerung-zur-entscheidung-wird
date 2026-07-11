@@ -89,10 +89,10 @@ const KONTROLLIERTE_WERTE = {
  *
  * Felder pro Akte:
  *   id                    — eindeutige interne Kennung
- *   archivsignatur        — sichtbare Signatur, z. B. WEZ-1989-014
+ *   archivsignatur        — optional; wird sonst automatisch aus `jahr` erzeugt (z. B. WEZ-1989-014)
  *   kategorie             — thematisches Feld (siehe KONTROLLIERTE_WERTE.kategorien)
  *   titel                 — Anzeigetitel der Akte
- *   jahr                  — Bezugsjahr (Zahl oder null)
+ *   jahr                  — Bezugsjahr: Zahl, null (nicht datiert), „ca. 1974“, „1970er Jahre“ usw.
  *   bild                  — Pfad zum Bild, relativ zum Projektordner
  *   kurzbeschreibung      — 1–3 Sätze für Vorschau und Auswahl
  *   objekttyp             — Form des Fragments
@@ -107,7 +107,6 @@ const ARCHIV_AKTEN = [
 
   {
     id: 'akte-beispiel-001',
-    archivsignatur: 'WEZ-1989-014',
     kategorie: 'Protest',
     titel: '[Platzhalter] Fragment eines Plakatrests',
     jahr: 1989,
@@ -124,7 +123,6 @@ const ARCHIV_AKTEN = [
 
   {
     id: 'akte-beispiel-002',
-    archivsignatur: 'WEZ-2003-087',
     kategorie: 'Migration / Arbeit',
     titel: '[Platzhalter] Notizzettel aus einem Gesprächsfragment',
     jahr: 2003,
@@ -141,7 +139,6 @@ const ARCHIV_AKTEN = [
 
   {
     id: 'akte-beispiel-003',
-    archivsignatur: 'WEZ-2018-203',
     kategorie: 'Digitale Spuren',
     titel: '[Platzhalter] Beschädigte Datei — Tonspur',
     jahr: 2018,

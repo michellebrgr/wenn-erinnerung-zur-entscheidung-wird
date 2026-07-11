@@ -10,6 +10,8 @@
   const offerSection = document.getElementById('offer-section');
   const offerContainer = document.getElementById('offer-container');
   const displacementSection = document.getElementById('displacement-section');
+  const confirmationSection = document.getElementById('confirmation-section');
+  const confirmationContinue = document.getElementById('confirmation-continue');
   const pendingAktePreview = document.getElementById('pending-akte-preview');
   const archiveMemoryRoom = document.getElementById('archive-memory-room');
   const displacementCancel = document.getElementById('displacement-cancel');
@@ -26,7 +28,7 @@
   /** Akte, die auf Verdrängung wartet (wenn Speicher voll) */
   let pendingAkte = null;
 
-  /** 'start' | 'offer' | 'displacement' */
+  /** 'start' | 'offer' | 'displacement' | 'confirmation' */
   let viewMode = 'start';
 
   /**
@@ -234,18 +236,34 @@
   }
 
   /**
-   * Wechselt zwischen Start-, Angebots- und Verdrängungsansicht.
-   * @param {'start'|'offer'|'displacement'} mode
+   * Wechselt zwischen Start-, Angebots-, Verdrängungs- und Bestätigungsansicht.
+   * @param {'start'|'offer'|'displacement'|'confirmation'} mode
    */
   function setViewMode(mode) {
     viewMode = mode;
     const isStart = mode === 'start';
     const isDisplacement = mode === 'displacement';
+    const isConfirmation = mode === 'confirmation';
 
     startScreen.hidden = !isStart;
     archiveInterface.hidden = isStart;
-    offerSection.hidden = isStart || isDisplacement;
+    offerSection.hidden = isStart || isDisplacement || isConfirmation;
     displacementSection.hidden = !isDisplacement;
+    confirmationSection.hidden = !isConfirmation;
+  }
+
+  /**
+   * Zeigt den Bestätigungsbildschirm nach erfolgreicher Auswahl.
+   */
+  function showConfirmation() {
+    setViewMode('confirmation');
+  }
+
+  /**
+   * Schließt den Bestätigungsbildschirm und kehrt zum Startbildschirm zurück.
+   */
+  function dismissConfirmation() {
+    setViewMode('start');
   }
 
   /**
@@ -351,8 +369,8 @@
     let state = loadState();
     state = addToMemoryRoom(state, akte);
     state = refreshOfferSet(state);
-    setViewMode('start');
     saveState(state);
+    showConfirmation();
   }
 
   /**
@@ -372,8 +390,8 @@
     let state = loadState();
     state = replaceInMemoryRoom(state, newAkte, oldAkteId);
     state = refreshOfferSet(state);
-    setViewMode('start');
     saveState(state);
+    showConfirmation();
   }
 
   /**
@@ -384,7 +402,7 @@
     currentState = state;
     state = ensureOfferSet(state);
 
-    if (viewMode === 'start') {
+    if (viewMode === 'start' || viewMode === 'confirmation') {
       return;
     }
 

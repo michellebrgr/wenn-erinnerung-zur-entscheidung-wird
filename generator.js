@@ -6,6 +6,62 @@
  */
 
 /**
+ * Erzeugt eine dreistellige Zufallszahl für die Archivsignatur.
+ * @returns {string}
+ */
+function randomArchivSuffix() {
+  return String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+}
+
+/**
+ * Leitet den Jahres- bzw. Datierungsanteil der Archivsignatur aus `jahr` ab.
+ * @param {number|string|null} jahr
+ * @returns {string}
+ */
+function jahrToSignaturSegment(jahr) {
+  if (jahr === null || jahr === undefined || jahr === '') {
+    return 'UND';
+  }
+
+  if (typeof jahr === 'number' && !isNaN(jahr)) {
+    return String(jahr);
+  }
+
+  const s = String(jahr).trim();
+
+  const decadeMatch = s.match(/^(\d{3})X$/i) || s.match(/^(\d{3})\d*er(\s+Jahre)?$/i);
+  if (decadeMatch) {
+    return decadeMatch[1] + 'X';
+  }
+
+  const caMatch = s.match(/^CA(\d{4})$/i) || s.match(/^ca\.?\s*(\d{4})$/i) || s.match(/^circa\s*(\d{4})$/i);
+  if (caMatch) {
+    return 'CA' + caMatch[1];
+  }
+
+  if (/^\d{4}$/.test(s)) {
+    return s;
+  }
+
+  if (/^(undatiert|nicht\s+datiert|n\.?\s*d\.?)$/i.test(s)) {
+    return 'UND';
+  }
+
+  return 'UND';
+}
+
+/**
+ * Erzeugt eine Archivsignatur aus Jahr/Datierung und Zufallsnummer.
+ * Beispiele: WEZ-1974-018, WEZ-CA1974-018, WEZ-197X-018, WEZ-UND-018
+ * @param {number|string|null} jahr
+ * @returns {string}
+ */
+function generateArchivsignatur(jahr) {
+  const prefix = typeof ARCHIV_PREFIX !== 'undefined' ? ARCHIV_PREFIX : 'AK';
+  return prefix + '-' + jahrToSignaturSegment(jahr) + '-' + randomArchivSuffix();
+}
+
+/**
  * Wählt zufällig count Elemente aus einem Array (ohne Duplikate).
  * @param {Array} arr - Quell-Array
  * @param {number} count - Anzahl der Elemente
@@ -37,13 +93,14 @@ function normalizeAkte(akte) {
       })
     : null;
   const src = fromData || akte;
+  const jahr = src.jahr != null ? src.jahr : (akte.jahr != null ? akte.jahr : (akte.year != null ? akte.year : null));
 
   return {
     id: src.id || akte.id,
-    archivsignatur: src.archivsignatur || akte.archivsignatur || akte.inventoryNumber || akte.reference || null,
+    archivsignatur: src.archivsignatur || akte.archivsignatur || akte.inventoryNumber || akte.reference || generateArchivsignatur(jahr),
     kategorie: src.kategorie || akte.kategorie || akte.category || null,
     titel: src.titel || akte.titel || akte.title || null,
-    jahr: src.jahr != null ? src.jahr : (akte.jahr != null ? akte.jahr : (akte.year != null ? akte.year : null)),
+    jahr: jahr,
     bild: src.bild !== undefined ? src.bild : (akte.bild !== undefined ? akte.bild : null),
     kurzbeschreibung: src.kurzbeschreibung || akte.kurzbeschreibung || akte.shortText || akte.fragment || null,
     objekttyp: src.objekttyp || akte.objekttyp || akte.objectType || null,

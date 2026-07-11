@@ -17,6 +17,8 @@
   const startScreen = document.getElementById('start-screen');
   const archiveInterface = document.getElementById('archive-interface');
   const openArchiveBtn = document.getElementById('open-archive-btn');
+  const memoryFullModal = document.getElementById('memory-full-modal');
+  const memoryFullModalConfirm = document.getElementById('memory-full-modal-confirm');
 
   /** Aktuell im Speicher gehaltener State (Referenz) */
   let currentState = null;
@@ -258,6 +260,35 @@
   }
 
   /**
+   * Blendet das Pop-up bei vollem Erinnerungsraum ein.
+   * @param {Object} akte - Die neu gewählte Akte
+   */
+  function showMemoryFullModal(akte) {
+    pendingAkte = akte;
+    memoryFullModal.hidden = false;
+    memoryFullModalConfirm.focus();
+  }
+
+  /**
+   * Blendet das Pop-up bei vollem Erinnerungsraum aus.
+   */
+  function hideMemoryFullModal() {
+    memoryFullModal.hidden = true;
+  }
+
+  /**
+   * Bestätigt das Pop-up und öffnet die Verdrängungsansicht.
+   */
+  function confirmMemoryFullModal() {
+    if (!pendingAkte || !currentState) {
+      return;
+    }
+
+    hideMemoryFullModal();
+    showDisplacementView(pendingAkte, currentState.memoryRoom);
+  }
+
+  /**
    * Zeigt den gemeinsamen Erinnerungsraum zur Verdrängung auf der Archivseite.
    * @param {Object} akte - Die neu gewählte Akte
    * @param {Array} memoryRoom - Aktuell belegte Plätze
@@ -313,7 +344,7 @@
     }
 
     if (needsDisplacement(currentState)) {
-      showDisplacementView(akte, currentState.memoryRoom);
+      showMemoryFullModal(akte);
       return;
     }
 
@@ -377,11 +408,10 @@
       return;
     }
 
-    if (viewMode === 'displacement') {
-      pendingAkte = null;
-      pendingAktePreview.innerHTML = '';
-      archiveMemoryRoom.innerHTML = '';
-    }
+    hideMemoryFullModal();
+    pendingAkte = null;
+    pendingAktePreview.innerHTML = '';
+    archiveMemoryRoom.innerHTML = '';
 
     setViewMode('start');
     resetState();
@@ -394,6 +424,7 @@
     setViewMode('start');
     openArchiveBtn.addEventListener('click', openArchive);
     displacementCancel.addEventListener('click', exitDisplacementView);
+    memoryFullModalConfirm.addEventListener('click', confirmMemoryFullModal);
     resetInstallation.addEventListener('click', handleResetInstallation);
 
     document.addEventListener('keydown', function (event) {

@@ -54,6 +54,22 @@
     <button type="button" id="reset-installation" class="btn-reset" title="Installation zurücksetzen">
       Installation zurücksetzen
     </button>
+
+    <div id="memory-full-modal" class="memory-full-modal" hidden
+         role="dialog" aria-modal="true" aria-labelledby="memory-full-modal-title">
+      <div class="memory-full-modal__backdrop" aria-hidden="true"></div>
+      <div class="memory-full-modal__card">
+        <p id="memory-full-modal-title" class="memory-full-modal__primary">
+          Der Erinnerungsraum ist vollständig belegt.
+        </p>
+        <p class="memory-full-modal__secondary">
+          Um die ausgewählte Akte aufnehmen zu können, muss eine bestehende Akte entfernt werden.
+        </p>
+        <button type="button" id="memory-full-modal-confirm" class="btn-start">
+          Löschung Starten
+        </button>
+      </div>
+    </div>
   </div>
 
   <script src="data.js"></script>

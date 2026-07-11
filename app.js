@@ -83,58 +83,29 @@
   }
 
   /**
-   * Mappt Skalenwerte (gering/mittel/hoch) auf Punktanzahl (1–5).
-   * Skala hier anpassen, falls du andere Werte in data.js verwendest.
-   * @param {string} wert
-   * @returns {number}
-   */
-  function mapScaleToDots(wert) {
-    const scale = {
-      gering: 1,
-      mittel: 3,
-      hoch: 5,
-    };
-    return scale[wert] || 0;
-  }
-
-  /**
-   * Rendert einen Punkt-Balken für ein Kriterium.
-   * @param {string} label
-   * @param {number} value - Anzahl gefüllter Punkte (1–5)
-   * @returns {string}
-   */
-  function renderCriterionDots(label, value) {
-    let dots = '';
-    for (let i = 1; i <= 5; i++) {
-      dots += '<span class="criterion__dot' + (i <= value ? ' criterion__dot--filled' : '') + '"></span>';
-    }
-
-    return (
-      '<li class="criterion">' +
-      '<span class="criterion__label">' + escapeHtml(label) + '</span>' +
-      '<span class="criterion__bar" aria-label="' + value + ' von 5">' + dots + '</span>' +
-      '</li>'
-    );
-  }
-
-  /**
-   * Bereich 5: Institutionelle Relevanz, Dokumentationsgrad, Erhaltungszustand.
+   * Bereich 5: Bewertungskriterien mit Kategorie und Text.
    * @param {Object} akte
    * @returns {string}
    */
   function renderCriteria(akte) {
-    const items = [
-      renderCriterionDots('Institutionelle Relevanz', mapScaleToDots(akte.institutionelleRelevanz)),
-      renderCriterionDots('Dokumentationsgrad', mapScaleToDots(akte.dokumentationsgrad)),
-      (
-        '<li class="criterion">' +
-        '<span class="criterion__label">Erhaltungszustand</span>' +
-        '<span class="criterion__value">' + escapeHtml(formatValue(akte.erhaltungszustand)) + '</span>' +
-        '</li>'
-      ),
-    ];
+    const kriterien = Array.isArray(akte.bewertungskriterien) ? akte.bewertungskriterien : [];
 
-    return items.join('');
+    if (kriterien.length === 0) {
+      return '<li class="criterion"><span class="criterion__value">—</span></li>';
+    }
+
+    return kriterien.map(function (item) {
+      if (typeof item === 'string') {
+        return '<li class="criterion"><span class="criterion__value">' + escapeHtml(item) + '</span></li>';
+      }
+
+      return (
+        '<li class="criterion">' +
+        '<span class="criterion__label">' + escapeHtml(item.label) + '</span>' +
+        '<span class="criterion__value">' + escapeHtml(item.text) + '</span>' +
+        '</li>'
+      );
+    }).join('');
   }
 
   /**

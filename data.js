@@ -7,7 +7,8 @@
  * 1. Neues Bild: Datei in den Ordner assests/ legen und neuen Eintrag in ARCHIV_BILDER anlegen.
  * 2. Weitere Archivlesart zum selben Bild: weiteres Objekt in `varianten` desselben Bild-Eintrags.
  * 3. Akte ohne Bild: Eintrag mit `pfad: null` und passender Variante.
- * 4. Vokabulare: Listen in KONTROLLIERTE_WERTE bei Bedarf erweitern (optional, nur Orientierung).
+ * 4. Vokabulare: Listen und Profile in KONTROLLIERTE_WERTE erweitern — daraus werden
+ *    Objekttyp, Herkunft, Provenienz, Sammlung und Bewertungskriterien erzeugt.
  */
 
 /** Präfix für Archivsignaturen, z. B. AK-1989-014 */
@@ -15,8 +16,11 @@ const ARCHIV_PREFIX = 'AK';
 
 
 /**
- * Kontrollierte Werte — Orientierung beim Befüllen neuer Varianten.
- * Diese Listen sind Vorschläge; du kannst auch abweichende Werte in einzelnen Varianten eintragen.
+ * Kontrollierte Werte — Vokabulare und Profile für die automatische Aktengenerierung.
+ *
+ * Globale Listen (objekttypen, sammlung, …) dienen als Fallback.
+ * aktenProfile steuern kohärente Kombinationen: Sammlung passt zur Kategorie,
+ * Provenienz passt zur Herkunft. Erweitere Profile oder Einträge nach Bedarf.
  */
 const KONTROLLIERTE_WERTE = {
 
@@ -40,6 +44,7 @@ const KONTROLLIERTE_WERTE = {
     'Notizzettel',
     'digitaler Scan',
     'Fotokopie',
+    'Fotografie',
     'Markierung',
     'Abdruck',
     'Protokollfragment',
@@ -59,26 +64,147 @@ const KONTROLLIERTE_WERTE = {
     'digitaler Bestand',
   ],
 
-  /** Dokumentationsgrad — wie vollständig die Akte beschrieben ist */
-  dokumentationsgrad: [
-    'gering',
-    'mittel',
-    'hoch',
+  /** Überlieferungsgeschichte — wird pro Akte zufällig vergeben */
+  provenienz: [
+    'Überlieferung durch private Nachlässe; Zeitpunkt der Archivaufnahme nicht dokumentiert.',
+    'Erhalt über kommunale Sammlung; vorheriger Besitz unbekannt.',
+    'Übernahme aus institutionellem Archivbestand ohne vollständige Herkunftsangabe.',
+    'Fund im Rahmen einer Bestandsaufnahme; ursprünglicher Erwerb nicht rekonstruierbar.',
+    'Weitergabe im Familienkreis; spätere Ablage im Archiv ohne Protokoll.',
+    'Digitalisierung aus einem unsortierten Vorlass; analoge Vorlage nicht mehr vorhanden.',
+    'Sekundärüberlieferung über mündliche Erzählung; schriftliche Belege fragmentarisch.',
+    'Zugang über Schenkung; genaue Übernahmebedingungen nicht überliefert.',
   ],
 
-  /** Erhaltungszustand des Objekts oder Fragments */
-  erhaltungszustand: [
-    'intakt',
-    'fragil',
-    'beschädigt',
-    'fragmentarisch',
+  /** Zugehörige Sammlung oder Bestand */
+  sammlung: [
+    'Bestand Stadtgeschichte',
+    'Sammlung Alltagskultur',
+    'Konvolut private Überlieferung',
+    'Magazin offene Bestände',
+    'Dokumentationsarchiv öffentlicher Raum',
+    'Sammlung Arbeit und Migration',
+    'Vorlassensammlung ohne Signaturenzuordnung',
+    'Digitaler Bildbestand — unsortiert',
+    'Sammlung Fest- und Vereinskultur',
+    'Depot unzugeordneter Fundstücke',
   ],
 
-  /** Institutionelle Relevanz — Bedeutung für Sammlung oder Archiv */
-  institutionelleRelevanz: [
-    'gering',
-    'mittel',
-    'hoch',
+  /**
+   * Bewertungskriterien — je Kategorie ein zufälliger Anzeigetext pro Akte.
+   * Schlüssel = Kategoriename in der Anzeige (z. B. „Institutionelle Relevanz:“).
+   */
+  bewertungskriterienListen: {
+    'Institutionelle Relevanz': [
+      'archivwürdig',
+      'von regionaler Bedeutung',
+      'von lokaler Bedeutung',
+      'von überregionaler Bedeutung',
+      'bedingt relevant',
+      'nicht priorisiert',
+    ],
+    'Dokumentationsgrad': [
+      'teilweise dokumentiert',
+      'gut dokumentiert',
+      'spärlich dokumentiert',
+      'undokumentiert',
+    ],
+    'Erhaltungszustand': [
+      'gut erhalten',
+      'fragil erhalten',
+      'beschädigt',
+      'fragmentarisch erhalten',
+    ],
+  },
+
+  /**
+   * Akten-Profile — regelbasierte Metadaten-Generierung.
+   * Schlüssel '*' in Zuordnungstabellen = Fallback für unbekannte Kategorien/Herkünfte.
+   */
+  aktenProfile: [
+    {
+      id: 'bildliche-ueberlieferung',
+      objekttypen: ['Fotografie', 'Fotokopie', 'digitaler Scan'],
+      herkunft: ['private Überlieferung', 'kommunale Sammlung', 'institutionelles Archiv'],
+      sammlungNachKategorie: {
+        'Arbeit': ['Sammlung Arbeit und Migration', 'Bestand Stadtgeschichte'],
+        'Migration': ['Sammlung Arbeit und Migration', 'Bestand Stadtgeschichte'],
+        'Öffentlicher Raum': ['Dokumentationsarchiv öffentlicher Raum', 'Bestand Stadtgeschichte'],
+        'Protest': ['Magazin offene Bestände', 'Bestand Stadtgeschichte'],
+        'Alltagskultur': ['Sammlung Alltagskultur', 'Digitaler Bildbestand — unsortiert', 'Konvolut private Überlieferung'],
+        'Kultur und Rituale': ['Sammlung Fest- und Vereinskultur', 'Bestand Stadtgeschichte'],
+        '*': ['Digitaler Bildbestand — unsortiert', 'Bestand Stadtgeschichte'],
+      },
+      provenienzNachHerkunft: {
+        'private Überlieferung': [
+          'Überlieferung durch private Nachlässe; Zeitpunkt der Archivaufnahme nicht dokumentiert.',
+          'Weitergabe im Familienkreis; spätere Ablage im Archiv ohne Protokoll.',
+          'Digitalisierung aus einem unsortierten Vorlass; analoge Vorlage nicht mehr vorhanden.',
+        ],
+        'kommunale Sammlung': [
+          'Erhalt über kommunale Sammlung; vorheriger Besitz unbekannt.',
+          'Zugang über Schenkung; genaue Übernahmebedingungen nicht überliefert.',
+        ],
+        'institutionelles Archiv': [
+          'Übernahme aus institutionellem Archivbestand ohne vollständige Herkunftsangabe.',
+          'Fund im Rahmen einer Bestandsaufnahme; ursprünglicher Erwerb nicht rekonstruierbar.',
+        ],
+      },
+    },
+    {
+      id: 'schriftliche-fragmente',
+      objekttypen: ['Notizzettel', 'Plakatrest', 'Protokollfragment', 'Gesprächsfragment', 'Abdruck', 'beschädigte Datei'],
+      herkunft: ['mündliche Überlieferung', 'unbekannte Provenienz', 'private Überlieferung', 'digitaler Bestand'],
+      sammlungNachKategorie: {
+        'Arbeit': ['Sammlung Arbeit und Migration', 'Magazin offene Bestände'],
+        'Migration': ['Sammlung Arbeit und Migration', 'Vorlassensammlung ohne Signaturenzuordnung'],
+        'Migration / Arbeit': ['Sammlung Arbeit und Migration', 'Magazin offene Bestände'],
+        'Protest': ['Magazin offene Bestände', 'Depot unzugeordneter Fundstücke'],
+        'Alltagskultur': ['Konvolut private Überlieferung', 'Sammlung Alltagskultur', 'Vorlassensammlung ohne Signaturenzuordnung'],
+        'Öffentlicher Raum': ['Dokumentationsarchiv öffentlicher Raum', 'Magazin offene Bestände'],
+        '*': ['Magazin offene Bestände', 'Vorlassensammlung ohne Signaturenzuordnung'],
+      },
+      provenienzNachHerkunft: {
+        'mündliche Überlieferung': [
+          'Sekundärüberlieferung über mündliche Erzählung; schriftliche Belege fragmentarisch.',
+        ],
+        'unbekannte Provenienz': [
+          'Fund im Rahmen einer Bestandsaufnahme; ursprünglicher Erwerb nicht rekonstruierbar.',
+        ],
+        'private Überlieferung': [
+          'Überlieferung durch private Nachlässe; Zeitpunkt der Archivaufnahme nicht dokumentiert.',
+          'Weitergabe im Familienkreis; spätere Ablage im Archiv ohne Protokoll.',
+        ],
+        'digitaler Bestand': [
+          'Digitalisierung aus einem unsortierten Vorlass; analoge Vorlage nicht mehr vorhanden.',
+        ],
+      },
+    },
+    {
+      id: 'raum-und-fundstuecke',
+      objekttypen: ['Gegenstandsfragment', 'Raumfragment', 'Fundstück', 'Alltagsobjekt', 'Wandspur', 'Markierung', 'Tonspur'],
+      herkunft: ['unbekannte Provenienz', 'kommunale Sammlung', 'institutionelles Archiv'],
+      sammlungNachKategorie: {
+        'Arbeit': ['Sammlung Arbeit und Migration', 'Depot unzugeordneter Fundstücke'],
+        'Migration': ['Sammlung Arbeit und Migration', 'Depot unzugeordneter Fundstücke'],
+        'Öffentlicher Raum': ['Dokumentationsarchiv öffentlicher Raum', 'Depot unzugeordneter Fundstücke'],
+        'Protest': ['Magazin offene Bestände', 'Depot unzugeordneter Fundstücke'],
+        'Kultur und Rituale': ['Sammlung Fest- und Vereinskultur', 'Bestand Stadtgeschichte'],
+        'Alltagskultur': ['Sammlung Alltagskultur', 'Depot unzugeordneter Fundstücke'],
+        '*': ['Depot unzugeordneter Fundstücke', 'Magazin offene Bestände'],
+      },
+      provenienzNachHerkunft: {
+        'unbekannte Provenienz': [
+          'Fund im Rahmen einer Bestandsaufnahme; ursprünglicher Erwerb nicht rekonstruierbar.',
+        ],
+        'kommunale Sammlung': [
+          'Erhalt über kommunale Sammlung; vorheriger Besitz unbekannt.',
+        ],
+        'institutionelles Archiv': [
+          'Übernahme aus institutionellem Archivbestand ohne vollständige Herkunftsangabe.',
+        ],
+      },
+    },
   ],
 };
 
@@ -88,6 +214,8 @@ const KONTROLLIERTE_WERTE = {
  *
  * Archivakten entstehen zur Laufzeit aus Bild + Variante.
  * Jedes Bild kann mehrere Varianten haben (unterschiedliche Titel, Beschreibungen, Kategorien).
+ * Die Datierung (Jahr), Metadaten (Objekttyp, Herkunft, …) und Bewertungskriterien werden beim
+ * Erzeugen einer Akte regelbasiert vergeben — siehe generator.js und KONTROLLIERTE_WERTE.
  *
  * Felder pro Bild:
  *   id        — eindeutige interne Kennung
@@ -96,18 +224,15 @@ const KONTROLLIERTE_WERTE = {
  *
  * Felder pro Variante:
  *   id                    — eindeutige Kennung innerhalb des Bildes
- *   archivsignatur        — optional; wird sonst automatisch aus `jahr` erzeugt
- *   kategorie             — thematisches Feld (siehe KONTROLLIERTE_WERTE.kategorien)
+ *   archivsignatur        — optional; wird sonst automatisch aus der Datierung erzeugt
+ *   kategorie             — thematisches Feld; steuert die Sammlungs-Zuordnung in aktenProfile
  *   titel                 — Anzeigetitel der Akte
- *   jahr                  — Bezugsjahr: Zahl, null (nicht datiert), „ca. 1974“, „1970er Jahre“ usw.
  *   kurzbeschreibung      — 1–3 Sätze für Vorschau und Auswahl
- *   objekttyp             — Form des Fragments
- *   herkunft              — woher das Material stammt
- *   provenienz            — Überlieferungsgeschichte (freier Text)
- *   sammlung              — zugehörige Sammlung oder Bestand
- *   institutionelleRelevanz
- *   dokumentationsgrad
- *   erhaltungszustand
+ *
+ * Metadaten-Erweiterung: In KONTROLLIERTE_WERTE.aktenProfile neue Profile anlegen oder
+ * sammlungNachKategorie / provenienzNachHerkunft um Einträge ergänzen. Schlüssel '*' = Fallback.
+ * Bewertungskriterien: bewertungskriterienListen in KONTROLLIERTE_WERTE erweitern
+ * (Schlüssel = Kategoriename, z. B. „Institutionelle Relevanz“).
  */
 const ARCHIV_BILDER = [
 
@@ -119,29 +244,13 @@ const ARCHIV_BILDER = [
         id: 'variant-a',
         kategorie: 'Protest',
         titel: '[Platzhalter] Fragment eines Plakatrests',
-        jahr: 1989,
         kurzbeschreibung: '[Platzhalter] Kurzbeschreibung der ersten Lesart. Hier später 1–3 Sätze eintragen.',
-        objekttyp: 'Plakatrest',
-        herkunft: 'private Überlieferung',
-        provenienz: '[Platzhalter] Überlieferungsgeschichte — wer, wann, wie ins Archiv gelangt.',
-        sammlung: '[Platzhalter] Name der Sammlung oder des Bestands',
-        institutionelleRelevanz: 'mittel',
-        dokumentationsgrad: 'gering',
-        erhaltungszustand: 'fragmentarisch',
       },
       {
         id: 'variant-b',
         kategorie: 'Alltagskultur',
         titel: '[Platzhalter] Fotosammlung — Alltagsdokumentation',
-        jahr: '1970er Jahre',
         kurzbeschreibung: '[Platzhalter] Zweite Lesart desselben Bildes mit anderem Titel und anderer Kategorie.',
-        objekttyp: 'Fotokopie',
-        herkunft: 'kommunale Sammlung',
-        provenienz: '[Platzhalter] Alternative Provenienzangabe für dieselbe Aufnahme.',
-        sammlung: '[Platzhalter] Anderer Bestand',
-        institutionelleRelevanz: 'gering',
-        dokumentationsgrad: 'mittel',
-        erhaltungszustand: 'fragil',
       },
     ],
   },
@@ -154,29 +263,13 @@ const ARCHIV_BILDER = [
         id: 'variant-a',
         kategorie: 'Öffentlicher Raum',
         titel: '[Platzhalter] Festzug im öffentlichen Raum',
-        jahr: 1962,
         kurzbeschreibung: '[Platzhalter] Kurzbeschreibung der Festzug-Akte. Hier später 1–3 Sätze eintragen.',
-        objekttyp: 'Raumfragment',
-        herkunft: 'institutionelles Archiv',
-        provenienz: '[Platzhalter] Überlieferungsgeschichte des Festzug-Bildes.',
-        sammlung: '[Platzhalter] Sammlungsname',
-        institutionelleRelevanz: 'hoch',
-        dokumentationsgrad: 'mittel',
-        erhaltungszustand: 'intakt',
       },
       {
         id: 'variant-b',
         kategorie: 'Kultur und Rituale',
         titel: 'Traditionelle Prozession im Stadtraum',
-        jahr: 1962,
         kurzbeschreibung: 'Dokumentation einer gemeinschaftlichen Festpraxis, bei der musikalische Darbietung, Kleidung und Öffentlichkeit zusammenwirken.',
-        objekttyp: 'Raumfragment',
-        herkunft: 'institutionelles Archiv',
-        provenienz: '[Platzhalter] Überlieferungsgeschichte des Festzug-Bildes.',
-        sammlung: '[Platzhalter] Sammlungsname',
-        institutionelleRelevanz: 'hoch',
-        dokumentationsgrad: 'mittel',
-        erhaltungszustand: 'intakt',
       },
     ],
   },
@@ -187,17 +280,9 @@ const ARCHIV_BILDER = [
     varianten: [
       {
         id: 'variant-a',
-        kategorie: 'Migration / Arbeit',
+        kategorie: 'Arbeit',
         titel: '[Platzhalter] Notizzettel aus einem Gesprächsfragment',
-        jahr: 2003,
         kurzbeschreibung: '[Platzhalter] Beispielakte ohne Bild — pfad kann null sein, bis ein Foto vorliegt.',
-        objekttyp: 'Notizzettel',
-        herkunft: 'mündliche Überlieferung',
-        provenienz: '[Platzhalter] Provenienzangabe',
-        sammlung: '[Platzhalter] Sammlungsname',
-        institutionelleRelevanz: 'hoch',
-        dokumentationsgrad: 'mittel',
-        erhaltungszustand: 'fragil',
       },
     ],
   },
@@ -209,29 +294,13 @@ const ARCHIV_BILDER = [
         id: 'variant-a',
         kategorie: 'Alltagskultur',
         titel: 'Private Erinnerungsdokumente',
-        jahr: 1989,
         kurzbeschreibung: 'Konvolut aus Fotografien und handschriftlichen Aufzeichnungen, das auf einen privaten Erinnerungskontext verweist.',
-        objekttyp: 'Plakatrest',
-        herkunft: 'private Überlieferung',
-        provenienz: '[Platzhalter] Überlieferungsgeschichte — wer, wann, wie ins Archiv gelangt.',
-        sammlung: '[Platzhalter] Name der Sammlung oder des Bestands',
-        institutionelleRelevanz: 'mittel',
-        dokumentationsgrad: 'gering',
-        erhaltungszustand: 'fragmentarisch',
       },
       {
         id: 'variant-b',
         kategorie: 'Alltagskultur',
         titel: 'Fragmente persönlicher Korrespondenz',
-        jahr: '1970er Jahre',
         kurzbeschreibung: '[Sammlung analoger Dokumente, die als Spuren alltäglicher Beziehungen und individueller Erinnerung überliefert wurden.',
-        objekttyp: 'Fotokopie',
-        herkunft: 'kommunale Sammlung',
-        provenienz: '[Platzhalter] Alternative Provenienzangabe für dieselbe Aufnahme.',
-        sammlung: '[Platzhalter] Anderer Bestand',
-        institutionelleRelevanz: 'gering',
-        dokumentationsgrad: 'mittel',
-        erhaltungszustand: 'fragil',
       },
     ],
   },
@@ -243,43 +312,19 @@ const ARCHIV_BILDER = [
         id: 'variant-a',
         kategorie: 'Arbeit',
         titel: 'Verladung im innerstädtischen Hafen',
-        jahr: 1989,
         kurzbeschreibung: 'Dokumentation eines Hafenbereichs mit Schiffen, Ladeeinrichtungen und mechanischer Hebevorrichtung. Die Aufnahme verweist auf frühere Arbeitsabläufe, deren genauer betrieblicher Zusammenhang nicht überliefert ist.',
-        objekttyp: 'Fotografie',
-        herkunft: 'private Überlieferung',
-        provenienz: '[Platzhalter] Überlieferungsgeschichte — wer, wann, wie ins Archiv gelangt.',
-        sammlung: '[Platzhalter] Name der Sammlung oder des Bestands',
-        institutionelleRelevanz: 'mittel',
-        dokumentationsgrad: 'gering',
-        erhaltungszustand: 'fragmentarisch',
       },
       {
         id: 'variant-b',
         kategorie: 'Öffentlicher Raum',
         titel: 'Hafenbecken zwischen Nutzung und Wandel',
-        jahr: '1970er',
         kurzbeschrebung: 'Aufnahme eines städtischen Hafenraums, in dem Verkehrswege, technische Infrastruktur und maritime Nutzung zusammentreffen. Die ursprüngliche Funktion einzelner Bereiche konnte nicht vollständig rekonstruiert werden.',
-        objekttyp: 'Fotografie',
-        herkunft: 'kommunale Sammlung',
-        provenienz: '[Platzhalter] Alternative Provenienzangabe für dieselbe Aufnahme.',
-        sammlung: '[Platzhalter] Anderer Bestand',
-        institutionelleRelevanz: 'gering',
-        dokumentationsgrad: 'mittel',
-        erhaltungszustand: 'fragil',
       },
       {
         id: 'variant-c',
         kategorie: 'Migration',
         titel: 'Hafen als Ort von Ankunft und Abreise',
-        jahr: '1970er',
         kurzbeschrebung: 'Fotografische Dokumentation eines Hafenbereichs, der mit unterschiedlichen Formen von Mobilität und grenzüberschreitender Bewegung in Verbindung gebracht wird. Konkrete Angaben zu Personen und Reisewegen liegen nicht vor.',
-        objekttyp: 'Fotografie',
-        herkunft: 'kommunale Sammlung',
-        provenienz: '[Platzhalter] Alternative Provenienzangabe für dieselbe Aufnahme.',
-        sammlung: '[Platzhalter] Anderer Bestand',
-        institutionelleRelevanz: 'gering',
-        dokumentationsgrad: 'mittel',
-        erhaltungszustand: 'fragil',
       },
     ],
   },

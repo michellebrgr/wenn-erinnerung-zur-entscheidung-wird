@@ -1,22 +1,28 @@
 /**
  * app.js — Steuert das Archivinterface (Laptop)
  *
- * Zeigt 3 wählbare Akten und den Verdrängungsdialog bei vollem Speicher.
+ * Zeigt 3 wählbare Akten und bei vollem Speicher den Erinnerungsraum zur Verdrängung.
  */
 
 (function () {
   'use strict';
 
+  const offerSection = document.getElementById('offer-section');
   const offerContainer = document.getElementById('offer-container');
-  const modal = document.getElementById('displacement-modal');
-  const displacementOptions = document.getElementById('displacement-options');
-  const modalCancel = document.getElementById('modal-cancel');
+  const displacementSection = document.getElementById('displacement-section');
+  const pendingAktePreview = document.getElementById('pending-akte-preview');
+  const archiveMemoryRoom = document.getElementById('archive-memory-room');
+  const displacementCancel = document.getElementById('displacement-cancel');
+  const resetInstallation = document.getElementById('reset-installation');
 
   /** Aktuell im Speicher gehaltener State (Referenz) */
   let currentState = null;
 
   /** Akte, die auf Verdrängung wartet (wenn Speicher voll) */
   let pendingAkte = null;
+
+  /** 'offer' | 'displacement' */
+  let viewMode = 'offer';
 
   /**
    * Escaped HTML-Sonderzeichen.
@@ -39,6 +45,19 @@
       return '—';
     }
     return String(value);
+  }
+
+  /**
+   * Kürzt einen Text auf maxLength Zeichen.
+   * @param {string} text
+   * @param {number} maxLength
+   * @returns {string}
+   */
+  function truncateText(text, maxLength) {
+    if (text.length <= maxLength) {
+      return text;
+    }
+    return text.slice(0, maxLength).trim() + '…';
   }
 
   /**
@@ -121,7 +140,7 @@
   /**
    * Bereich 4: Objekttyp, Herkunft, Provenienz, Sammlung.
    * @param {Object} akte
-   * @param {boolean} compact - Weniger Felder für den Verdrängungsdialog
+   * @param {boolean} compact - Weniger Felder für kompakte Darstellung
    * @returns {string}
    */
   function renderMetaList(akte, compact) {
@@ -148,7 +167,7 @@
    * Rendert eine Archivkarte mit fünf Bereichen.
    * @param {Object} akte
    * @param {Object} options
-   * @param {string} options.variant - 'selectable' oder 'displacement'
+   * @param {string} options.variant - 'selectable' oder 'pending'
    * @param {boolean} [options.compact=false]
    * @returns {string}
    */
@@ -156,30 +175,23 @@
     const variant = options.variant;
     const compact = options.compact || false;
     const isSelectable = variant === 'selectable';
-    const cardClass = isSelectable ? 'akte-card--selectable' : 'akte-card--displacement';
-    const dataAttr = isSelectable
-      ? 'data-id="' + escapeHtml(akte.id) + '"'
-      : 'data-displace-id="' + escapeHtml(akte.id) + '"';
-    const actionHint = isSelectable ? 'Klicken zum Aufnehmen' : 'Zum Verdrängen wählen';
+    const cardClass = isSelectable ? 'akte-card--selectable' : 'akte-card--pending';
+    const dataAttr = isSelectable ? 'data-id="' + escapeHtml(akte.id) + '"' : '';
+    const actionHint = isSelectable ? 'Klicken zum Aufnehmen' : '';
 
     return (
       '<article class="akte-card ' + cardClass + '" role="listitem" tabindex="0" ' + dataAttr + '>' +
-      // Bereich 1: Kopfdaten — Titel/Jahr in data.js pflegen
       '<header class="akte-card__header">' +
       '<span class="akte-card__reference">' + escapeHtml(formatValue(akte.archivsignatur)) + '</span>' +
       '<span class="akte-card__category">' + escapeHtml(formatValue(akte.kategorie)) + '</span>' +
       '</header>' +
       '<h3 class="akte-card__title">' + escapeHtml(formatValue(akte.titel)) + '</h3>' +
       '<p class="akte-card__year">' + escapeHtml(formatValue(akte.jahr)) + '</p>' +
-      // Bereich 2: Bild — Pfad in data.js Feld `bild`
       renderAkteImage(akte.bild) +
-      // Bereich 3: Kurzbeschreibung — Text in data.js Feld `kurzbeschreibung`
       '<p class="akte-card__fragment">' + escapeHtml(formatValue(akte.kurzbeschreibung)) + '</p>' +
-      // Bereich 4: Objekttyp, Herkunft, Provenienz, Sammlung
       renderMetaList(akte, compact) +
-      // Bereich 5: Bewertungskriterien — Werte in data.js anpassen
       '<ul class="akte-card__criteria" aria-label="Bewertungskriterien">' + renderCriteria(akte) + '</ul>' +
-      '<p class="akte-card__action-hint">' + actionHint + '</p>' +
+      (actionHint ? '<p class="akte-card__action-hint">' + actionHint + '</p>' : '') +
       '</article>'
     );
   }
@@ -194,12 +206,30 @@
   }
 
   /**
-   * Rendert eine Akte im Verdrängungsdialog (kompakter).
+   * Rendert einen Speicherplatz im Archiv-Erinnerungsraum.
    * @param {Object} akte
+   * @param {number} index
    * @returns {string}
    */
-  function renderDisplacementCard(akte) {
-    return renderAkteCard(akte, { variant: 'displacement', compact: true });
+  function renderArchiveMemorySlot(akte, index) {
+    const ariaLabel = 'Platz ' + (index + 1) + ': ' + formatValue(akte.archivsignatur);
+
+    return (
+      '<article class="archive-memory-slot archive-memory-slot--filled archive-memory-slot--displacement" ' +
+      'role="listitem" tabindex="0" aria-label="' + escapeHtml(ariaLabel) + '" ' +
+      'data-displace-id="' + escapeHtml(akte.id) + '">' +
+      '<div class="archive-memory-slot__reference">' + escapeHtml(formatValue(akte.archivsignatur)) + '</div>' +
+      '<div class="archive-memory-slot__category">' + escapeHtml(formatValue(akte.kategorie)) + '</div>' +
+      '<div class="archive-memory-slot__title">' + escapeHtml(formatValue(akte.titel)) + '</div>' +
+      '<div class="archive-memory-slot__meta">' +
+      '<span><strong>Objekttyp</strong>: ' + escapeHtml(formatValue(akte.objekttyp)) + '</span>' +
+      '<span><strong>Jahr</strong>: ' + escapeHtml(formatValue(akte.jahr)) + '</span>' +
+      '<span><strong>Herkunft</strong>: ' + escapeHtml(formatValue(akte.herkunft)) + '</span>' +
+      '</div>' +
+      '<p class="archive-memory-slot__fragment">' + escapeHtml(truncateText(formatValue(akte.kurzbeschreibung), 180)) + '</p>' +
+      '<p class="archive-memory-slot__action-hint">Zum Verdrängen wählen</p>' +
+      '</article>'
+    );
   }
 
   /**
@@ -223,38 +253,56 @@
   }
 
   /**
-   * Öffnet den Verdrängungsdialog.
-   * @param {Object} akte - Die neu gewählte Akte
-   * @param {Array} memoryRoom - Aktuell belegte Plätze
+   * Wechselt zwischen Angebots- und Verdrängungsansicht.
+   * @param {'offer'|'displacement'} mode
    */
-  function openDisplacementModal(akte, memoryRoom) {
-    pendingAkte = akte;
-    displacementOptions.innerHTML = memoryRoom.map(renderDisplacementCard).join('');
-
-    displacementOptions.querySelectorAll('.akte-card--displacement').forEach(function (card) {
-      card.addEventListener('click', function () {
-        handleDisplacement(card.getAttribute('data-displace-id'));
-      });
-      card.addEventListener('keydown', function (event) {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          handleDisplacement(card.getAttribute('data-displace-id'));
-        }
-      });
-    });
-
-    modal.hidden = false;
-    modal.setAttribute('aria-hidden', 'false');
+  function setViewMode(mode) {
+    viewMode = mode;
+    const isDisplacement = mode === 'displacement';
+    offerSection.hidden = isDisplacement;
+    displacementSection.hidden = !isDisplacement;
   }
 
   /**
-   * Schließt den Verdrängungsdialog.
+   * Zeigt den gemeinsamen Erinnerungsraum zur Verdrängung auf der Archivseite.
+   * @param {Object} akte - Die neu gewählte Akte
+   * @param {Array} memoryRoom - Aktuell belegte Plätze
    */
-  function closeDisplacementModal() {
+  function showDisplacementView(akte, memoryRoom) {
+    pendingAkte = akte;
+    setViewMode('displacement');
+
+    pendingAktePreview.innerHTML =
+      '<p class="pending-akte-preview__label">Neu ausgewählte Akte</p>' +
+      renderAkteCard(akte, { variant: 'pending', compact: true });
+
+    archiveMemoryRoom.innerHTML = memoryRoom.map(renderArchiveMemorySlot).join('');
+
+    archiveMemoryRoom.querySelectorAll('.archive-memory-slot--displacement').forEach(function (slot) {
+      slot.addEventListener('click', function () {
+        handleDisplacement(slot.getAttribute('data-displace-id'));
+      });
+      slot.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          handleDisplacement(slot.getAttribute('data-displace-id'));
+        }
+      });
+    });
+  }
+
+  /**
+   * Beendet die Verdrängungsansicht und kehrt zum Angebots-Set zurück.
+   */
+  function exitDisplacementView() {
     pendingAkte = null;
-    modal.hidden = true;
-    modal.setAttribute('aria-hidden', 'true');
-    displacementOptions.innerHTML = '';
+    pendingAktePreview.innerHTML = '';
+    archiveMemoryRoom.innerHTML = '';
+    setViewMode('offer');
+
+    if (currentState) {
+      renderOfferSet(ensureOfferSet(currentState).currentOffer);
+    }
   }
 
   /**
@@ -271,7 +319,7 @@
     }
 
     if (needsDisplacement(currentState)) {
-      openDisplacementModal(akte, currentState.memoryRoom);
+      showDisplacementView(akte, currentState.memoryRoom);
       return;
     }
 
@@ -290,11 +338,13 @@
       return;
     }
 
+    const newAkte = pendingAkte;
+    exitDisplacementView();
+
     let state = loadState();
-    state = replaceInMemoryRoom(state, pendingAkte, oldAkteId);
+    state = replaceInMemoryRoom(state, newAkte, oldAkteId);
     state = refreshOfferSet(state);
     saveState(state);
-    closeDisplacementModal();
   }
 
   /**
@@ -304,20 +354,44 @@
   function render(state) {
     currentState = state;
     state = ensureOfferSet(state);
+
+    if (viewMode === 'displacement' && pendingAkte) {
+      showDisplacementView(pendingAkte, state.memoryRoom);
+      return;
+    }
+
     renderOfferSet(state.currentOffer);
+  }
+
+  /**
+   * Setzt die Installation zurück (Erinnerungsraum und Angebots-Set).
+   */
+  function handleResetInstallation() {
+    const confirmed = window.confirm(
+      'Installation wirklich zurücksetzen? Der Erinnerungsraum und alle bisherigen Entscheidungen werden gelöscht.'
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    if (viewMode === 'displacement') {
+      exitDisplacementView();
+    }
+
+    resetState();
   }
 
   /**
    * Initialisierung.
    */
   function init() {
-    modalCancel.addEventListener('click', closeDisplacementModal);
-
-    modal.querySelector('.modal-backdrop').addEventListener('click', closeDisplacementModal);
+    displacementCancel.addEventListener('click', exitDisplacementView);
+    resetInstallation.addEventListener('click', handleResetInstallation);
 
     document.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape' && !modal.hidden) {
-        closeDisplacementModal();
+      if (event.key === 'Escape' && viewMode === 'displacement') {
+        exitDisplacementView();
       }
     });
 

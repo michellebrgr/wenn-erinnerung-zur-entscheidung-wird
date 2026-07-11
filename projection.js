@@ -1,7 +1,7 @@
 /**
  * projection.js — Steuert die Projektionsansicht (Beamer)
  *
- * Zeigt den öffentlichen Erinnerungsraum mit maximal 6 Plätzen.
+ * Zeigt den gemeinsamen Erinnerungsraum mit maximal 6 Plätzen.
  * Reagiert live auf State-Änderungen aus localStorage (Cross-Tab-Sync).
  */
 
@@ -39,6 +39,18 @@
   }
 
   /**
+   * Gibt einen Anzeigewert zurück oder „—“ bei leeren Werten.
+   * @param {*} value
+   * @returns {string}
+   */
+  function formatValue(value) {
+    if (value === null || value === undefined || value === '') {
+      return '—';
+    }
+    return String(value);
+  }
+
+  /**
    * Rendert einen einzelnen Speicherplatz.
    * @param {Object|null} akte - Akte oder null für leeren Platz
    * @param {number} index - Platznummer (0–5)
@@ -49,7 +61,7 @@
     const slotClass = akte ? 'memory-slot--filled' : 'memory-slot--empty';
     const enterClass = isNew ? ' memory-slot--enter' : '';
     const ariaLabel = akte
-      ? 'Platz ' + (index + 1) + ': ' + akte.inventoryNumber
+      ? 'Platz ' + (index + 1) + ': ' + formatValue(akte.archivsignatur)
       : 'Platz ' + (index + 1) + ': frei';
 
     if (!akte) {
@@ -62,18 +74,17 @@
 
     return (
       '<article class="memory-slot ' + slotClass + enterClass + '" role="listitem" aria-label="' + ariaLabel + '" data-id="' + escapeHtml(akte.id) + '">' +
-      '<div class="memory-slot__reference">' + escapeHtml(akte.inventoryNumber) + '</div>' +
-      '<div class="memory-slot__category">' + escapeHtml(akte.category) + '</div>' +
-      '<div class="memory-slot__title">' + escapeHtml(akte.title) + '</div>' +
+      '<div class="memory-slot__reference">' + escapeHtml(formatValue(akte.archivsignatur)) + '</div>' +
+      '<div class="memory-slot__category">' + escapeHtml(formatValue(akte.kategorie)) + '</div>' +
+      '<div class="memory-slot__title">' + escapeHtml(formatValue(akte.titel)) + '</div>' +
       '<div class="memory-slot__meta">' +
-      '<span><strong>Objekttyp</strong>: ' + escapeHtml(akte.objectType) + '</span>' +
-      '<span><strong>Jahr</strong>: ' + escapeHtml(String(akte.year)) + '</span>' +
-      '<span><strong>Material</strong>: ' + escapeHtml(akte.material) + '</span>' +
-      '<span><strong>Herkunft</strong>: ' + escapeHtml(akte.origin) + '</span>' +
-      '<span><strong>Zustand</strong>: ' + escapeHtml(akte.condition) + '</span>' +
-      '<span><strong>Sichtbarkeit</strong>: ' + escapeHtml(akte.visibility) + '</span>' +
+      '<span><strong>Objekttyp</strong>: ' + escapeHtml(formatValue(akte.objekttyp)) + '</span>' +
+      '<span><strong>Jahr</strong>: ' + escapeHtml(formatValue(akte.jahr)) + '</span>' +
+      '<span><strong>Herkunft</strong>: ' + escapeHtml(formatValue(akte.herkunft)) + '</span>' +
+      '<span><strong>Zustand</strong>: ' + escapeHtml(formatValue(akte.erhaltungszustand)) + '</span>' +
+      '<span><strong>Dokumentation</strong>: ' + escapeHtml(formatValue(akte.dokumentationsgrad)) + '</span>' +
       '</div>' +
-      '<p class="memory-slot__fragment">' + escapeHtml(truncateText(akte.shortText, 220)) + '</p>' +
+      '<p class="memory-slot__fragment">' + escapeHtml(truncateText(formatValue(akte.kurzbeschreibung), 220)) + '</p>' +
       '</article>'
     );
   }
@@ -83,11 +94,12 @@
    * @param {Array} memoryRoom - Array belegter Akten
    */
   function renderMemoryRoom(memoryRoom) {
-    const currentIds = memoryRoom.map(function (a) { return a.id; });
+    const room = memoryRoom || [];
+    const currentIds = room.map(function (a) { return a.id; });
     const slots = [];
 
     for (let i = 0; i < SLOT_COUNT; i++) {
-      const akte = memoryRoom[i] || null;
+      const akte = room[i] || null;
       const isNew = akte && previousIds.indexOf(akte.id) === -1;
       slots.push(renderSlot(akte, i, isNew));
     }

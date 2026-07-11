@@ -110,13 +110,17 @@ function findBildAndVariante(bildId, varianteId) {
  * Erzeugt ein Akten-Objekt aus Bild und Variante.
  * @param {Object} bild - Eintrag aus ARCHIV_BILDER
  * @param {Object} variante - Variante des Bildes
+ * @param {Object} [options]
+ * @param {boolean} [options.unique=false] - Eindeutige ID für mehrfach angezeigte bildlose Akten
  * @returns {Object}
  */
-function buildAkte(bild, variante) {
+function buildAkte(bild, variante, options) {
+  options = options || {};
   const jahr = variante.jahr != null ? variante.jahr : null;
+  const baseId = bild.id + '--' + variante.id;
 
   return {
-    id: bild.id + '--' + variante.id,
+    id: options.unique ? baseId + '--' + randomArchivSuffix() : baseId,
     bildId: bild.id,
     varianteId: variante.id,
     archivsignatur: variante.archivsignatur || generateArchivsignatur(jahr),
@@ -178,10 +182,38 @@ function pickArchiveBilder(bilder, count) {
 }
 
 /**
+ * Wählt zufällig ein Element aus einem Array (mit Wiederholung).
+ * @param {Array} arr
+ * @returns {*}
+ */
+function pickRandomOne(arr) {
+  if (!arr || arr.length === 0) {
+    return null;
+  }
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+/**
+ * Erzeugt eine bildlose Akte für Auffüllung des Angebots.
+ * @param {Array} ohneBild - Bild-Einträge ohne Pfad
+ * @returns {Object|null}
+ */
+function pickRandomOhneBildAkte(ohneBild) {
+  const bild = pickRandomOne(ohneBild);
+  if (!bild || !Array.isArray(bild.varianten) || bild.varianten.length === 0) {
+    return null;
+  }
+
+  const variante = pickRandomOne(bild.varianten);
+  return buildAkte(bild, variante, { unique: true });
+}
+
+/**
  * Wählt zufällig mehrere Archivakten aus ARCHIV_BILDER.
- * Zuerst Bilder mit Pfad, dann bei Bedarf Einträge ohne Bild.
+ * Zuerst verfügbare Bilder mit Pfad, dann bildlose Akten zur Auffüllung auf count.
+ * Bilder im Erinnerungsraum werden ausgeschlossen; bildlose Akten dürfen mehrfach vorkommen.
  * @param {number} count - Anzahl der Akten
- * @param {Array<string>} [excludedBildIds] - Bild-IDs, die bereits im Erinnerungsraum sind
+ * @param {Array<string>} [excludedBildIds] - Bild-IDs mit Pfad, die bereits im Erinnerungsraum sind
  * @returns {Array} Array von vorbereiteten Akten-Objekten
  */
 function pickArchiveAkten(count, excludedBildIds) {
@@ -196,22 +228,21 @@ function pickArchiveAkten(count, excludedBildIds) {
     return b.pfad && !excluded.has(b.id);
   });
   const ohneBild = ARCHIV_BILDER.filter(function (b) {
-    return !b.pfad && !excluded.has(b.id);
+    return !b.pfad;
   });
 
   const pickedMitBild = pickArchiveBilder(mitBild, Math.min(count, mitBild.length));
-  let akten = pickedMitBild.map(function (bild) {
+  const akten = pickedMitBild.map(function (bild) {
     const variante = pickRandom(bild.varianten, 1)[0];
     return buildAkte(bild, variante);
   });
 
-  const remaining = count - akten.length;
-  if (remaining > 0 && ohneBild.length > 0) {
-    const pickedOhneBild = pickArchiveBilder(ohneBild, Math.min(remaining, ohneBild.length));
-    akten = akten.concat(pickedOhneBild.map(function (bild) {
-      const variante = pickRandom(bild.varianten, 1)[0];
-      return buildAkte(bild, variante);
-    }));
+  while (akten.length < count) {
+    const akte = pickRandomOhneBildAkte(ohneBild);
+    if (!akte) {
+      break;
+    }
+    akten.push(akte);
   }
 
   return akten.map(normalizeAkte);

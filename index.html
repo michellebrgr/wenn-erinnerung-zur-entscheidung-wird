@@ -15,26 +15,29 @@
   </header>
 
   <main class="archive-main">
-    <section class="offer-section" aria-labelledby="offer-heading">
+    <section class="offer-section" id="offer-section" aria-labelledby="offer-heading">
       <h2 id="offer-heading">Aktuelle Archivakten</h2>
       <div id="offer-container" class="offer-grid" role="list"></div>
     </section>
-  </main>
 
-  <!-- Verdrängungsdialog: erscheint wenn alle 6 Plätze belegt sind -->
-  <div id="displacement-modal" class="modal" hidden aria-hidden="true" role="dialog" aria-labelledby="modal-title">
-    <div class="modal-backdrop"></div>
-    <div class="modal-content">
-      <h2 id="modal-title">Speicher voll — welche Erinnerung soll verdrängt werden?</h2>
-      <p class="modal-hint">Der Erinnerungsraum ist voll. Wählen Sie eine bestehende Akte, die ersetzt werden soll.</p>
-      <div id="displacement-options" class="displacement-grid" role="list"></div>
-      <button type="button" id="modal-cancel" class="btn-cancel">Abbrechen</button>
-    </div>
-  </div>
+    <section class="displacement-section" id="displacement-section" hidden aria-labelledby="displacement-heading">
+      <h2 id="displacement-heading">Erinnerungsraum</h2>
+      <p class="displacement-hint">
+        Der Erinnerungsraum ist voll. Wählen Sie eine bestehende Akte, die durch Ihre neue Auswahl ersetzt werden soll.
+      </p>
+      <div id="pending-akte-preview" class="pending-akte-preview" aria-label="Neu ausgewählte Akte"></div>
+      <div id="archive-memory-room" class="archive-memory-room" role="list" aria-label="Gemeinsamer Erinnerungsraum"></div>
+      <button type="button" id="displacement-cancel" class="btn-cancel">Abbrechen</button>
+    </section>
+  </main>
 
   <footer class="site-footer">
     <p>Projektionsansicht: <a href="projection.html" target="_blank">projection.html</a> im Beamer-Fenster öffnen.</p>
   </footer>
+
+  <button type="button" id="reset-installation" class="btn-reset" title="Installation zurücksetzen">
+    Installation zurücksetzen
+  </button>
 
   <script src="data.js"></script>
   <script src="generator.js"></script>

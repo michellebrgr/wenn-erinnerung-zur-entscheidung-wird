@@ -9,16 +9,35 @@ const STORAGE_KEY = 'wez-installation-state';
 const MAX_MEMORY_SLOTS = 6;
 const OFFER_COUNT = 3;
 
-/** @type {Set<Function>} Listener, die bei State-Änderungen aufgerufen werden */
-const subscribers = new Set();
+/** @type {Array<Function>} Listener, die bei State-Änderungen aufgerufen werden */
+const subscribers = [];
+
+/** Zuletzt bekannter Zeitstempel — für Polling-Fallback zwischen Tabs */
+let lastKnownUpdatedAt = 0;
+
+/** Cross-Tab-Sync per BroadcastChannel (ergänzt storage-Events) */
+let syncChannel = null;
+
+try {
+  syncChannel = new BroadcastChannel('wez-installation-sync');
+  syncChannel.onmessage = function () {
+    notifySubscribers(loadState());
+  };
+} catch (err) {
+  syncChannel = null;
+}
 
 /**
- * Sammelt Bild-IDs aus dem Erinnerungsraum für die Angebots-Auswahl.
+ * Sammelt Bild-IDs mit Pfad aus dem Erinnerungsraum für die Angebots-Auswahl.
+ * Bildlose Akten werden nicht ausgeschlossen und dürfen mehrfach angeboten werden.
  * @param {Array} memoryRoom
  * @returns {Array<string>}
  */
 function getExcludedBildIds(memoryRoom) {
   return (memoryRoom || [])
+    .filter(function (akte) {
+      return akte.bild;
+    })
     .map(function (akte) {
       return akte.bildId;
     })
@@ -47,7 +66,7 @@ function createDefaultState() {
  */
 function normalizeStateAkten(state) {
   state.currentOffer = (state.currentOffer || []).map(normalizeAkte);
-  state.memoryRoom = (state.memoryRoom || []).map(normalizeAkte);
+  state.memoryRoom = (state.memoryRoom || []).slice(0, MAX_MEMORY_SLOTS).map(normalizeAkte);
   return state;
 }
 
@@ -81,7 +100,13 @@ function loadState() {
  */
 function saveState(state) {
   state.updatedAt = Date.now();
+  lastKnownUpdatedAt = state.updatedAt;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+
+  if (syncChannel) {
+    syncChannel.postMessage({ updatedAt: state.updatedAt });
+  }
+
   notifySubscribers(state);
 }
 
@@ -96,24 +121,34 @@ function notifySubscribers(state) {
 }
 
 /**
+ * Entfernt einen Callback aus der Subscriber-Liste.
+ * @param {Function} callback
+ */
+function removeSubscriber(callback) {
+  const index = subscribers.indexOf(callback);
+  if (index !== -1) {
+    subscribers.splice(index, 1);
+  }
+}
+
+/**
  * Registriert einen Listener für State-Änderungen (eigener Tab + andere Tabs).
  * @param {Function} callback - Wird mit dem aktuellen State aufgerufen
  * @returns {Function} Unsubscribe-Funktion
  */
 function subscribe(callback) {
-  subscribers.add(callback);
+  subscribers.push(callback);
 
-  const state = loadState();
-
-  // Beim ersten Besuch State sofort persistieren, damit beide Tabs dasselbe Set sehen
   if (!localStorage.getItem(STORAGE_KEY)) {
-    saveState(state);
+    saveState(createDefaultState());
   } else {
+    const state = loadState();
+    lastKnownUpdatedAt = state.updatedAt || 0;
     callback(state);
   }
 
   return function unsubscribe() {
-    subscribers.delete(callback);
+    removeSubscriber(callback);
   };
 }
 
@@ -122,7 +157,7 @@ function subscribe(callback) {
  * @param {Function} callback
  */
 function unsubscribe(callback) {
-  subscribers.delete(callback);
+  removeSubscriber(callback);
 }
 
 /**
@@ -132,8 +167,33 @@ window.addEventListener('storage', function (event) {
   if (event.key !== STORAGE_KEY) {
     return;
   }
-  notifySubscribers(loadState());
+
+  const state = loadState();
+  lastKnownUpdatedAt = state.updatedAt || 0;
+  notifySubscribers(state);
 });
+
+/**
+ * Polling-Fallback: stellt sicher, dass alle Tabs denselben Erinnerungsraum sehen.
+ */
+setInterval(function () {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      return;
+    }
+
+    const parsed = JSON.parse(raw);
+    const updatedAt = parsed.updatedAt || 0;
+
+    if (updatedAt !== lastKnownUpdatedAt) {
+      lastKnownUpdatedAt = updatedAt;
+      notifySubscribers(normalizeStateAkten(parsed));
+    }
+  } catch (err) {
+    // Ignorieren — loadState übernimmt bei Bedarf
+  }
+}, 500);
 
 /**
  * Prüft, ob der Erinnerungsraum voll ist (6 Plätze belegt).
@@ -146,14 +206,14 @@ function needsDisplacement(state) {
 }
 
 /**
- * Stellt sicher, dass currentOffer mindestens ein Angebot enthält.
+ * Stellt sicher, dass currentOffer immer drei Angebots-Akten enthält.
  * @param {Object} state
  * @returns {Object} Aktualisierter State
  */
 function ensureOfferSet(state) {
   state = normalizeStateAkten(state);
 
-  if (!state.currentOffer || state.currentOffer.length === 0) {
+  if (!state.currentOffer || state.currentOffer.length < OFFER_COUNT) {
     state.currentOffer = generateOfferSet(OFFER_COUNT, getExcludedBildIds(state.memoryRoom));
   }
 

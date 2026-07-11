@@ -175,7 +175,7 @@ const ARCHIV_BILDER = [
         kategorie: 'Migration / Arbeit',
         titel: '[Platzhalter] Notizzettel aus einem Gesprächsfragment',
         jahr: 2003,
-        kurzbeschreibung: '[Platzhalter] Beispielakte ohne Bild — `pfad` kann null sein, bis ein Foto vorliegt.',
+        kurzbeschreibung: '[Platzhalter] Beispielakte ohne Bild — pfad kann null sein, bis ein Foto vorliegt.',
         objekttyp: 'Notizzettel',
         herkunft: 'mündliche Überlieferung',
         provenienz: '[Platzhalter] Provenienzangabe',

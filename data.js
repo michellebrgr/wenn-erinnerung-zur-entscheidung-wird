@@ -10,7 +10,7 @@
  */
 
 /** Präfix für Archivsignaturen, z. B. WEZ-2026-001 */
-const ARCHIV_PREFIX = 'WEZ';
+const ARCHIV_PREFIX = 'AK';
 
 
 /**

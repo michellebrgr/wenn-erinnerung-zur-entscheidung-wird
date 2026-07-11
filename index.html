@@ -27,33 +27,29 @@
   </section>
 
   <div id="archive-interface" hidden>
-    <header class="site-header">
-      <h1>Wenn Erinnerung zur Entscheidung wird</h1>
-      <p class="intro">
-        Wählen Sie eine der drei Archivakten aus. Ihre Entscheidung erscheint in der Projektionsansicht.
-      </p>
-    </header>
+    <div class="archive-shell">
+      <div class="archive-shell__topbar" aria-hidden="true"></div>
+      <div class="archive-shell__content">
+        <h1 class="archive-shell__title">Archiv</h1>
+        <main class="archive-main">
+          <section class="offer-section" id="offer-section" aria-labelledby="offer-heading">
+            <h2 id="offer-heading" class="sr-only">Aktuelle Archivakten</h2>
+            <div id="offer-container" class="offer-grid" role="list"></div>
+          </section>
 
-    <main class="archive-main">
-      <section class="offer-section" id="offer-section" aria-labelledby="offer-heading">
-        <h2 id="offer-heading">Aktuelle Archivakten</h2>
-        <div id="offer-container" class="offer-grid" role="list"></div>
-      </section>
-
-      <section class="displacement-section" id="displacement-section" hidden aria-labelledby="displacement-heading">
-        <h2 id="displacement-heading">Erinnerungsraum</h2>
-        <p class="displacement-hint">
-          Der Erinnerungsraum ist voll. Wählen Sie eine bestehende Akte, die durch Ihre neue Auswahl ersetzt werden soll.
-        </p>
-        <div id="pending-akte-preview" class="pending-akte-preview" aria-label="Neu ausgewählte Akte"></div>
-        <div id="archive-memory-room" class="archive-memory-room" role="list" aria-label="Gemeinsamer Erinnerungsraum"></div>
-        <button type="button" id="displacement-cancel" class="btn-cancel">Abbrechen</button>
-      </section>
-    </main>
-
-    <footer class="site-footer">
-      <p>Projektionsansicht: <a href="projection.html" target="_blank">projection.html</a> im Beamer-Fenster öffnen.</p>
-    </footer>
+          <section class="displacement-section" id="displacement-section" hidden aria-labelledby="displacement-heading">
+            <h2 id="displacement-heading">Erinnerungsraum</h2>
+            <p class="displacement-hint">
+              Der Erinnerungsraum ist voll. Wählen Sie eine bestehende Akte, die durch Ihre neue Auswahl ersetzt werden soll.
+            </p>
+            <div id="pending-akte-preview" class="pending-akte-preview" aria-label="Neu ausgewählte Akte"></div>
+            <div id="archive-memory-room" class="archive-memory-room" role="list" aria-label="Gemeinsamer Erinnerungsraum"></div>
+            <button type="button" id="displacement-cancel" class="btn-cancel">Abbrechen</button>
+          </section>
+        </main>
+      </div>
+      <div class="archive-shell__footerbar" aria-hidden="true"></div>
+    </div>
 
     <button type="button" id="reset-installation" class="btn-reset" title="Installation zurücksetzen">
       Installation zurücksetzen

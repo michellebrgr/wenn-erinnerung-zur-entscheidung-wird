@@ -61,37 +61,67 @@ a:hover {
 /* --- Archivansicht (Laptop) --- */
 body.archive-view {
   background: var(--color-paper);
-  background-image:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.4) 0%, transparent 120px);
 }
 
-.site-header {
-  padding: 2rem 2rem 1rem;
-  max-width: 1200px;
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --- Archiv-Seitenrahmen --- */
+.archive-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-paper);
+}
+
+.archive-shell__topbar {
+  flex-shrink: 0;
+  height: 14px;
+  background: var(--color-ink);
+}
+
+.archive-shell__content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 2.5rem 2.5rem;
+  width: 100%;
+  max-width: 1400px;
   margin: 0 auto;
-  border-bottom: 1px solid var(--color-border);
 }
 
-.site-header h1 {
-  margin: 0 0 0.5rem;
-  font-size: 1.75rem;
+.archive-shell__title {
+  margin: 0 0 2rem;
+  font-family: var(--font-sans);
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--color-ink);
+  text-align: center;
 }
 
-.intro {
-  margin: 0;
-  font-size: 1rem;
-  color: var(--color-ink-muted);
-  max-width: 60ch;
+.archive-shell__footerbar {
+  flex-shrink: 0;
+  height: 48px;
+  background: var(--color-paper-dark);
 }
 
 .archive-main {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 1.5rem 2rem 3rem;
+  width: 100%;
 }
 
-.offer-section h2 {
+.offer-section h2:not(.sr-only) {
   font-size: 1.1rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -101,45 +131,145 @@ body.archive-view {
 
 .offer-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.archive-offer-column {
+  display: flex;
+  flex-direction: column;
   gap: 1.25rem;
-  margin-bottom: 2.5rem;
+  min-width: 0;
+  padding: 0 0.25rem;
 }
 
-/* --- Akten-Karte --- */
-.akte-card {
-  position: relative;
-  background: #fff;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
-  padding: 1.25rem 1.25rem 1rem;
-  box-shadow: 0 2px 8px var(--color-shadow);
+.archive-offer-column .akte-card {
+  flex: 1;
+}
+
+.btn-archive-select {
+  flex-shrink: 0;
+  width: 100%;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  background: var(--color-ink);
+  color: #fff;
+  border: none;
+  border-radius: 2px;
   cursor: pointer;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  transition: opacity var(--transition-fast);
 }
 
-.akte-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 1rem;
-  width: 2rem;
-  height: 0.5rem;
-  background: var(--color-accent);
-  border-radius: 0 0 2px 2px;
-  opacity: 0.6;
+.btn-archive-select:hover {
+  opacity: 0.85;
 }
 
-.akte-card:hover,
-.akte-card:focus-visible {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px var(--color-shadow);
+.btn-archive-select:focus-visible {
   outline: 2px solid var(--color-stamp);
   outline-offset: 2px;
 }
 
+/* --- Akten-Karte (Ringbuch-Seite) --- */
+.akte-card {
+  --binder-width: 2.75rem;
+  position: relative;
+  isolation: isolate;
+  background-color: #faf8f3;
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.55) 0%,
+    transparent 35%
+  );
+  border: 1px solid #b5a99a;
+  border-radius: 6px;
+  padding: 1.75rem 1.5rem 1.5rem calc(var(--binder-width) + 1.25rem);
+  box-shadow: 0 2px 6px var(--color-shadow);
+  cursor: default;
+  min-height: 28rem;
+  overflow: hidden;
+}
+
+/* Untere Seite im Stapel */
+.akte-card::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  right: -5px;
+  bottom: -5px;
+  background: #ebe5da;
+  border: 1px solid rgba(181, 169, 154, 0.45);
+  border-radius: 6px;
+  z-index: -1;
+}
+
+/* Linker Lochrand / Rückenleiste */
+.akte-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: var(--binder-width);
+  background: linear-gradient(90deg, #e3ddd2 0%, #ece7df 55%, #f3efe8 100%);
+  border-right: 1px dashed rgba(181, 169, 154, 0.55);
+  z-index: 0;
+}
+
+.akte-card > :not(.akte-card__binder) {
+  position: relative;
+  z-index: 1;
+}
+
+.akte-card__binder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: var(--binder-width);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.akte-card__binder-hole {
+  position: absolute;
+  left: 50%;
+  width: 0.85rem;
+  height: 0.85rem;
+  margin-left: -0.425rem;
+  border-radius: 50%;
+  background: var(--color-paper);
+  box-shadow:
+    inset 0 2px 5px rgba(42, 37, 32, 0.28),
+    0 0 0 2px #d9d0c4,
+    0 0 0 3px #b8aea0;
+}
+
+.akte-card__binder-hole:nth-child(1) {
+  top: 14%;
+}
+
+.akte-card__binder-hole:nth-child(2) {
+  top: 50%;
+  margin-top: -0.425rem;
+}
+
+.akte-card__binder-hole:nth-child(3) {
+  bottom: 14%;
+}
+
 .akte-card--selectable {
-  cursor: pointer;
+  cursor: default;
+}
+
+.akte-card--selectable:hover,
+.akte-card--selectable:focus-visible {
+  transform: none;
+  box-shadow: 0 2px 8px var(--color-shadow);
+  outline: none;
 }
 
 .akte-card__header {
@@ -455,6 +585,13 @@ body.archive-view {
   border-top: 1px solid var(--color-border);
 }
 
+.displacement-section {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 0 2rem;
+}
+
 /* --- Startbildschirm --- */
 #start-screen[hidden],
 #archive-interface[hidden] {
@@ -703,6 +840,18 @@ body.projection-view {
 }
 
 /* --- Responsive --- */
+@media (max-width: 1024px) {
+  .offer-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .archive-shell__content {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
 @media (max-width: 768px) {
   .memory-room,
   .archive-memory-room {
@@ -711,9 +860,7 @@ body.projection-view {
     min-height: auto;
   }
 
-  .site-header,
-  .archive-main,
-  .site-footer {
+  .archive-shell__content {
     padding-left: 1rem;
     padding-right: 1rem;
   }

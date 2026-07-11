@@ -119,6 +119,14 @@ body.archive-view {
 
 .archive-main {
   width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.archive-main:has(.confirmation-section:not([hidden])) {
+  align-items: center;
+  justify-content: center;
 }
 
 .offer-section h2:not(.sr-only) {
@@ -590,6 +598,57 @@ body.archive-view {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 0 2rem;
+}
+
+/* --- Bestätigungsbildschirm nach Auswahl --- */
+.confirmation-section[hidden] {
+  display: none;
+}
+
+.confirmation-section {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1rem 0 2rem;
+}
+
+.confirmation-card {
+  width: 100%;
+  background: var(--color-paper-dark);
+  border-radius: 6px;
+  padding: 3rem 2.75rem 2.5rem;
+  text-align: center;
+}
+
+.confirmation-card__intro {
+  margin: 0 0 2rem;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-style: italic;
+  line-height: 1.55;
+  color: var(--color-ink-muted);
+}
+
+.confirmation-card__primary {
+  margin: 0 0 1.25rem;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--color-ink);
+}
+
+.confirmation-card__secondary {
+  margin: 0 0 2rem;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--color-ink);
+}
+
+.confirmation-card .btn-start {
+  margin-top: 0.5rem;
 }
 
 /* --- Pop-up bei vollem Erinnerungsraum --- */

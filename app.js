@@ -442,6 +442,7 @@
     setViewMode('start');
     openArchiveBtn.addEventListener('click', openArchive);
     displacementCancel.addEventListener('click', exitDisplacementView);
+    confirmationContinue.addEventListener('click', dismissConfirmation);
     memoryFullModalConfirm.addEventListener('click', confirmMemoryFullModal);
     resetInstallation.addEventListener('click', handleResetInstallation);
 

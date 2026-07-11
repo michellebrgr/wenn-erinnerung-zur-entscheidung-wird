@@ -592,26 +592,38 @@ body.archive-view {
   padding: 0 0 2rem;
 }
 
-/* --- Bestätigungsbildschirm nach Auswahl --- */
-.confirmation-section[hidden] {
+/* --- Pop-up bei vollem Erinnerungsraum --- */
+.memory-full-modal[hidden] {
   display: none;
 }
 
-.confirmation-section {
-  width: 100%;
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 2rem 0 3rem;
+.memory-full-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
 }
 
-.confirmation-card {
+.memory-full-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(42, 37, 32, 0.45);
+}
+
+.memory-full-modal__card {
+  position: relative;
+  width: 100%;
+  max-width: 720px;
   background: var(--color-paper-dark);
   border-radius: 6px;
   padding: 2.5rem 2.5rem 2rem;
   text-align: center;
 }
 
-.confirmation-card__primary {
+.memory-full-modal__primary {
   margin: 0 0 1.25rem;
   font-family: var(--font-sans);
   font-size: 1rem;
@@ -620,16 +632,15 @@ body.archive-view {
   color: var(--color-ink);
 }
 
-.confirmation-card__secondary {
+.memory-full-modal__secondary {
   margin: 0 0 2rem;
   font-family: var(--font-sans);
   font-size: 1rem;
-  font-style: italic;
   line-height: 1.5;
   color: var(--color-ink);
 }
 
-.confirmation-card .btn-start {
+.memory-full-modal__card .btn-start {
   margin-top: 0.5rem;
 }
 

@@ -150,11 +150,16 @@
     const compact = options.compact || false;
     const isSelectable = variant === 'selectable';
     const cardClass = isSelectable ? 'akte-card--selectable' : 'akte-card--pending';
-    const dataAttr = isSelectable ? 'data-id="' + escapeHtml(akte.id) + '"' : '';
-    const actionHint = isSelectable ? 'Klicken zum Aufnehmen' : '';
+    const binderHoles =
+      '<div class="akte-card__binder" aria-hidden="true">' +
+      '<span class="akte-card__binder-hole"></span>' +
+      '<span class="akte-card__binder-hole"></span>' +
+      '<span class="akte-card__binder-hole"></span>' +
+      '</div>';
 
     return (
-      '<article class="akte-card ' + cardClass + '" role="listitem" tabindex="0" ' + dataAttr + '>' +
+      '<article class="akte-card ' + cardClass + '">' +
+      binderHoles +
       '<header class="akte-card__header">' +
       '<span class="akte-card__reference">' + escapeHtml(formatValue(akte.archivsignatur)) + '</span>' +
       '<span class="akte-card__category">' + escapeHtml(formatValue(akte.kategorie)) + '</span>' +
@@ -165,18 +170,24 @@
       '<p class="akte-card__fragment">' + escapeHtml(formatValue(akte.kurzbeschreibung)) + '</p>' +
       renderMetaList(akte, compact) +
       '<ul class="akte-card__criteria" aria-label="Bewertungskriterien">' + renderCriteria(akte) + '</ul>' +
-      (actionHint ? '<p class="akte-card__action-hint">' + actionHint + '</p>' : '') +
       '</article>'
     );
   }
 
   /**
-   * Rendert eine wählbare Akten-Karte.
+   * Rendert eine Spalte mit Akten-Karte und Auswahl-Button.
    * @param {Object} akte
    * @returns {string}
    */
-  function renderOfferCard(akte) {
-    return renderAkteCard(akte, { variant: 'selectable' });
+  function renderOfferColumn(akte) {
+    return (
+      '<div class="archive-offer-column" role="listitem">' +
+      renderAkteCard(akte, { variant: 'selectable' }) +
+      '<button type="button" class="btn-archive-select" data-id="' + escapeHtml(akte.id) + '">' +
+      'In den Erinnerungsraum aufnehmen' +
+      '</button>' +
+      '</div>'
+    );
   }
 
   /**
@@ -211,17 +222,11 @@
    * @param {Array} offer
    */
   function renderOfferSet(offer) {
-    offerContainer.innerHTML = offer.map(renderOfferCard).join('');
+    offerContainer.innerHTML = offer.map(renderOfferColumn).join('');
 
-    offerContainer.querySelectorAll('.akte-card--selectable').forEach(function (card) {
-      card.addEventListener('click', function () {
-        handleSelect(card.getAttribute('data-id'));
-      });
-      card.addEventListener('keydown', function (event) {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          handleSelect(card.getAttribute('data-id'));
-        }
+    offerContainer.querySelectorAll('.btn-archive-select').forEach(function (button) {
+      button.addEventListener('click', function () {
+        handleSelect(button.getAttribute('data-id'));
       });
     });
   }

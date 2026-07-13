@@ -428,39 +428,8 @@ body.archive-view {
   cursor: default;
 }
 
-.akte-card--spread-left-page {
-  padding: 1.75rem calc(var(--binder-width) + 1.25rem) 1.5rem 1.5rem;
-  border-radius: 6px 0 0 6px;
-  border-right: none;
-}
-
-.akte-card--spread-left-page::before {
-  left: auto;
-  right: 0;
-  border-right: none;
-  border-left: 1px dashed rgba(181, 169, 154, 0.55);
-  background: linear-gradient(270deg, #e3ddd2 0%, #ece7df 55%, #f3efe8 100%);
-}
-
-.akte-card--spread-left-page .akte-card__binder {
-  left: auto;
-  right: 0;
-}
-
-.akte-card--spread-right-page {
-  padding: 1.75rem 1.5rem 1.5rem calc(var(--binder-width) + 1.25rem);
-  border-radius: 0 6px 6px 0;
-  border-left: none;
-}
-
-.akte-card--spread-right-page::after {
-  right: auto;
-  left: 5px;
-}
-
-.memory-review__page-select--active .akte-card {
-  border-color: var(--color-stamp);
-  box-shadow: 0 4px 14px var(--color-shadow);
+.akte-card--review {
+  cursor: default;
 }
 
 /* --- Verdrängungsansicht auf der Archivseite --- */
@@ -478,73 +447,21 @@ body.archive-view {
 }
 
 .memory-review {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  width: calc(((100% - 5rem) / 3) * 2 + 2.5rem);
-  max-width: none;
+  width: 100%;
   margin: 0 auto 1.5rem;
 }
 
-.memory-review__book {
+.memory-review__browser {
   display: flex;
   align-items: center;
   gap: 1rem;
   width: 100%;
 }
 
-.memory-review__stage {
+.memory-review__browser .offer-grid {
   flex: 1;
   min-width: 0;
-}
-
-.memory-review__spread {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  align-items: stretch;
-  gap: 0;
-  width: 100%;
-}
-
-.memory-review__page {
-  min-width: 0;
-}
-
-.memory-review__page--left {
-  z-index: 1;
-}
-
-.memory-review__page--right {
-  z-index: 0;
-  margin-left: calc(var(--binder-width) * -1);
-}
-
-.memory-review__page-select {
-  display: block;
-  width: 100%;
-  padding: 0;
-  margin: 0;
-  border: none;
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-}
-
-.memory-review__page-select:focus-visible {
-  outline: 2px solid var(--color-stamp);
-  outline-offset: 2px;
-}
-
-.memory-review__page-select .akte-card {
-  min-height: 28rem;
-  width: 100%;
-}
-
-.memory-review__page-empty {
-  min-height: 28rem;
-  background: rgba(255, 255, 255, 0.35);
-  border: 1px dashed var(--color-border);
-  border-radius: 6px;
+  margin-bottom: 0;
 }
 
 .memory-review__nav {
@@ -579,7 +496,8 @@ body.archive-view {
   outline-offset: 2px;
 }
 
-.btn-memory-remove {
+.btn-memory-delete {
+  flex-shrink: 0;
   width: 100%;
   font-family: var(--font-sans);
   font-size: 0.85rem;
@@ -593,16 +511,11 @@ body.archive-view {
   transition: opacity var(--transition-fast);
 }
 
-.btn-memory-remove:hover:not(:disabled) {
+.btn-memory-delete:hover {
   opacity: 0.9;
 }
 
-.btn-memory-remove:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-
-.btn-memory-remove:focus-visible {
+.btn-memory-delete:focus-visible {
   outline: 2px solid var(--color-ink);
   outline-offset: 2px;
 }
@@ -1027,21 +940,6 @@ body.projection-view {
 
   .memory-review {
     width: 100%;
-  }
-
-  .memory-review__spread {
-    grid-template-columns: 1fr;
-    gap: 1.25rem;
-  }
-
-  .memory-review__page--right {
-    margin-left: 0;
-  }
-
-  .akte-card--spread-left-page,
-  .akte-card--spread-right-page {
-    border-radius: 6px;
-    border: 1px solid #b5a99a;
   }
 
   .archive-shell__content {

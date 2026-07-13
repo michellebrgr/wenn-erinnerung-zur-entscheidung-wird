@@ -53,23 +53,15 @@
           <section class="displacement-section" id="displacement-section" hidden aria-labelledby="displacement-heading">
             <h2 id="displacement-heading">Erinnerungsraum</h2>
             <div class="memory-review" aria-label="Akten im Erinnerungsraum">
-              <div class="memory-review__book">
-                <button type="button" id="memory-review-prev" class="memory-review__nav" aria-label="Vorherige Doppelseite">
+              <div class="memory-review__browser">
+                <button type="button" id="memory-review-prev" class="memory-review__nav" aria-label="Vorherige Akten">
                   ‹
                 </button>
-                <div id="memory-review-stage" class="memory-review__stage" aria-live="polite">
-                  <div class="memory-review__spread">
-                    <div id="memory-review-page-left" class="memory-review__page memory-review__page--left"></div>
-                    <div id="memory-review-page-right" class="memory-review__page memory-review__page--right"></div>
-                  </div>
-                </div>
-                <button type="button" id="memory-review-next" class="memory-review__nav" aria-label="Nächste Doppelseite">
+                <div id="memory-review-grid" class="offer-grid" role="list" aria-live="polite"></div>
+                <button type="button" id="memory-review-next" class="memory-review__nav" aria-label="Nächste Akten">
                   ›
                 </button>
               </div>
-              <button type="button" id="memory-review-remove" class="btn-memory-remove">
-                Diese Akte entfernen
-              </button>
             </div>
             <button type="button" id="displacement-cancel" class="btn-cancel">Abbrechen</button>
           </section>

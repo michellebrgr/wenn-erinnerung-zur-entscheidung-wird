@@ -12,12 +12,9 @@
   const displacementSection = document.getElementById('displacement-section');
   const confirmationSection = document.getElementById('confirmation-section');
   const confirmationContinue = document.getElementById('confirmation-continue');
-  const memoryReviewStage = document.getElementById('memory-review-stage');
-  const memoryReviewPageLeft = document.getElementById('memory-review-page-left');
-  const memoryReviewPageRight = document.getElementById('memory-review-page-right');
+  const memoryReviewGrid = document.getElementById('memory-review-grid');
   const memoryReviewPrev = document.getElementById('memory-review-prev');
   const memoryReviewNext = document.getElementById('memory-review-next');
-  const memoryReviewRemove = document.getElementById('memory-review-remove');
   const displacementCancel = document.getElementById('displacement-cancel');
   const resetInstallation = document.getElementById('reset-installation');
   const startScreen = document.getElementById('start-screen');
@@ -32,11 +29,10 @@
   /** Akte, die auf Verdrängung wartet (wenn Speicher voll) */
   let pendingAkte = null;
 
-  /** Index der aktuellen Doppelseite im Erinnerungsraum (0–2 bei 6 Akten) */
-  let memoryReviewSpreadIndex = 0;
+  const MEMORY_REVIEW_PAGE_SIZE = 3;
 
-  /** ID der für die Entfernung ausgewählten Akte */
-  let memoryReviewSelectedAkteId = null;
+  /** Index der aktuellen Seite im Erinnerungsraum (0–1 bei 6 Akten) */
+  let memoryReviewPageIndex = 0;
 
   /** 'start' | 'offer' | 'displacement' | 'confirmation' */
   let viewMode = 'start';
@@ -143,13 +139,11 @@
    * @param {Object} options
    * @param {string} options.variant - 'selectable', 'pending' oder 'review'
    * @param {boolean} [options.compact=false]
-   * @param {'left'|'right'} [options.spreadSide]
    * @returns {string}
    */
   function renderAkteCard(akte, options) {
     const variant = options.variant;
     const compact = options.compact || false;
-    const spreadSide = options.spreadSide || '';
     const cardClass =
       variant === 'selectable'
         ? 'akte-card--selectable'
@@ -158,12 +152,6 @@
           : variant === 'review'
             ? 'akte-card--review'
             : '';
-    const spreadClass =
-      spreadSide === 'left'
-        ? ' akte-card--spread-left-page'
-        : spreadSide === 'right'
-          ? ' akte-card--spread-right-page'
-          : '';
     const binderHoles =
       '<div class="akte-card__binder" aria-hidden="true">' +
       '<span class="akte-card__binder-hole"></span>' +
@@ -172,7 +160,7 @@
       '</div>';
 
     return (
-      '<article class="akte-card ' + cardClass + spreadClass + '">' +
+      '<article class="akte-card ' + cardClass + '">' +
       binderHoles +
       '<header class="akte-card__header">' +
       '<span class="akte-card__reference">' + escapeHtml(formatValue(akte.archivsignatur)) + '</span>' +
@@ -205,12 +193,12 @@
   }
 
   /**
-   * Berechnet die Anzahl der Doppelseiten.
+   * Berechnet die Anzahl der Seiten à drei Akten.
    * @param {number} total
    * @returns {number}
    */
-  function getMemoryReviewSpreadCount(total) {
-    return Math.ceil(total / 2);
+  function getMemoryReviewPageCount(total) {
+    return Math.ceil(total / MEMORY_REVIEW_PAGE_SIZE);
   }
 
   /**
@@ -224,70 +212,37 @@
   }
 
   /**
-   * Markiert die ausgewählte Akte in der Doppelseite.
-   * @param {string|null} akteId
-   */
-  function setMemoryReviewSelection(akteId) {
-    memoryReviewSelectedAkteId = akteId;
-
-    [memoryReviewPageLeft, memoryReviewPageRight].forEach(function (page) {
-      page.querySelectorAll('.memory-review__page-select').forEach(function (button) {
-        const isSelected = button.getAttribute('data-akte-id') === akteId;
-        button.classList.toggle('memory-review__page-select--active', isSelected);
-        button.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
-      });
-    });
-
-    if (akteId) {
-      memoryReviewRemove.disabled = false;
-      memoryReviewRemove.setAttribute('data-id', akteId);
-    } else {
-      memoryReviewRemove.disabled = true;
-      memoryReviewRemove.removeAttribute('data-id');
-    }
-  }
-
-  /**
-   * Rendert eine Seite der Doppelseite.
-   * @param {Object|null} akte
-   * @param {string} side - 'left' oder 'right'
+   * Rendert eine Spalte mit Akten-Karte und Löschen-Button.
+   * @param {Object} akte
    * @returns {string}
    */
-  function renderMemoryReviewPageCard(akte, side) {
-    if (!akte) {
-      return '<div class="memory-review__page-empty" aria-hidden="true"></div>';
-    }
-
-    const label = 'Akte ' + escapeHtml(formatValue(akte.archivsignatur)) + ' auswählen';
-
+  function renderDisplacementColumn(akte) {
     return (
-      '<button type="button" class="memory-review__page-select memory-review__page-select--' + side + '" ' +
-      'data-akte-id="' + escapeHtml(akte.id) + '" aria-label="' + label + '" aria-pressed="false">' +
-      renderAkteCard(akte, { variant: 'review', spreadSide: side }) +
-      '</button>'
+      '<div class="archive-offer-column" role="listitem">' +
+      renderAkteCard(akte, { variant: 'review' }) +
+      '<button type="button" class="btn-memory-delete" data-id="' + escapeHtml(akte.id) + '">' +
+      'Diese Akte löschen' +
+      '</button>' +
+      '</div>'
     );
   }
 
   /**
-   * Leert die Ringbuch-Verdrängungsansicht.
+   * Leert die Verdrängungsansicht.
    */
   function clearMemoryReview() {
-    memoryReviewPageLeft.innerHTML = '';
-    memoryReviewPageRight.innerHTML = '';
-    memoryReviewRemove.disabled = true;
-    memoryReviewRemove.removeAttribute('data-id');
+    memoryReviewGrid.innerHTML = '';
     setMemoryReviewNavState(memoryReviewPrev, false);
     setMemoryReviewNavState(memoryReviewNext, false);
-    memoryReviewSpreadIndex = 0;
-    memoryReviewSelectedAkteId = null;
+    memoryReviewPageIndex = 0;
   }
 
   /**
-   * Zeigt eine Doppelseite im Ringbuch-Durchblättermodus.
+   * Zeigt eine Seite mit bis zu drei Akten im Erinnerungsraum.
    * @param {Array} memoryRoom
-   * @param {number} spreadIndex
+   * @param {number} pageIndex
    */
-  function renderMemoryReviewPage(memoryRoom, spreadIndex) {
+  function renderMemoryReviewPage(memoryRoom, pageIndex) {
     const room = memoryRoom || [];
     const total = room.length;
 
@@ -296,35 +251,25 @@
       return;
     }
 
-    const spreadCount = getMemoryReviewSpreadCount(total);
-    const safeSpreadIndex = Math.max(0, Math.min(spreadIndex, spreadCount - 1));
-    memoryReviewSpreadIndex = safeSpreadIndex;
+    const pageCount = getMemoryReviewPageCount(total);
+    const safePageIndex = Math.max(0, Math.min(pageIndex, pageCount - 1));
+    memoryReviewPageIndex = safePageIndex;
 
-    const leftIndex = safeSpreadIndex * 2;
-    const rightIndex = leftIndex + 1;
-    const leftAkte = room[leftIndex] || null;
-    const rightAkte = room[rightIndex] || null;
+    const pageAkten = room.slice(
+      safePageIndex * MEMORY_REVIEW_PAGE_SIZE,
+      safePageIndex * MEMORY_REVIEW_PAGE_SIZE + MEMORY_REVIEW_PAGE_SIZE
+    );
 
-    memoryReviewPageLeft.innerHTML = renderMemoryReviewPageCard(leftAkte, 'left');
-    memoryReviewPageRight.innerHTML = renderMemoryReviewPageCard(rightAkte, 'right');
+    memoryReviewGrid.innerHTML = pageAkten.map(renderDisplacementColumn).join('');
 
-    setMemoryReviewNavState(memoryReviewPrev, safeSpreadIndex > 0);
-    setMemoryReviewNavState(memoryReviewNext, safeSpreadIndex < spreadCount - 1);
-
-    const defaultSelection = leftAkte || rightAkte;
-    const keepSelection =
-      memoryReviewSelectedAkteId &&
-      room.some(function (akte) {
-        return akte.id === memoryReviewSelectedAkteId;
+    memoryReviewGrid.querySelectorAll('.btn-memory-delete').forEach(function (button) {
+      button.addEventListener('click', function () {
+        handleDisplacement(button.getAttribute('data-id'));
       });
+    });
 
-    if (keepSelection) {
-      setMemoryReviewSelection(memoryReviewSelectedAkteId);
-    } else if (defaultSelection) {
-      setMemoryReviewSelection(defaultSelection.id);
-    } else {
-      setMemoryReviewSelection(null);
-    }
+    setMemoryReviewNavState(memoryReviewPrev, safePageIndex > 0);
+    setMemoryReviewNavState(memoryReviewNext, safePageIndex < pageCount - 1);
   }
 
   /**
@@ -413,7 +358,7 @@
   }
 
   /**
-   * Zeigt den Erinnerungsraum zur Verdrängung als durchblätterbare Ringbuch-Seite.
+   * Zeigt den Erinnerungsraum zur Verdrängung im 3-Spalten-Layout.
    * @param {Object} akte - Die neu gewählte Akte
    * @param {Array} memoryRoom - Aktuell belegte Plätze
    * @param {boolean} [preserveIndex=false] - Index beim Re-Render beibehalten
@@ -423,38 +368,37 @@
     setViewMode('displacement');
 
     if (!preserveIndex) {
-      memoryReviewSpreadIndex = 0;
-      memoryReviewSelectedAkteId = null;
+      memoryReviewPageIndex = 0;
     }
 
-    renderMemoryReviewPage(memoryRoom, memoryReviewSpreadIndex);
+    renderMemoryReviewPage(memoryRoom, memoryReviewPageIndex);
   }
 
   /**
-   * Blättert zur vorherigen Doppelseite im Erinnerungsraum.
+   * Blättert zur vorherigen Seite im Erinnerungsraum.
    */
   function showPreviousMemoryReviewPage() {
-    if (!currentState || memoryReviewSpreadIndex <= 0) {
+    if (!currentState || memoryReviewPageIndex <= 0) {
       return;
     }
 
-    renderMemoryReviewPage(currentState.memoryRoom, memoryReviewSpreadIndex - 1);
+    renderMemoryReviewPage(currentState.memoryRoom, memoryReviewPageIndex - 1);
   }
 
   /**
-   * Blättert zur nächsten Doppelseite im Erinnerungsraum.
+   * Blättert zur nächsten Seite im Erinnerungsraum.
    */
   function showNextMemoryReviewPage() {
     if (!currentState) {
       return;
     }
 
-    const spreadCount = getMemoryReviewSpreadCount(currentState.memoryRoom.length);
-    if (memoryReviewSpreadIndex >= spreadCount - 1) {
+    const pageCount = getMemoryReviewPageCount(currentState.memoryRoom.length);
+    if (memoryReviewPageIndex >= pageCount - 1) {
       return;
     }
 
-    renderMemoryReviewPage(currentState.memoryRoom, memoryReviewSpreadIndex + 1);
+    renderMemoryReviewPage(currentState.memoryRoom, memoryReviewPageIndex + 1);
   }
 
   /**
@@ -565,23 +509,6 @@
     displacementCancel.addEventListener('click', exitDisplacementView);
     memoryReviewPrev.addEventListener('click', showPreviousMemoryReviewPage);
     memoryReviewNext.addEventListener('click', showNextMemoryReviewPage);
-    memoryReviewStage.addEventListener('click', function (event) {
-      const selectButton = event.target.closest('.memory-review__page-select');
-      if (!selectButton) {
-        return;
-      }
-
-      const akteId = selectButton.getAttribute('data-akte-id');
-      if (akteId) {
-        setMemoryReviewSelection(akteId);
-      }
-    });
-    memoryReviewRemove.addEventListener('click', function () {
-      const akteId = memoryReviewRemove.getAttribute('data-id');
-      if (akteId) {
-        handleDisplacement(akteId);
-      }
-    });
     confirmationContinue.addEventListener('click', dismissConfirmation);
     memoryFullModalConfirm.addEventListener('click', confirmMemoryFullModal);
     resetInstallation.addEventListener('click', handleResetInstallation);

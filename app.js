@@ -12,8 +12,12 @@
   const displacementSection = document.getElementById('displacement-section');
   const confirmationSection = document.getElementById('confirmation-section');
   const confirmationContinue = document.getElementById('confirmation-continue');
-  const pendingAktePreview = document.getElementById('pending-akte-preview');
-  const archiveMemoryRoom = document.getElementById('archive-memory-room');
+  const memoryReviewStage = document.getElementById('memory-review-stage');
+  const memoryReviewPageLeft = document.getElementById('memory-review-page-left');
+  const memoryReviewPageRight = document.getElementById('memory-review-page-right');
+  const memoryReviewPrev = document.getElementById('memory-review-prev');
+  const memoryReviewNext = document.getElementById('memory-review-next');
+  const memoryReviewRemove = document.getElementById('memory-review-remove');
   const displacementCancel = document.getElementById('displacement-cancel');
   const resetInstallation = document.getElementById('reset-installation');
   const startScreen = document.getElementById('start-screen');
@@ -27,6 +31,12 @@
 
   /** Akte, die auf Verdrängung wartet (wenn Speicher voll) */
   let pendingAkte = null;
+
+  /** Index der aktuellen Doppelseite im Erinnerungsraum (0–2 bei 6 Akten) */
+  let memoryReviewSpreadIndex = 0;
+
+  /** ID der für die Entfernung ausgewählten Akte */
+  let memoryReviewSelectedAkteId = null;
 
   /** 'start' | 'offer' | 'displacement' | 'confirmation' */
   let viewMode = 'start';
@@ -55,20 +65,6 @@
   }
 
   /**
-   * Kürzt einen Text auf maxLength Zeichen.
-   * @param {string} text
-   * @param {number} maxLength
-   * @returns {string}
-   */
-  function truncateText(text, maxLength) {
-    if (text.length <= maxLength) {
-      return text;
-    }
-    return text.slice(0, maxLength).trim() + '…';
-  }
-
-  /**
-   * Bereich 2: Bild oder Platzhalter.
    * Bildpfad pro Akte in data.js im Feld `bild` eintragen.
    * @param {string|null} bild
    * @returns {string}
@@ -145,15 +141,29 @@
    * Rendert eine Archivkarte mit fünf Bereichen.
    * @param {Object} akte
    * @param {Object} options
-   * @param {string} options.variant - 'selectable' oder 'pending'
+   * @param {string} options.variant - 'selectable', 'pending' oder 'review'
    * @param {boolean} [options.compact=false]
+   * @param {'left'|'right'} [options.spreadSide]
    * @returns {string}
    */
   function renderAkteCard(akte, options) {
     const variant = options.variant;
     const compact = options.compact || false;
-    const isSelectable = variant === 'selectable';
-    const cardClass = isSelectable ? 'akte-card--selectable' : 'akte-card--pending';
+    const spreadSide = options.spreadSide || '';
+    const cardClass =
+      variant === 'selectable'
+        ? 'akte-card--selectable'
+        : variant === 'pending'
+          ? 'akte-card--pending'
+          : variant === 'review'
+            ? 'akte-card--review'
+            : '';
+    const spreadClass =
+      spreadSide === 'left'
+        ? ' akte-card--spread-left-page'
+        : spreadSide === 'right'
+          ? ' akte-card--spread-right-page'
+          : '';
     const binderHoles =
       '<div class="akte-card__binder" aria-hidden="true">' +
       '<span class="akte-card__binder-hole"></span>' +
@@ -162,7 +172,7 @@
       '</div>';
 
     return (
-      '<article class="akte-card ' + cardClass + '">' +
+      '<article class="akte-card ' + cardClass + spreadClass + '">' +
       binderHoles +
       '<header class="akte-card__header">' +
       '<span class="akte-card__reference">' + escapeHtml(formatValue(akte.archivsignatur)) + '</span>' +
@@ -195,30 +205,126 @@
   }
 
   /**
-   * Rendert einen Speicherplatz im Archiv-Erinnerungsraum.
-   * @param {Object} akte
-   * @param {number} index
+   * Berechnet die Anzahl der Doppelseiten.
+   * @param {number} total
+   * @returns {number}
+   */
+  function getMemoryReviewSpreadCount(total) {
+    return Math.ceil(total / 2);
+  }
+
+  /**
+   * Setzt den Aktivierungszustand der Blätter-Pfeile.
+   * @param {HTMLButtonElement} button
+   * @param {boolean} enabled
+   */
+  function setMemoryReviewNavState(button, enabled) {
+    button.disabled = !enabled;
+    button.setAttribute('aria-disabled', enabled ? 'false' : 'true');
+  }
+
+  /**
+   * Markiert die ausgewählte Akte in der Doppelseite.
+   * @param {string|null} akteId
+   */
+  function setMemoryReviewSelection(akteId) {
+    memoryReviewSelectedAkteId = akteId;
+
+    [memoryReviewPageLeft, memoryReviewPageRight].forEach(function (page) {
+      page.querySelectorAll('.memory-review__page-select').forEach(function (button) {
+        const isSelected = button.getAttribute('data-akte-id') === akteId;
+        button.classList.toggle('memory-review__page-select--active', isSelected);
+        button.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+      });
+    });
+
+    if (akteId) {
+      memoryReviewRemove.disabled = false;
+      memoryReviewRemove.setAttribute('data-id', akteId);
+    } else {
+      memoryReviewRemove.disabled = true;
+      memoryReviewRemove.removeAttribute('data-id');
+    }
+  }
+
+  /**
+   * Rendert eine Seite der Doppelseite.
+   * @param {Object|null} akte
+   * @param {string} side - 'left' oder 'right'
    * @returns {string}
    */
-  function renderArchiveMemorySlot(akte, index) {
-    const ariaLabel = 'Platz ' + (index + 1) + ': ' + formatValue(akte.archivsignatur);
+  function renderMemoryReviewPageCard(akte, side) {
+    if (!akte) {
+      return '<div class="memory-review__page-empty" aria-hidden="true"></div>';
+    }
+
+    const label = 'Akte ' + escapeHtml(formatValue(akte.archivsignatur)) + ' auswählen';
 
     return (
-      '<article class="archive-memory-slot archive-memory-slot--filled archive-memory-slot--displacement" ' +
-      'role="listitem" tabindex="0" aria-label="' + escapeHtml(ariaLabel) + '" ' +
-      'data-displace-id="' + escapeHtml(akte.id) + '">' +
-      '<div class="archive-memory-slot__reference">' + escapeHtml(formatValue(akte.archivsignatur)) + '</div>' +
-      '<div class="archive-memory-slot__category">' + escapeHtml(formatValue(akte.kategorie)) + '</div>' +
-      '<div class="archive-memory-slot__title">' + escapeHtml(formatValue(akte.titel)) + '</div>' +
-      '<div class="archive-memory-slot__meta">' +
-      '<span><strong>Objekttyp</strong>: ' + escapeHtml(formatValue(akte.objekttyp)) + '</span>' +
-      '<span><strong>Jahr</strong>: ' + escapeHtml(formatValue(akte.jahr)) + '</span>' +
-      '<span><strong>Herkunft</strong>: ' + escapeHtml(formatValue(akte.herkunft)) + '</span>' +
-      '</div>' +
-      '<p class="archive-memory-slot__fragment">' + escapeHtml(truncateText(formatValue(akte.kurzbeschreibung), 180)) + '</p>' +
-      '<p class="archive-memory-slot__action-hint">Zum Verdrängen wählen</p>' +
-      '</article>'
+      '<button type="button" class="memory-review__page-select memory-review__page-select--' + side + '" ' +
+      'data-akte-id="' + escapeHtml(akte.id) + '" aria-label="' + label + '" aria-pressed="false">' +
+      renderAkteCard(akte, { variant: 'review', spreadSide: side }) +
+      '</button>'
     );
+  }
+
+  /**
+   * Leert die Ringbuch-Verdrängungsansicht.
+   */
+  function clearMemoryReview() {
+    memoryReviewPageLeft.innerHTML = '';
+    memoryReviewPageRight.innerHTML = '';
+    memoryReviewRemove.disabled = true;
+    memoryReviewRemove.removeAttribute('data-id');
+    setMemoryReviewNavState(memoryReviewPrev, false);
+    setMemoryReviewNavState(memoryReviewNext, false);
+    memoryReviewSpreadIndex = 0;
+    memoryReviewSelectedAkteId = null;
+  }
+
+  /**
+   * Zeigt eine Doppelseite im Ringbuch-Durchblättermodus.
+   * @param {Array} memoryRoom
+   * @param {number} spreadIndex
+   */
+  function renderMemoryReviewPage(memoryRoom, spreadIndex) {
+    const room = memoryRoom || [];
+    const total = room.length;
+
+    if (total === 0) {
+      clearMemoryReview();
+      return;
+    }
+
+    const spreadCount = getMemoryReviewSpreadCount(total);
+    const safeSpreadIndex = Math.max(0, Math.min(spreadIndex, spreadCount - 1));
+    memoryReviewSpreadIndex = safeSpreadIndex;
+
+    const leftIndex = safeSpreadIndex * 2;
+    const rightIndex = leftIndex + 1;
+    const leftAkte = room[leftIndex] || null;
+    const rightAkte = room[rightIndex] || null;
+
+    memoryReviewPageLeft.innerHTML = renderMemoryReviewPageCard(leftAkte, 'left');
+    memoryReviewPageRight.innerHTML = renderMemoryReviewPageCard(rightAkte, 'right');
+
+    setMemoryReviewNavState(memoryReviewPrev, safeSpreadIndex > 0);
+    setMemoryReviewNavState(memoryReviewNext, safeSpreadIndex < spreadCount - 1);
+
+    const defaultSelection = leftAkte || rightAkte;
+    const keepSelection =
+      memoryReviewSelectedAkteId &&
+      room.some(function (akte) {
+        return akte.id === memoryReviewSelectedAkteId;
+      });
+
+    if (keepSelection) {
+      setMemoryReviewSelection(memoryReviewSelectedAkteId);
+    } else if (defaultSelection) {
+      setMemoryReviewSelection(defaultSelection.id);
+    } else {
+      setMemoryReviewSelection(null);
+    }
   }
 
   /**
@@ -307,31 +413,48 @@
   }
 
   /**
-   * Zeigt den gemeinsamen Erinnerungsraum zur Verdrängung auf der Archivseite.
+   * Zeigt den Erinnerungsraum zur Verdrängung als durchblätterbare Ringbuch-Seite.
    * @param {Object} akte - Die neu gewählte Akte
    * @param {Array} memoryRoom - Aktuell belegte Plätze
+   * @param {boolean} [preserveIndex=false] - Index beim Re-Render beibehalten
    */
-  function showDisplacementView(akte, memoryRoom) {
+  function showDisplacementView(akte, memoryRoom, preserveIndex) {
     pendingAkte = akte;
     setViewMode('displacement');
 
-    pendingAktePreview.innerHTML =
-      '<p class="pending-akte-preview__label">Neu ausgewählte Akte</p>' +
-      renderAkteCard(akte, { variant: 'pending', compact: true });
+    if (!preserveIndex) {
+      memoryReviewSpreadIndex = 0;
+      memoryReviewSelectedAkteId = null;
+    }
 
-    archiveMemoryRoom.innerHTML = memoryRoom.map(renderArchiveMemorySlot).join('');
+    renderMemoryReviewPage(memoryRoom, memoryReviewSpreadIndex);
+  }
 
-    archiveMemoryRoom.querySelectorAll('.archive-memory-slot--displacement').forEach(function (slot) {
-      slot.addEventListener('click', function () {
-        handleDisplacement(slot.getAttribute('data-displace-id'));
-      });
-      slot.addEventListener('keydown', function (event) {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          handleDisplacement(slot.getAttribute('data-displace-id'));
-        }
-      });
-    });
+  /**
+   * Blättert zur vorherigen Doppelseite im Erinnerungsraum.
+   */
+  function showPreviousMemoryReviewPage() {
+    if (!currentState || memoryReviewSpreadIndex <= 0) {
+      return;
+    }
+
+    renderMemoryReviewPage(currentState.memoryRoom, memoryReviewSpreadIndex - 1);
+  }
+
+  /**
+   * Blättert zur nächsten Doppelseite im Erinnerungsraum.
+   */
+  function showNextMemoryReviewPage() {
+    if (!currentState) {
+      return;
+    }
+
+    const spreadCount = getMemoryReviewSpreadCount(currentState.memoryRoom.length);
+    if (memoryReviewSpreadIndex >= spreadCount - 1) {
+      return;
+    }
+
+    renderMemoryReviewPage(currentState.memoryRoom, memoryReviewSpreadIndex + 1);
   }
 
   /**
@@ -339,8 +462,7 @@
    */
   function exitDisplacementView() {
     pendingAkte = null;
-    pendingAktePreview.innerHTML = '';
-    archiveMemoryRoom.innerHTML = '';
+    clearMemoryReview();
     setViewMode('offer');
 
     if (currentState) {
@@ -384,8 +506,7 @@
 
     const newAkte = pendingAkte;
     pendingAkte = null;
-    pendingAktePreview.innerHTML = '';
-    archiveMemoryRoom.innerHTML = '';
+    clearMemoryReview();
 
     let state = loadState();
     state = replaceInMemoryRoom(state, newAkte, oldAkteId);
@@ -407,7 +528,7 @@
     }
 
     if (viewMode === 'displacement' && pendingAkte) {
-      showDisplacementView(pendingAkte, state.memoryRoom);
+      showDisplacementView(pendingAkte, state.memoryRoom, true);
       return;
     }
 
@@ -428,8 +549,7 @@
 
     hideMemoryFullModal();
     pendingAkte = null;
-    pendingAktePreview.innerHTML = '';
-    archiveMemoryRoom.innerHTML = '';
+    clearMemoryReview();
 
     setViewMode('start');
     resetState();
@@ -440,15 +560,51 @@
    */
   function init() {
     setViewMode('start');
+    clearMemoryReview();
     openArchiveBtn.addEventListener('click', openArchive);
     displacementCancel.addEventListener('click', exitDisplacementView);
+    memoryReviewPrev.addEventListener('click', showPreviousMemoryReviewPage);
+    memoryReviewNext.addEventListener('click', showNextMemoryReviewPage);
+    memoryReviewStage.addEventListener('click', function (event) {
+      const selectButton = event.target.closest('.memory-review__page-select');
+      if (!selectButton) {
+        return;
+      }
+
+      const akteId = selectButton.getAttribute('data-akte-id');
+      if (akteId) {
+        setMemoryReviewSelection(akteId);
+      }
+    });
+    memoryReviewRemove.addEventListener('click', function () {
+      const akteId = memoryReviewRemove.getAttribute('data-id');
+      if (akteId) {
+        handleDisplacement(akteId);
+      }
+    });
     confirmationContinue.addEventListener('click', dismissConfirmation);
     memoryFullModalConfirm.addEventListener('click', confirmMemoryFullModal);
     resetInstallation.addEventListener('click', handleResetInstallation);
 
     document.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape' && viewMode === 'displacement') {
+      if (viewMode !== 'displacement') {
+        return;
+      }
+
+      if (event.key === 'Escape') {
         exitDisplacementView();
+        return;
+      }
+
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        showPreviousMemoryReviewPage();
+        return;
+      }
+
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        showNextMemoryReviewPage();
       }
     });
 

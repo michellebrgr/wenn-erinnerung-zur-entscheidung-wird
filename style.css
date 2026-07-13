@@ -129,6 +129,10 @@ body.archive-view {
   justify-content: center;
 }
 
+.archive-main:has(.displacement-section:not([hidden])) {
+  align-items: center;
+}
+
 .offer-section h2:not(.sr-only) {
   font-size: 1.1rem;
   text-transform: uppercase;
@@ -420,6 +424,45 @@ body.archive-view {
   box-shadow: 0 4px 12px var(--color-shadow);
 }
 
+.akte-card--review {
+  cursor: default;
+}
+
+.akte-card--spread-left-page {
+  padding: 1.75rem calc(var(--binder-width) + 1.25rem) 1.5rem 1.5rem;
+  border-radius: 6px 0 0 6px;
+  border-right: none;
+}
+
+.akte-card--spread-left-page::before {
+  left: auto;
+  right: 0;
+  border-right: none;
+  border-left: 1px dashed rgba(181, 169, 154, 0.55);
+  background: linear-gradient(270deg, #e3ddd2 0%, #ece7df 55%, #f3efe8 100%);
+}
+
+.akte-card--spread-left-page .akte-card__binder {
+  left: auto;
+  right: 0;
+}
+
+.akte-card--spread-right-page {
+  padding: 1.75rem 1.5rem 1.5rem calc(var(--binder-width) + 1.25rem);
+  border-radius: 0 6px 6px 0;
+  border-left: none;
+}
+
+.akte-card--spread-right-page::after {
+  right: auto;
+  left: 5px;
+}
+
+.memory-review__page-select--active .akte-card {
+  border-color: var(--color-stamp);
+  box-shadow: 0 4px 14px var(--color-shadow);
+}
+
 /* --- Verdrängungsansicht auf der Archivseite --- */
 .displacement-section[hidden] {
   display: none;
@@ -430,118 +473,143 @@ body.archive-view {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--color-ink-muted);
-  margin: 0 0 0.75rem;
-}
-
-.displacement-hint {
   margin: 0 0 1.25rem;
-  color: var(--color-ink-muted);
-  font-size: 0.95rem;
-  max-width: 70ch;
+  text-align: center;
 }
 
-.pending-akte-preview {
-  margin-bottom: 1.5rem;
-}
-
-.pending-akte-preview__label {
-  margin: 0 0 0.75rem;
-  font-family: var(--font-sans);
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--color-stamp);
-}
-
-.archive-memory-room {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.archive-memory-slot {
-  background: #fff;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
-  padding: 1rem;
+.memory-review {
   display: flex;
   flex-direction: column;
-  min-height: 180px;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  align-items: stretch;
+  width: calc(((100% - 5rem) / 3) * 2 + 2.5rem);
+  max-width: none;
+  margin: 0 auto 1.5rem;
 }
 
-.archive-memory-slot--displacement {
+.memory-review__book {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+}
+
+.memory-review__stage {
+  flex: 1;
+  min-width: 0;
+}
+
+.memory-review__spread {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: stretch;
+  gap: 0;
+  width: 100%;
+}
+
+.memory-review__page {
+  min-width: 0;
+}
+
+.memory-review__page--left {
+  z-index: 1;
+}
+
+.memory-review__page--right {
+  z-index: 0;
+  margin-left: calc(var(--binder-width) * -1);
+}
+
+.memory-review__page-select {
+  display: block;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
   cursor: pointer;
 }
 
-.archive-memory-slot--displacement:hover,
-.archive-memory-slot--displacement:focus-visible {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px var(--color-shadow);
+.memory-review__page-select:focus-visible {
   outline: 2px solid var(--color-stamp);
   outline-offset: 2px;
-  border-color: var(--color-stamp);
 }
 
-.archive-memory-slot__reference {
-  font-family: var(--font-sans);
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--color-stamp);
-  letter-spacing: 0.04em;
-  margin-bottom: 0.25rem;
+.memory-review__page-select .akte-card {
+  min-height: 28rem;
+  width: 100%;
 }
 
-.archive-memory-slot__category {
-  font-family: var(--font-sans);
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+.memory-review__page-empty {
+  min-height: 28rem;
+  background: rgba(255, 255, 255, 0.35);
+  border: 1px dashed var(--color-border);
+  border-radius: 6px;
+}
+
+.memory-review__nav {
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  font-family: var(--font-serif);
+  font-size: 1.75rem;
+  line-height: 1;
   color: var(--color-ink-muted);
-  margin-bottom: 0.5rem;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
 }
 
-.archive-memory-slot__title {
-  font-size: 0.95rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-}
-
-.archive-memory-slot__meta {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  font-family: var(--font-sans);
-  font-size: 0.72rem;
+.memory-review__nav:hover:not(:disabled) {
   color: var(--color-ink);
-  margin-bottom: 0.5rem;
+  border-color: var(--color-accent);
+  background: rgba(255, 255, 255, 0.5);
 }
 
-.archive-memory-slot__meta strong {
-  color: var(--color-ink-muted);
-  font-weight: 600;
+.memory-review__nav:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
-.archive-memory-slot__fragment {
-  margin: 0 0 auto;
+.memory-review__nav:focus-visible {
+  outline: 2px solid var(--color-stamp);
+  outline-offset: 2px;
+}
+
+.btn-memory-remove {
+  width: 100%;
+  font-family: var(--font-sans);
   font-size: 0.85rem;
-  color: var(--color-ink);
-}
-
-.archive-memory-slot__action-hint {
-  margin: 0.75rem 0 0;
-  font-family: var(--font-sans);
-  font-size: 0.7rem;
-  color: var(--color-stamp);
-  text-align: center;
-  opacity: 0;
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  background: var(--color-stamp);
+  color: #fff;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
   transition: opacity var(--transition-fast);
 }
 
-.archive-memory-slot--displacement:hover .archive-memory-slot__action-hint {
-  opacity: 1;
+.btn-memory-remove:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.btn-memory-remove:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.btn-memory-remove:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+}
+
+.displacement-section .btn-cancel {
+  display: block;
+  margin: 0 auto;
 }
 
 .btn-cancel {
@@ -957,6 +1025,25 @@ body.projection-view {
     gap: 2rem;
   }
 
+  .memory-review {
+    width: 100%;
+  }
+
+  .memory-review__spread {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  .memory-review__page--right {
+    margin-left: 0;
+  }
+
+  .akte-card--spread-left-page,
+  .akte-card--spread-right-page {
+    border-radius: 6px;
+    border: 1px solid #b5a99a;
+  }
+
   .archive-shell__content {
     padding-left: 1.5rem;
     padding-right: 1.5rem;
@@ -964,8 +1051,7 @@ body.projection-view {
 }
 
 @media (max-width: 768px) {
-  .memory-room,
-  .archive-memory-room {
+  .memory-room {
     grid-template-columns: 1fr;
     grid-template-rows: auto;
     min-height: auto;

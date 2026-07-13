@@ -129,10 +129,6 @@ body.archive-view {
   justify-content: center;
 }
 
-.archive-main:has(.displacement-section:not([hidden])) {
-  align-items: center;
-}
-
 .offer-section h2:not(.sr-only) {
   font-size: 1.1rem;
   text-transform: uppercase;
@@ -428,10 +424,6 @@ body.archive-view {
   cursor: default;
 }
 
-.akte-card--review {
-  cursor: default;
-}
-
 /* --- Verdrängungsansicht auf der Archivseite --- */
 .displacement-section[hidden] {
   display: none;
@@ -442,30 +434,22 @@ body.archive-view {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--color-ink-muted);
-  margin: 0 0 1.25rem;
-  text-align: center;
+  margin: 0 0 1rem;
 }
 
 .memory-review {
-  width: 100%;
-  margin: 0 auto 1.5rem;
-}
-
-.memory-review__browser {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+  position: relative;
   width: 100%;
 }
 
-.memory-review__browser .offer-grid {
-  flex: 1;
-  min-width: 0;
-  margin-bottom: 0;
+.memory-review > .offer-grid {
+  width: 100%;
 }
 
 .memory-review__nav {
-  flex-shrink: 0;
+  position: absolute;
+  top: 50%;
+  z-index: 2;
   width: 2.5rem;
   height: 2.5rem;
   padding: 0;
@@ -473,11 +457,27 @@ body.archive-view {
   font-size: 1.75rem;
   line-height: 1;
   color: var(--color-ink-muted);
-  background: transparent;
+  background: var(--color-paper);
   border: 1px solid var(--color-border);
   border-radius: 50%;
   cursor: pointer;
+  transform: translateY(-50%);
   transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.memory-review__nav--prev {
+  left: -3.25rem;
+}
+
+.memory-review__nav--next {
+  right: -3.25rem;
+}
+
+.memory-review .akte-card--selectable:hover,
+.memory-review .akte-card--selectable:focus-visible {
+  transform: none;
+  box-shadow: 0 2px 6px var(--color-shadow);
+  border-color: #b5a99a;
 }
 
 .memory-review__nav:hover:not(:disabled) {
@@ -512,7 +512,7 @@ body.archive-view {
 }
 
 .btn-memory-delete:hover {
-  opacity: 0.9;
+  opacity: 0.85;
 }
 
 .btn-memory-delete:focus-visible {
@@ -576,8 +576,6 @@ body.archive-view {
 
 .displacement-section {
   width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
   padding: 0 0 2rem;
 }
 
@@ -938,8 +936,12 @@ body.projection-view {
     gap: 2rem;
   }
 
-  .memory-review {
-    width: 100%;
+  .memory-review__nav--prev {
+    left: 0;
+  }
+
+  .memory-review__nav--next {
+    right: 0;
   }
 
   .archive-shell__content {

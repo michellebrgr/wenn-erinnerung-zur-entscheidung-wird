@@ -219,7 +219,7 @@
   function renderDisplacementColumn(akte) {
     return (
       '<div class="archive-offer-column" role="listitem">' +
-      renderAkteCard(akte, { variant: 'review' }) +
+      renderAkteCard(akte, { variant: 'selectable' }) +
       '<button type="button" class="btn-memory-delete" data-id="' + escapeHtml(akte.id) + '">' +
       'Diese Akte löschen' +
       '</button>' +

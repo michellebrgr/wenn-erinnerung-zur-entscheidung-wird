@@ -53,15 +53,13 @@
           <section class="displacement-section" id="displacement-section" hidden aria-labelledby="displacement-heading">
             <h2 id="displacement-heading">Erinnerungsraum</h2>
             <div class="memory-review" aria-label="Akten im Erinnerungsraum">
-              <div class="memory-review__browser">
-                <button type="button" id="memory-review-prev" class="memory-review__nav" aria-label="Vorherige Akten">
-                  ‹
-                </button>
-                <div id="memory-review-grid" class="offer-grid" role="list" aria-live="polite"></div>
-                <button type="button" id="memory-review-next" class="memory-review__nav" aria-label="Nächste Akten">
-                  ›
-                </button>
-              </div>
+              <button type="button" id="memory-review-prev" class="memory-review__nav memory-review__nav--prev" aria-label="Vorherige Akten">
+                ‹
+              </button>
+              <div id="memory-review-grid" class="offer-grid" role="list" aria-live="polite"></div>
+              <button type="button" id="memory-review-next" class="memory-review__nav memory-review__nav--next" aria-label="Nächste Akten">
+                ›
+              </button>
             </div>
             <button type="button" id="displacement-cancel" class="btn-cancel">Abbrechen</button>
           </section>

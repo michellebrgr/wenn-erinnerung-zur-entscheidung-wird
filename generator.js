@@ -6,7 +6,7 @@
  */
 
 /** Untergrenze für zufällige Jahresangaben */
-const DATIERUNG_JAHR_MIN = 1920;
+const DATIERUNG_JAHR_MIN = 1845;
 
 /** Obergrenze für zufällige Jahresangaben */
 const DATIERUNG_JAHR_MAX = 2020;

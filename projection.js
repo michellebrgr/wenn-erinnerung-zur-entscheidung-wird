@@ -93,6 +93,16 @@
       );
     }
 
+    const kriterien = Array.isArray(akte.bewertungskriterien) ? akte.bewertungskriterien : [];
+    const kriterienHtml = kriterien.length > 0
+      ? kriterien.map(function (item) {
+        if (typeof item === 'string') {
+          return '<span>' + escapeHtml(item) + '</span>';
+        }
+        return '<span><strong>' + escapeHtml(item.label) + '</strong>: ' + escapeHtml(item.text) + '</span>';
+      }).join('')
+      : '<span>—</span>';
+
     return (
       '<article class="memory-exhibit ' + slotClass + enterClass + '" role="listitem" aria-label="' + ariaLabel + '" data-id="' + escapeHtml(akte.id) + '">' +
       '<div class="memory-exhibit__visual">' +

@@ -51,23 +51,44 @@
   }
 
   /**
-   * Rendert einen einzelnen Speicherplatz.
+   * Rendert das Ausstellungsbild einer Akte.
+   * @param {string|null} bild
+   * @returns {string}
+   */
+  function renderExhibitImage(bild) {
+    if (bild) {
+      return (
+        '<figure class="memory-exhibit__figure">' +
+        '<img class="memory-exhibit__image" src="' + escapeHtml(bild) + '" alt="">' +
+        '</figure>'
+      );
+    }
+
+    return (
+      '<figure class="memory-exhibit__figure">' +
+      '<div class="memory-exhibit__image-placeholder" aria-hidden="true"></div>' +
+      '</figure>'
+    );
+  }
+
+  /**
+   * Rendert einen einzelnen Speicherplatz als Ausstellungsstück.
    * @param {Object|null} akte - Akte oder null für leeren Platz
    * @param {number} index - Platznummer (0–5)
    * @param {boolean} isNew - Ob die Akte neu hinzugekommen ist
    * @returns {string}
    */
   function renderSlot(akte, index, isNew) {
-    const slotClass = akte ? 'memory-slot--filled' : 'memory-slot--empty';
-    const enterClass = isNew ? ' memory-slot--enter' : '';
+    const slotClass = akte ? 'memory-exhibit--filled' : 'memory-exhibit--empty';
+    const enterClass = isNew ? ' memory-exhibit--enter' : '';
     const ariaLabel = akte
-      ? 'Platz ' + (index + 1) + ': ' + formatValue(akte.archivsignatur)
+      ? 'Platz ' + (index + 1) + ': ' + formatValue(akte.titel)
       : 'Platz ' + (index + 1) + ': frei';
 
     if (!akte) {
       return (
-        '<article class="memory-slot ' + slotClass + '" role="listitem" aria-label="' + ariaLabel + '">' +
-        '<span class="memory-slot__placeholder">freier Speicherplatz</span>' +
+        '<article class="memory-exhibit ' + slotClass + '" role="listitem" aria-label="' + ariaLabel + '">' +
+        '<span class="memory-exhibit__placeholder">freier Speicherplatz</span>' +
         '</article>'
       );
     }
@@ -83,17 +104,15 @@
       : '<span>—</span>';
 
     return (
-      '<article class="memory-slot ' + slotClass + enterClass + '" role="listitem" aria-label="' + ariaLabel + '" data-id="' + escapeHtml(akte.id) + '">' +
-      '<div class="memory-slot__reference">' + escapeHtml(formatValue(akte.archivsignatur)) + '</div>' +
-      '<div class="memory-slot__category">' + escapeHtml(formatValue(akte.kategorie)) + '</div>' +
-      '<div class="memory-slot__title">' + escapeHtml(formatValue(akte.titel)) + '</div>' +
-      '<div class="memory-slot__meta">' +
-      '<span><strong>Objekttyp</strong>: ' + escapeHtml(formatValue(akte.objekttyp)) + '</span>' +
-      '<span><strong>Jahr</strong>: ' + escapeHtml(formatValue(akte.jahr)) + '</span>' +
-      '<span><strong>Herkunft</strong>: ' + escapeHtml(formatValue(akte.herkunft)) + '</span>' +
+      '<article class="memory-exhibit ' + slotClass + enterClass + '" role="listitem" aria-label="' + ariaLabel + '" data-id="' + escapeHtml(akte.id) + '">' +
+      '<div class="memory-exhibit__visual">' +
+      renderExhibitImage(akte.bild) +
+      '<div class="memory-exhibit__sign">' +
+      '<h2 class="memory-exhibit__title">' + escapeHtml(formatValue(akte.titel)) + '</h2>' +
+      '<p class="memory-exhibit__year">' + escapeHtml(formatValue(akte.jahr)) + '</p>' +
       '</div>' +
-      '<div class="memory-slot__criteria">' + kriterienHtml + '</div>' +
-      '<p class="memory-slot__fragment">' + escapeHtml(truncateText(formatValue(akte.kurzbeschreibung), 220)) + '</p>' +
+      '</div>' +
+      '<p class="memory-exhibit__description">' + escapeHtml(truncateText(formatValue(akte.kurzbeschreibung), 220)) + '</p>' +
       '</article>'
     );
   }

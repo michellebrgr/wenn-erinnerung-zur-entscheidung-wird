@@ -792,6 +792,23 @@ body.projection-view {
   --projection-image-placeholder: rgba(255, 255, 255, 0.04);
   --projection-footer: #2a2520;
 
+  /* Skalierungsbasis: vmin skaliert proportional mit der Bildschirmgröße.
+     Minimalwert = aktuelle Größe auf 13" Laptop, danach unbegrenzt proportional. */
+  --proj-space-xs:  max(0.5rem,  0.8vmin);
+  --proj-space-sm:  max(0.75rem, 1.4vmin);
+  --proj-space-md:  max(1rem,    2vmin);
+  --proj-space-lg:  max(1.5rem,  3vmin);
+  --proj-font-xs:   max(0.6rem,  1vmin);
+  --proj-font-sm:   max(0.75rem, 1.3vmin);
+  --proj-font-md:   max(0.85rem, 1.6vmin);
+  --proj-font-lg:   max(1.2rem,  2.2vmin);
+  --proj-font-xl:   max(1.8rem,  3.8vmin);
+  --proj-bar-top:   max(10px,    1.2vmin);
+  --proj-bar-bot:   max(36px,    3.5vmin);
+  --proj-gap:       max(0.75rem, 1.8vmin);
+  --proj-pad-x:     max(1.5rem,  2.5vmin);
+  --proj-pad-y:     max(1rem,    1.8vmin);
+
   background: var(--projection-bg);
   color: var(--projection-text);
   height: 100dvh;
@@ -817,7 +834,7 @@ body.projection-view.projection-view--light {
 
 .projection-shell__topbar {
   flex-shrink: 0;
-  height: 14px;
+  height: var(--proj-bar-top);
   background: var(--color-ink);
 }
 
@@ -826,13 +843,13 @@ body.projection-view.projection-view--light {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 2rem 2.5rem 1.5rem;
+  padding: var(--proj-pad-y) var(--proj-pad-x);
 }
 
 .projection-shell__title {
-  margin: 0 0 2rem;
+  margin: 0 0 var(--proj-space-lg);
   font-family: var(--font-sans);
-  font-size: clamp(2rem, 4.5vw, 3.5rem);
+  font-size: var(--proj-font-xl);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -842,7 +859,7 @@ body.projection-view.projection-view--light {
 
 .projection-shell__footerbar {
   flex-shrink: 0;
-  height: 48px;
+  height: var(--proj-bar-bot);
   background: var(--projection-footer);
 }
 
@@ -857,9 +874,9 @@ body.projection-view.projection-view--light {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(2, 1fr);
-  gap: clamp(1rem, 2vw, 1.75rem);
+  gap: var(--proj-gap);
   width: 100%;
-  max-width: 1500px;
+  max-width: none;
   margin: 0 auto;
 }
 
@@ -867,10 +884,10 @@ body.projection-view.projection-view--light {
   background: var(--projection-card-bg);
   border: 1px solid var(--projection-card-border);
   border-radius: var(--radius-card);
-  padding: clamp(0.75rem, 1.2vw, 1rem);
+  padding: var(--proj-space-sm);
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: var(--proj-space-xs);
   min-height: 0;
   transition: opacity var(--transition-fast), transform var(--transition-fast);
 }
@@ -904,7 +921,7 @@ body.projection-view.projection-view--light {
 
 .memory-exhibit__placeholder {
   font-family: var(--font-sans);
-  font-size: clamp(0.65rem, 1vw, 0.8rem);
+  font-size: var(--proj-font-xs);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--projection-text-muted);
@@ -914,7 +931,7 @@ body.projection-view.projection-view--light {
 .memory-exhibit__visual {
   display: flex;
   align-items: flex-start;
-  gap: clamp(0.5rem, 1vw, 0.85rem);
+  gap: var(--proj-space-sm);
   min-height: 0;
 }
 
@@ -942,29 +959,34 @@ body.projection-view.projection-view--light {
 .memory-exhibit__sign {
   flex: 1;
   min-width: 0;
-  padding-top: 0.15rem;
+  padding-top: 0.3vmin;
 }
 
 .memory-exhibit__title {
   margin: 0;
   font-family: var(--font-sans);
-  font-size: clamp(0.75rem, 1.2vw, 0.95rem);
+  font-size: var(--proj-font-md);
   font-weight: 700;
   line-height: 1.25;
   color: var(--projection-text);
 }
 
 .memory-exhibit__year {
-  margin: 0.25rem 0 0;
+  margin: 0.4vmin 0 0;
+  font-family: var(--font-sans);
+  font-size: var(--proj-font-sm);
+  color: var(--projection-text-muted);
+}
+
 .memory-slot__criteria span {
   font-family: var(--font-sans);
-  font-size: clamp(0.6rem, 0.9vw, 0.75rem);
+  font-size: var(--proj-font-xs);
   color: #a89f94;
 }
 
 .memory-slot__criterion {
   font-family: var(--font-sans);
-  font-size: clamp(0.7rem, 1vw, 0.85rem);
+  font-size: var(--proj-font-sm);
   font-weight: 400;
   color: var(--projection-text);
 }
@@ -972,7 +994,7 @@ body.projection-view.projection-view--light {
 .memory-exhibit__description {
   margin: 0;
   font-family: var(--font-sans);
-  font-size: clamp(0.6rem, 0.85vw, 0.72rem);
+  font-size: var(--proj-font-xs);
   line-height: 1.4;
   color: var(--projection-text-muted);
 }

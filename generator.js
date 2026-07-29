@@ -302,10 +302,29 @@ function generateAktenTexte(bausteine) {
 }
 
 /**
+ * Nimmt options-Wert, sonst Varianten-Wert, sonst Fallback.
+ * @param {Object} options
+ * @param {Object} variante
+ * @param {string} key
+ * @param {*} fallback
+ * @returns {*}
+ */
+function pickCuratedOrFallback(options, variante, key, fallback) {
+  if (options && options[key] !== undefined) {
+    return options[key];
+  }
+  if (variante && variante[key] !== undefined) {
+    return variante[key];
+  }
+  return typeof fallback === 'function' ? fallback() : fallback;
+}
+
+/**
  * Erzeugt kohärente Metadaten für eine Akte aus dem Kategoriekatalog.
- * @param {Object} variante - Variante mit kategorie
+ * Kuratierte Variantenfelder (Bildakten) haben Vorrang vor Zufallsauswahl.
+ * @param {Object} variante - Variante mit kategorie und optionalen Metadaten
  * @param {Object} [options] - Bereits gespeicherte Feldwerte
- * @returns {{ kategorie: string|null, objekttyp: string|null, provenienz: string|null, sammlung: string|null, erhaltungszustand: string|null, motiv: string|null, ort: string|null, fehlendeInformation: string|null, materialhinweis: string|null, institutionelleRelevanz: string|null }}
+ * @returns {{ kategorie: string|null, objekttyp: string|null, herkunft: string|null, provenienz: string|null, sammlung: string|null, erhaltungszustand: string|null, dokumentationsgrad: string|null, motiv: string|null, ort: string|null, fehlendeInformation: string|null, materialhinweis: string|null, institutionelleRelevanz: string|null }}
  */
 function generateAktenMetadaten(variante, options) {
   options = options || {};
@@ -314,17 +333,37 @@ function generateAktenMetadaten(variante, options) {
   const kategorie = options.kategorie !== undefined
     ? options.kategorie
     : resolveKategorie(variante);
-  const bausteine = pickKategorieBausteine(kategorie, options);
-  const provenienz = options.provenienz !== undefined
-    ? options.provenienz
-    : pickFromListe('provenienz');
+
+  const curatedOverrides = {
+    objekttyp: pickCuratedOrFallback(options, variante, 'objekttyp', undefined),
+    sammlung: pickCuratedOrFallback(options, variante, 'sammlung', undefined),
+    erhaltungszustand: pickCuratedOrFallback(options, variante, 'erhaltungszustand', undefined),
+    institutionelleRelevanz: pickCuratedOrFallback(options, variante, 'institutionelleRelevanz', undefined),
+  };
+
+  const bausteine = pickKategorieBausteine(kategorie, {
+    objekttyp: curatedOverrides.objekttyp,
+    sammlung: curatedOverrides.sammlung,
+    erhaltungszustand: curatedOverrides.erhaltungszustand,
+    institutionelleRelevanz: curatedOverrides.institutionelleRelevanz,
+  });
+
+  const provenienz = pickCuratedOrFallback(options, variante, 'provenienz', function () {
+    return pickFromListe('provenienz');
+  });
+  const herkunft = pickCuratedOrFallback(options, variante, 'herkunft', null);
+  const dokumentationsgrad = pickCuratedOrFallback(options, variante, 'dokumentationsgrad', function () {
+    return pickFromListe('dokumentationsgrad');
+  });
 
   return {
     kategorie: kategorie,
     objekttyp: bausteine.objekttyp,
+    herkunft: herkunft,
     provenienz: provenienz,
     sammlung: bausteine.sammlung,
     erhaltungszustand: bausteine.erhaltungszustand,
+    dokumentationsgrad: dokumentationsgrad,
     motiv: bausteine.motiv,
     ort: bausteine.ort,
     fehlendeInformation: bausteine.fehlendeInformation,
@@ -335,11 +374,12 @@ function generateAktenMetadaten(variante, options) {
 
 /**
  * Erzeugt Bewertungskriterien — Relevanz und Erhaltungszustand aus der Kategorie,
- * Dokumentationsgrad aus dem allgemeinen Katalog.
+ * Dokumentationsgrad aus dem allgemeinen Katalog. Kuratierte Werte haben Vorrang.
  * @param {Object} [options]
  * @param {string} [options.kategorie]
  * @param {string} [options.erhaltungszustand]
  * @param {string} [options.institutionelleRelevanz]
+ * @param {string} [options.dokumentationsgrad]
  * @returns {Array<{ label: string, text: string }>}
  */
 function generateBewertungskriterien(options) {
@@ -417,7 +457,7 @@ function findBildAndVariante(bildId, varianteId) {
 
 /**
  * Erzeugt ein Akten-Objekt aus Bild und Variante.
- * Bildakten behalten manuelle Titel/Kurzbeschreibung; Metadaten kommen aus dem Kategoriekatalog.
+ * Bildakten behalten kuratierte Felder aus der Variante; fehlende Metadaten kommen aus dem Katalog.
  * Bildlose Akten erzeugen Titel, Kontext und Kurzbeschreibung aus Textbausteinen.
  * @param {Object} bild - Eintrag aus ARCHIV_BILDER
  * @param {Object} variante - Variante des Bildes
@@ -428,7 +468,9 @@ function findBildAndVariante(bildId, varianteId) {
 function buildAkte(bild, variante, options) {
   options = options || {};
   variante = variante || {};
-  const jahr = options.jahr !== undefined ? options.jahr : generateJahr();
+  const jahr = options.jahr !== undefined
+    ? options.jahr
+    : (variante.jahr !== undefined ? variante.jahr : generateJahr());
   const archivsignatur = options.archivsignatur || variante.archivsignatur || generateArchivsignatur(jahr);
   const meta = generateAktenMetadaten(variante, options);
   const ohneBild = !bild || bild.pfad == null;
@@ -461,13 +503,14 @@ function buildAkte(bild, variante, options) {
       ? options.kontextbeschreibung
       : (ohneBild ? texte.kontextbeschreibung : (variante.kontextbeschreibung || null)),
     objekttyp: meta.objekttyp,
-    herkunft: null,
+    herkunft: meta.herkunft,
     provenienz: meta.provenienz,
     sammlung: meta.sammlung,
     bewertungskriterien: generateBewertungskriterien({
       kategorie: meta.kategorie,
       erhaltungszustand: meta.erhaltungszustand,
       institutionelleRelevanz: meta.institutionelleRelevanz,
+      dokumentationsgrad: meta.dokumentationsgrad,
       bewertungskriterien: options.bewertungskriterien,
     }),
   };
@@ -486,6 +529,7 @@ function normalizeAkte(akte) {
       jahr: 'jahr' in akte ? akte.jahr : undefined,
       archivsignatur: akte.archivsignatur || akte.inventoryNumber || akte.reference || undefined,
       objekttyp: 'objekttyp' in akte ? akte.objekttyp : undefined,
+      herkunft: 'herkunft' in akte ? akte.herkunft : undefined,
       provenienz: 'provenienz' in akte ? akte.provenienz : undefined,
       sammlung: 'sammlung' in akte ? akte.sammlung : undefined,
       bewertungskriterien: 'bewertungskriterien' in akte ? akte.bewertungskriterien : undefined,
@@ -509,7 +553,7 @@ function normalizeAkte(akte) {
     kurzbeschreibung: src.kurzbeschreibung || akte.kurzbeschreibung || akte.shortText || akte.fragment || null,
     kontextbeschreibung: src.kontextbeschreibung || akte.kontextbeschreibung || null,
     objekttyp: 'objekttyp' in akte ? akte.objekttyp : (src.objekttyp || akte.objectType || fallbackMeta.objekttyp),
-    herkunft: 'herkunft' in akte ? akte.herkunft : (src.herkunft != null ? src.herkunft : null),
+    herkunft: 'herkunft' in akte ? akte.herkunft : (src.herkunft != null ? src.herkunft : (akte.origin || fallbackMeta.herkunft)),
     provenienz: 'provenienz' in akte ? akte.provenienz : (src.provenienz || fallbackMeta.provenienz),
     sammlung: 'sammlung' in akte ? akte.sammlung : (src.sammlung || fallbackMeta.sammlung),
     bewertungskriterien: 'bewertungskriterien' in akte

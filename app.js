@@ -511,7 +511,9 @@
     memoryReviewNext.addEventListener('click', showNextMemoryReviewPage);
     confirmationContinue.addEventListener('click', dismissConfirmation);
     memoryFullModalConfirm.addEventListener('click', confirmMemoryFullModal);
-    resetInstallation.addEventListener('click', handleResetInstallation);
+    if (resetInstallation) {
+      resetInstallation.addEventListener('click', handleResetInstallation);
+    }
 
     document.addEventListener('keydown', function (event) {
       if (viewMode !== 'displacement') {

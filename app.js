@@ -516,6 +516,12 @@
     }
 
     document.addEventListener('keydown', function (event) {
+      if (event.shiftKey && event.key === 'R') {
+        event.preventDefault();
+        handleResetInstallation();
+        return;
+      }
+
       if (viewMode !== 'displacement') {
         return;
       }

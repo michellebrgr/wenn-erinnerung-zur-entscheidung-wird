@@ -443,10 +443,22 @@
     openArchiveBtn.addEventListener('click', openArchive);
     displacementCancel.addEventListener('click', exitDisplacementView);
     memoryFullModalConfirm.addEventListener('click', confirmMemoryFullModal);
-    resetInstallation.addEventListener('click', handleResetInstallation);
+    if (resetInstallation) {
+      resetInstallation.addEventListener('click', handleResetInstallation);
+    }
 
     document.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape' && viewMode === 'displacement') {
+      if (event.shiftKey && event.key === 'R') {
+        event.preventDefault();
+        handleResetInstallation();
+        return;
+      }
+
+      if (viewMode !== 'displacement') {
+        return;
+      }
+
+      if (event.key === 'Escape') {
         exitDisplacementView();
       }
     });

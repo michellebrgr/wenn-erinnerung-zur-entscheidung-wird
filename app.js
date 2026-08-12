@@ -62,21 +62,22 @@
 
   /**
    * Bildpfad pro Akte in data.js im Feld `bild` eintragen.
-   * @param {string|null} bild
+   * Ohne Bild: Archivfragment aus aktenart.
+   * @param {Object} akte
    * @returns {string}
    */
-  function renderAkteImage(bild) {
-    if (bild) {
+  function renderAkteImage(akte) {
+    if (akte && akte.bild) {
       return (
         '<figure class="akte-card__figure">' +
-        '<img class="akte-card__image" src="' + escapeHtml(bild) + '" alt="">' +
+        '<img class="akte-card__image" src="' + escapeHtml(akte.bild) + '" alt="">' +
         '</figure>'
       );
     }
 
     return (
       '<figure class="akte-card__figure">' +
-      '<div class="akte-card__image-placeholder">Kein Bild vorhanden</div>' +
+      renderArchivDarstellung(akte, 'card') +
       '</figure>'
     );
   }
@@ -168,7 +169,7 @@
       '</header>' +
       '<h3 class="akte-card__title">' + escapeHtml(formatValue(akte.titel)) + '</h3>' +
       '<p class="akte-card__year">' + escapeHtml(formatValue(akte.jahr)) + '</p>' +
-      renderAkteImage(akte.bild) +
+      renderAkteImage(akte) +
       '<p class="akte-card__fragment">' + escapeHtml(formatValue(akte.kurzbeschreibung)) + '</p>' +
       renderMetaList(akte, compact) +
       '<ul class="akte-card__criteria" aria-label="Bewertungskriterien">' + renderCriteria(akte) + '</ul>' +

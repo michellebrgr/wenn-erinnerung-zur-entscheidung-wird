@@ -52,21 +52,22 @@
 
   /**
    * Rendert das Ausstellungsbild einer Akte.
-   * @param {string|null} bild
+   * Ohne Bild: Archivfragment aus aktenart.
+   * @param {Object} akte
    * @returns {string}
    */
-  function renderExhibitImage(bild) {
-    if (bild) {
+  function renderExhibitImage(akte) {
+    if (akte && akte.bild) {
       return (
         '<figure class="memory-exhibit__figure">' +
-        '<img class="memory-exhibit__image" src="' + escapeHtml(bild) + '" alt="">' +
+        '<img class="memory-exhibit__image" src="' + escapeHtml(akte.bild) + '" alt="">' +
         '</figure>'
       );
     }
 
     return (
       '<figure class="memory-exhibit__figure">' +
-      '<div class="memory-exhibit__image-placeholder" aria-hidden="true"></div>' +
+      renderArchivDarstellung(akte, 'projection') +
       '</figure>'
     );
   }
@@ -106,7 +107,7 @@
     return (
       '<article class="memory-exhibit ' + slotClass + enterClass + '" role="listitem" aria-label="' + ariaLabel + '" data-id="' + escapeHtml(akte.id) + '">' +
       '<div class="memory-exhibit__visual">' +
-      renderExhibitImage(akte.bild) +
+      renderExhibitImage(akte) +
       '<div class="memory-exhibit__sign">' +
       '<h2 class="memory-exhibit__title">' + escapeHtml(formatValue(akte.titel)) + '</h2>' +
       '<p class="memory-exhibit__year">' + escapeHtml(formatValue(akte.jahr)) + '</p>' +

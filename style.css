@@ -329,19 +329,286 @@ body.archive-view {
   border-radius: var(--radius-card);
 }
 
-.akte-card__image-placeholder {
+/* --- Archivfragmente: klare Papierformate im Bildbereich --- */
+.archiv-fragment {
+  position: relative;
   display: flex;
+  flex-direction: column;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  max-height: 160px;
+  box-sizing: border-box;
+  padding: 0;
+  background: #ddd5c6;
+  border: none;
+  border-radius: 1px;
+  font-family: var(--font-sans);
+  color: var(--color-ink);
+  overflow: hidden;
+}
+
+.archiv-fragment__art {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.55rem;
+  z-index: 1;
+  max-width: 48%;
+  font-size: 0.55rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+  text-align: right;
+  line-height: 1.2;
+}
+
+.archiv-fragment__content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 0;
+  padding: 1rem 1.05rem 0.9rem;
+  padding-right: 2.6rem;
+}
+
+.archiv-fragment__body {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 0.98rem;
+  line-height: 1.35;
+  color: var(--color-ink);
+}
+
+.archiv-fragment__excerpt {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--color-ink);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+}
+
+.archiv-fragment__sheet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 78%;
+  height: 78%;
+  margin: auto;
+  background: #f3ebe0;
+  border: 1px solid #c4b6a0;
+  box-shadow: 2px 3px 0 rgba(42, 37, 32, 0.08);
+  transform: rotate(-1.5deg);
+}
+
+.archiv-fragment__sheet .archiv-fragment__art {
+  top: 0.35rem;
+  right: 0.4rem;
+}
+
+.archiv-fragment__sheet .archiv-fragment__content {
+  padding: 0.85rem 0.75rem 0.7rem;
+  padding-right: 1.8rem;
+}
+
+.archiv-fragment__sheet .archiv-fragment__body {
+  font-size: 0.85rem;
+}
+
+/* Unvollständiges Blatt */
+.archiv-fragment--archivvermerk {
+  background:
+    linear-gradient(135deg, rgba(255, 252, 245, 0.55) 0%, transparent 42%),
+    #ebe3d4;
+  border: 1px solid #b5a790;
+  border-left: 3px solid var(--color-stamp);
+  clip-path: polygon(0 0, 100% 0, 100% 88%, 94% 100%, 0 100%);
+}
+
+/* Eingelegter Zettel */
+.archiv-fragment--bestandsnotiz {
+  background:
+    linear-gradient(180deg, #d8d0c2 0%, #cfc6b6 100%);
   align-items: center;
   justify-content: center;
-  min-height: 100px;
-  background: var(--color-paper-dark);
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius-card);
+}
+
+.archiv-fragment--bestandsnotiz > .archiv-fragment__art {
+  display: none;
+}
+
+/* Dokumentausschnitt */
+.archiv-fragment--dokumentfragment {
+  background: #e6ddcd;
+  border: 1px solid #a89880;
+  clip-path: polygon(3% 0, 100% 0, 100% 78%, 92% 100%, 0 100%, 0 12%);
+}
+
+.archiv-fragment--dokumentfragment .archiv-fragment__content {
+  justify-content: flex-end;
+  padding-bottom: 0.75rem;
+}
+
+.archiv-fragment--dokumentfragment .archiv-fragment__excerpt {
+  border-left: 1px solid rgba(92, 85, 76, 0.28);
+  padding-left: 0.6rem;
+}
+
+/* Digitaler Ausdruck */
+.archiv-fragment--digitaler-datensatz {
+  font-variant-numeric: tabular-nums;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 1.05rem,
+      rgba(42, 37, 32, 0.05) 1.05rem,
+      rgba(42, 37, 32, 0.05) 1.07rem
+    ),
+    #d9d4cb;
+  border: 1px solid #a8a094;
+}
+
+.archiv-fragment--digitaler-datensatz .archiv-fragment__body {
   font-family: var(--font-sans);
-  font-size: 0.75rem;
-  color: var(--color-ink-muted);
+  font-size: 0.84rem;
+  letter-spacing: 0.01em;
+}
+
+/* Leere Lücke — kein gestrichelter Placeholder-Rand */
+.archiv-fragment--ueberlieferungsluecke {
+  background: #ebe6dc;
+  border: 1px solid transparent;
+}
+
+.archiv-fragment--ueberlieferungsluecke .archiv-fragment__content {
+  align-items: center;
   text-align: center;
-  padding: 1rem;
+  padding-right: 1.05rem;
+}
+
+.archiv-fragment--ueberlieferungsluecke .archiv-fragment__body {
+  color: var(--color-ink-muted);
+  font-size: 0.9rem;
+}
+
+.archiv-fragment--ueberlieferungsluecke .archiv-fragment__art {
+  opacity: 0.75;
+}
+
+/* Projektion */
+.archiv-fragment--projection {
+  max-height: none;
+  height: 100%;
+  aspect-ratio: 4 / 3;
+}
+
+.archiv-fragment--projection .archiv-fragment__art {
+  top: 1vmin;
+  right: 1.2vmin;
+  font-size: 1.1vmin;
+}
+
+.archiv-fragment--projection .archiv-fragment__content {
+  padding: 2vmin 2.2vmin;
+  padding-right: 5vmin;
+}
+
+.archiv-fragment--projection .archiv-fragment__body {
+  font-size: 2.35vmin;
+  line-height: 1.3;
+}
+
+.archiv-fragment--projection .archiv-fragment__excerpt {
+  font-size: 2vmin;
+  line-height: 1.4;
+  -webkit-line-clamp: 5;
+}
+
+.archiv-fragment--projection .archiv-fragment__sheet {
+  width: 76%;
+  height: 76%;
+  box-shadow: 0.3vmin 0.4vmin 0 rgba(0, 0, 0, 0.12);
+}
+
+.archiv-fragment--projection .archiv-fragment__sheet .archiv-fragment__body {
+  font-size: 1.9vmin;
+}
+
+.archiv-fragment--projection.archiv-fragment--digitaler-datensatz .archiv-fragment__body {
+  font-size: 2vmin;
+}
+
+.archiv-fragment--projection.archiv-fragment--ueberlieferungsluecke .archiv-fragment__body {
+  font-size: 2.1vmin;
+}
+
+.projection-view--dark .archiv-fragment {
+  color: #f2ebe0;
+  background: #3a342c;
+}
+
+.projection-view--dark .archiv-fragment__art {
+  color: rgba(242, 235, 224, 0.55);
+}
+
+.projection-view--dark .archiv-fragment__body,
+.projection-view--dark .archiv-fragment__excerpt {
+  color: #f5efe6;
+}
+
+.projection-view--dark .archiv-fragment--archivvermerk {
+  background:
+    linear-gradient(135deg, rgba(255, 248, 235, 0.07) 0%, transparent 45%),
+    #3f3830;
+  border-color: rgba(255, 248, 235, 0.22);
+  border-left-color: #d98989;
+}
+
+.projection-view--dark .archiv-fragment--bestandsnotiz {
+  background: #2f2a24;
+}
+
+.projection-view--dark .archiv-fragment__sheet {
+  background: #4a4238;
+  border-color: rgba(255, 248, 235, 0.25);
+  box-shadow: 0.3vmin 0.4vmin 0 rgba(0, 0, 0, 0.35);
+}
+
+.projection-view--dark .archiv-fragment--dokumentfragment {
+  background: #3c352d;
+  border-color: rgba(255, 248, 235, 0.28);
+}
+
+.projection-view--dark .archiv-fragment--dokumentfragment .archiv-fragment__excerpt {
+  border-left-color: rgba(242, 235, 224, 0.35);
+}
+
+.projection-view--dark .archiv-fragment--digitaler-datensatz {
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2vmin,
+      rgba(255, 248, 235, 0.06) 2vmin,
+      rgba(255, 248, 235, 0.06) 2.05vmin
+    ),
+    #353029;
+  border-color: rgba(255, 248, 235, 0.25);
+}
+
+.projection-view--dark .archiv-fragment--ueberlieferungsluecke {
+  background: #322c25;
+  border-color: transparent;
+}
+
+.projection-view--dark .archiv-fragment--ueberlieferungsluecke .archiv-fragment__body {
+  color: rgba(242, 235, 224, 0.62);
 }
 
 .akte-card__meta {
@@ -927,13 +1194,6 @@ body.projection-view.projection-view--light {
   width: 100%;
   aspect-ratio: 4 / 3;
   object-fit: cover;
-  border-radius: 2px;
-}
-
-.memory-exhibit__image-placeholder {
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  background: var(--projection-image-placeholder);
   border-radius: 2px;
 }
 

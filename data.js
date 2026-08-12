@@ -6,13 +6,56 @@
  * So ergänzt du später eigene Inhalte:
  * 1. Neues Bild: Datei in den Ordner assests/ legen und neuen Eintrag in ARCHIV_BILDER anlegen.
  * 2. Weitere Archivlesart zum selben Bild: weiteres Objekt in `varianten` desselben Bild-Eintrags.
- * 3. Akte ohne Bild: Eintrag mit `pfad: null` und passender Variante.
+ * 3. Akte ohne Bild: Eintrag mit `pfad: null` und passender Variante; Darstellung über ARCHIV_AKTENARTEN.
  * 4. Vokabulare: Listen und Profile in KONTROLLIERTE_WERTE erweitern — daraus werden
  *    Objekttyp, Herkunft, Provenienz, Sammlung und Bewertungskriterien erzeugt.
  */
 
 /** Präfix für Archivsignaturen, z. B. AK-1989-014 */
 const ARCHIV_PREFIX = 'AK';
+
+/**
+ * Aktenarten für bildlose Akten (keine hinterlegte Bilddatei).
+ * Gewichte steuern die Zufallsauswahl; Überlieferungslücke ist selten.
+ * vermerk + felder definieren die späteren Inhaltsprofile (ohne UI in diesem Schritt).
+ */
+const ARCHIV_AKTENARTEN = [
+  {
+    key: 'archivvermerk',
+    label: 'Archivvermerk',
+    gewicht: 235,
+    vermerk: 'Bilddokumentation nicht überliefert.',
+    felder: ['archivsignatur', 'materialhinweis'],
+  },
+  {
+    key: 'bestandsnotiz',
+    label: 'Bestandsnotiz',
+    gewicht: 235,
+    vermerk: 'Erfasst ohne visuelle Vorlage.',
+    felder: ['jahr', 'erhaltungszustand'],
+  },
+  {
+    key: 'dokumentfragment',
+    label: 'Dokumentfragment',
+    gewicht: 235,
+    vermerk: 'Nur fragmentarisch überliefert.',
+    felder: ['textauszug'],
+  },
+  {
+    key: 'digitaler-datensatz',
+    label: 'digitaler Datensatz',
+    gewicht: 235,
+    vermerk: 'Digital erschlossen; kein Analogbild.',
+    felder: ['archivsignatur', 'dokumentationsgrad'],
+  },
+  {
+    key: 'ueberlieferungsluecke',
+    label: 'Überlieferungslücke',
+    gewicht: 60,
+    vermerk: 'Lücke im Bestand.',
+    felder: ['dokumentationsgrad', 'fehlendeInformation'],
+  },
+];
 
 
 /**

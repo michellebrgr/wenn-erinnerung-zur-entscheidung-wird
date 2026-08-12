@@ -211,7 +211,7 @@
   }
 
   /**
-   * Rendert eine Spalte mit Akten-Karte und Löschen-Button.
+  
    * @param {Object} akte
    * @returns {string}
    */
@@ -220,7 +220,7 @@
       '<div class="archive-offer-column" role="listitem">' +
       renderAkteCard(akte, { variant: 'selectable' }) +
       '<button type="button" class="btn-memory-delete" data-id="' + escapeHtml(akte.id) + '">' +
-      'Diese Akte löschen' +
+      'Diese Akte verdrängen' +
       '</button>' +
       '</div>'
     );

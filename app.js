@@ -15,7 +15,6 @@
   const memoryReviewGrid = document.getElementById('memory-review-grid');
   const memoryReviewPrev = document.getElementById('memory-review-prev');
   const memoryReviewNext = document.getElementById('memory-review-next');
-  const displacementCancel = document.getElementById('displacement-cancel');
   const resetInstallation = document.getElementById('reset-installation');
   const startScreen = document.getElementById('start-screen');
   const archiveInterface = document.getElementById('archive-interface');
@@ -506,7 +505,6 @@
     setViewMode('start');
     clearMemoryReview();
     openArchiveBtn.addEventListener('click', openArchive);
-    displacementCancel.addEventListener('click', exitDisplacementView);
     memoryReviewPrev.addEventListener('click', showPreviousMemoryReviewPage);
     memoryReviewNext.addEventListener('click', showNextMemoryReviewPage);
     confirmationContinue.addEventListener('click', dismissConfirmation);

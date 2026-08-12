@@ -110,80 +110,276 @@ function generateJahr() {
 }
 
 /**
+ * Liefert die Kontrollwerte oder ein leeres Objekt.
+ * @returns {Object}
+ */
+function getKontrollierteWerte() {
+  return typeof KONTROLLIERTE_WERTE !== 'undefined' ? KONTROLLIERTE_WERTE : {};
+}
+
+/**
  * Wählt zufällig einen Eintrag aus einer Liste in KONTROLLIERTE_WERTE.
- * @param {string} listeKey - Schlüssel in KONTROLLIERTE_WERTE (z. B. „objekttypen“)
+ * @param {string} listeKey - Schlüssel in KONTROLLIERTE_WERTE (z. B. „provenienz“)
  * @returns {string|null}
  */
 function pickFromListe(listeKey) {
-  const listen = typeof KONTROLLIERTE_WERTE !== 'undefined' ? KONTROLLIERTE_WERTE : {};
+  const listen = getKontrollierteWerte();
   return pickRandomOne(listen[listeKey] || []);
 }
 
 /**
- * Wählt zufällig aus einer Zuordnungstabelle; Fallback über '*' oder globale Liste.
- * @param {Object|null} map - Zuordnungstabelle (z. B. sammlungNachKategorie)
- * @param {string} key - Suchschlüssel (z. B. Kategorie oder Herkunft)
- * @param {Array} fallbackListe - Globale Fallback-Liste
+ * Wählt eine gültige Kategorie — aus der Variante oder zufällig aus dem Katalog.
+ * @param {Object} [variante]
  * @returns {string|null}
  */
-function pickFromMap(map, key, fallbackListe) {
-  if (!map) {
-    return pickRandomOne(fallbackListe || []);
+function resolveKategorie(variante) {
+  variante = variante || {};
+  const listen = getKontrollierteWerte();
+  const kataloge = listen.kategorienKataloge || {};
+
+  if (variante.kategorie && kataloge[variante.kategorie]) {
+    return variante.kategorie;
   }
 
-  const liste = map[key] || map['*'] || fallbackListe || [];
-  return pickRandomOne(liste);
+  return pickRandomOne(listen.kategorien || Object.keys(kataloge));
 }
 
 /**
- * Erzeugt kohärente Metadaten für eine Akte aus aktenProfile.
- * Sammlung folgt Kategorie, Provenienz folgt Herkunft.
- * @param {Object} variante - Variante mit kategorie
+ * Liefert den Kategoriekatalog für eine Kategorie.
+ * @param {string} kategorie
+ * @returns {Object}
+ */
+function getKategorieKatalog(kategorie) {
+  const listen = getKontrollierteWerte();
+  const kataloge = listen.kategorienKataloge || {};
+  return kataloge[kategorie] || {};
+}
+
+/**
+ * Ersetzt Platzhalter in einer Vorlage durch Bausteinwerte.
+ * @param {string} template
+ * @param {Object} bausteine
+ * @returns {string}
+ */
+function fillTemplate(template, bausteine) {
+  return String(template || '')
+    .replace(/\{objekttyp\}/g, bausteine.objekttyp || '')
+    .replace(/\{motiv\}/g, bausteine.motiv || '')
+    .replace(/\{ort\}/g, bausteine.ort || '');
+}
+
+/**
+ * Großschreibung des ersten Zeichens.
+ * @param {string} text
+ * @returns {string}
+ */
+function capitalizeFirst(text) {
+  if (!text) {
+    return text;
+  }
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+/**
+ * Zieht kohärente Bausteine aus dem Katalog einer Kategorie.
+ * @param {string} kategorie
+ * @param {Object} [options] - Bereits gesetzte Feldwerte
+ * @returns {Object}
+ */
+function pickKategorieBausteine(kategorie, options) {
+  options = options || {};
+  const katalog = getKategorieKatalog(kategorie);
+
+  return {
+    kategorie: kategorie,
+    objekttyp: options.objekttyp !== undefined
+      ? options.objekttyp
+      : pickRandomOne(katalog.objekttypen || []),
+    motiv: options.motiv !== undefined
+      ? options.motiv
+      : pickRandomOne(katalog.motive || []),
+    ort: options.ort !== undefined
+      ? options.ort
+      : pickRandomOne(katalog.orte || []),
+    erhaltungszustand: options.erhaltungszustand !== undefined
+      ? options.erhaltungszustand
+      : pickRandomOne(katalog.erhaltungszustaende || []),
+    fehlendeInformation: options.fehlendeInformation !== undefined
+      ? options.fehlendeInformation
+      : pickRandomOne(katalog.fehlendeInformationen || []),
+    materialhinweis: options.materialhinweis !== undefined
+      ? options.materialhinweis
+      : pickRandomOne(katalog.materialhinweise || []),
+    sammlung: options.sammlung !== undefined
+      ? options.sammlung
+      : pickRandomOne(katalog.sammlungen || []),
+    institutionelleRelevanz: options.institutionelleRelevanz !== undefined
+      ? options.institutionelleRelevanz
+      : pickRandomOne(katalog.institutionelleRelevanz || []),
+  };
+}
+
+/**
+ * Erzeugt einen Aktentitel aus Titelstrukturen und Bausteinen.
+ * @param {Object} bausteine
+ * @returns {string|null}
+ */
+function generateAktenTitel(bausteine) {
+  const listen = getKontrollierteWerte();
+  const struktur = pickRandomOne(listen.titelstrukturen || []);
+  if (!struktur || !bausteine.objekttyp) {
+    return null;
+  }
+  return capitalizeFirst(fillTemplate(struktur, bausteine));
+}
+
+/**
+ * Erzeugt eine Kontextbeschreibung aus Satzanfängen, Verbindungen und Bausteinen.
+ * @param {Object} bausteine
+ * @returns {string|null}
+ */
+function generateKontextbeschreibung(bausteine) {
+  const listen = getKontrollierteWerte();
+  const anfang = pickRandomOne(listen.kontextSatzanfaenge || []);
+  const verbindung = pickRandomOne(listen.kontextVerbindungen || []);
+  const motiv = bausteine.motiv;
+  const ort = bausteine.ort;
+
+  if (!anfang || !motiv) {
+    return null;
+  }
+
+  const needsContinuation = [
+    'und gibt Einblick in',
+    'und dokumentiert zugleich',
+    'und lässt Rückschlüsse auf',
+    'und verweist auf',
+  ].indexOf(verbindung) !== -1;
+
+  let text;
+  if (needsContinuation && ort) {
+    text = anfang + ' ' + motiv + ' ' + verbindung + ' ' + ort + '.';
+  } else if (needsContinuation) {
+    text = anfang + ' ' + motiv + '.';
+  } else if (verbindung) {
+    text = anfang + ' ' + motiv + ' und ' + verbindung + '.';
+  } else {
+    text = anfang + ' ' + motiv + '.';
+  }
+
+  if (bausteine.fehlendeInformation && Math.random() < 0.7) {
+    text += ' ' + capitalizeFirst(bausteine.fehlendeInformation) + '.';
+  }
+
+  return text;
+}
+
+/**
+ * Erzeugt eine Kurzbeschreibung für den Erinnerungsraum.
+ * @param {Object} bausteine
+ * @returns {string|null}
+ */
+function generateKurzbeschreibung(bausteine) {
+  const listen = getKontrollierteWerte();
+  const struktur = pickRandomOne(listen.kurzbeschreibungStrukturen || []);
+  if (!struktur || !bausteine.motiv) {
+    return null;
+  }
+  return fillTemplate(struktur, bausteine);
+}
+
+/**
+ * Erzeugt Titel, Kontext- und Kurzbeschreibung für bildlose Akten.
+ * @param {Object} bausteine
+ * @returns {{ titel: string|null, kontextbeschreibung: string|null, kurzbeschreibung: string|null }}
+ */
+function generateAktenTexte(bausteine) {
+  return {
+    titel: generateAktenTitel(bausteine),
+    kontextbeschreibung: generateKontextbeschreibung(bausteine),
+    kurzbeschreibung: generateKurzbeschreibung(bausteine),
+  };
+}
+
+/**
+ * Nimmt options-Wert, sonst Varianten-Wert, sonst Fallback.
+ * @param {Object} options
+ * @param {Object} variante
+ * @param {string} key
+ * @param {*} fallback
+ * @returns {*}
+ */
+function pickCuratedOrFallback(options, variante, key, fallback) {
+  if (options && options[key] !== undefined) {
+    return options[key];
+  }
+  if (variante && variante[key] !== undefined) {
+    return variante[key];
+  }
+  return typeof fallback === 'function' ? fallback() : fallback;
+}
+
+/**
+ * Erzeugt kohärente Metadaten für eine Akte aus dem Kategoriekatalog.
+ * Kuratierte Variantenfelder (Bildakten) haben Vorrang vor Zufallsauswahl.
+ * @param {Object} variante - Variante mit kategorie und optionalen Metadaten
  * @param {Object} [options] - Bereits gespeicherte Feldwerte
- * @returns {{ objekttyp: string|null, herkunft: string|null, provenienz: string|null, sammlung: string|null }}
+ * @returns {{ kategorie: string|null, objekttyp: string|null, herkunft: string|null, provenienz: string|null, sammlung: string|null, erhaltungszustand: string|null, dokumentationsgrad: string|null, motiv: string|null, ort: string|null, fehlendeInformation: string|null, materialhinweis: string|null, institutionelleRelevanz: string|null }}
  */
 function generateAktenMetadaten(variante, options) {
   options = options || {};
   variante = variante || {};
 
-  const listen = typeof KONTROLLIERTE_WERTE !== 'undefined' ? KONTROLLIERTE_WERTE : {};
-  const profile = pickRandomOne(listen.aktenProfile || []);
+  const kategorie = options.kategorie !== undefined
+    ? options.kategorie
+    : resolveKategorie(variante);
 
-  if (!profile) {
-    const herkunft = options.herkunft !== undefined ? options.herkunft : pickFromListe('herkunft');
-    return {
-      objekttyp: options.objekttyp !== undefined ? options.objekttyp : pickFromListe('objekttypen'),
-      herkunft: herkunft,
-      provenienz: options.provenienz !== undefined ? options.provenienz : pickFromListe('provenienz'),
-      sammlung: options.sammlung !== undefined ? options.sammlung : pickFromListe('sammlung'),
-    };
-  }
+  const curatedOverrides = {
+    objekttyp: pickCuratedOrFallback(options, variante, 'objekttyp', undefined),
+    sammlung: pickCuratedOrFallback(options, variante, 'sammlung', undefined),
+    erhaltungszustand: pickCuratedOrFallback(options, variante, 'erhaltungszustand', undefined),
+    institutionelleRelevanz: pickCuratedOrFallback(options, variante, 'institutionelleRelevanz', undefined),
+  };
 
-  const kategorie = variante.kategorie || '*';
-  const objekttyp = options.objekttyp !== undefined
-    ? options.objekttyp
-    : pickRandomOne(profile.objekttypen || listen.objekttypen || []);
-  const herkunft = options.herkunft !== undefined
-    ? options.herkunft
-    : pickRandomOne(profile.herkunft || listen.herkunft || []);
-  const sammlung = options.sammlung !== undefined
-    ? options.sammlung
-    : pickFromMap(profile.sammlungNachKategorie, kategorie, listen.sammlung || []);
-  const provenienz = options.provenienz !== undefined
-    ? options.provenienz
-    : pickFromMap(profile.provenienzNachHerkunft, herkunft, listen.provenienz || []);
+  const bausteine = pickKategorieBausteine(kategorie, {
+    objekttyp: curatedOverrides.objekttyp,
+    sammlung: curatedOverrides.sammlung,
+    erhaltungszustand: curatedOverrides.erhaltungszustand,
+    institutionelleRelevanz: curatedOverrides.institutionelleRelevanz,
+  });
+
+  const provenienz = pickCuratedOrFallback(options, variante, 'provenienz', function () {
+    return pickFromListe('provenienz');
+  });
+  const herkunft = pickCuratedOrFallback(options, variante, 'herkunft', null);
+  const dokumentationsgrad = pickCuratedOrFallback(options, variante, 'dokumentationsgrad', function () {
+    return pickFromListe('dokumentationsgrad');
+  });
 
   return {
-    objekttyp: objekttyp,
+    kategorie: kategorie,
+    objekttyp: bausteine.objekttyp,
     herkunft: herkunft,
     provenienz: provenienz,
-    sammlung: sammlung,
+    sammlung: bausteine.sammlung,
+    erhaltungszustand: bausteine.erhaltungszustand,
+    dokumentationsgrad: dokumentationsgrad,
+    motiv: bausteine.motiv,
+    ort: bausteine.ort,
+    fehlendeInformation: bausteine.fehlendeInformation,
+    materialhinweis: bausteine.materialhinweis,
+    institutionelleRelevanz: bausteine.institutionelleRelevanz,
   };
 }
 
 /**
- * Erzeugt Bewertungskriterien — je Kategorie ein zufälliger Text mit Label.
+ * Erzeugt Bewertungskriterien — Relevanz und Erhaltungszustand aus der Kategorie,
+ * Dokumentationsgrad aus dem allgemeinen Katalog. Kuratierte Werte haben Vorrang.
  * @param {Object} [options]
+ * @param {string} [options.kategorie]
+ * @param {string} [options.erhaltungszustand]
+ * @param {string} [options.institutionelleRelevanz]
+ * @param {string} [options.dokumentationsgrad]
  * @returns {Array<{ label: string, text: string }>}
  */
 function generateBewertungskriterien(options) {
@@ -193,16 +389,25 @@ function generateBewertungskriterien(options) {
     return options.bewertungskriterien;
   }
 
-  const listen = typeof KONTROLLIERTE_WERTE !== 'undefined' ? KONTROLLIERTE_WERTE : {};
-  const kategorien = listen.bewertungskriterienListen || {};
+  const listen = getKontrollierteWerte();
+  const kategorie = options.kategorie || resolveKategorie({});
+  const katalog = getKategorieKatalog(kategorie);
 
-  return Object.keys(kategorien).map(function (label) {
-    const text = pickRandomOne(kategorien[label] || []);
-    if (!text) {
-      return null;
-    }
-    return { label: label, text: text };
-  }).filter(Boolean);
+  const relevanz = options.institutionelleRelevanz !== undefined
+    ? options.institutionelleRelevanz
+    : pickRandomOne(katalog.institutionelleRelevanz || []);
+  const dokumentationsgrad = options.dokumentationsgrad !== undefined
+    ? options.dokumentationsgrad
+    : pickRandomOne(listen.dokumentationsgrad || []);
+  const erhaltungszustand = options.erhaltungszustand !== undefined
+    ? options.erhaltungszustand
+    : pickRandomOne(katalog.erhaltungszustaende || []);
+
+  return [
+    relevanz ? { label: 'Institutionelle Relevanz', text: relevanz } : null,
+    dokumentationsgrad ? { label: 'Dokumentationsgrad', text: dokumentationsgrad } : null,
+    erhaltungszustand ? { label: 'Erhaltungszustand', text: erhaltungszustand } : null,
+  ].filter(Boolean);
 }
 
 /**
@@ -410,6 +615,8 @@ function resolveAktenart(ohneBild, options, source) {
 
 /**
  * Erzeugt ein Akten-Objekt aus Bild und Variante.
+ * Bildakten behalten kuratierte Felder aus der Variante; fehlende Metadaten kommen aus dem Katalog.
+ * Bildlose Akten erzeugen Titel, Kontext und Kurzbeschreibung aus Textbausteinen.
  * @param {Object} bild - Eintrag aus ARCHIV_BILDER
  * @param {Object} variante - Variante des Bildes
  * @param {Object} [options]
@@ -419,49 +626,52 @@ function resolveAktenart(ohneBild, options, source) {
  */
 function buildAkte(bild, variante, options) {
   options = options || {};
-  const jahr = options.jahr !== undefined ? options.jahr : generateJahr();
+  variante = variante || {};
+  const jahr = options.jahr !== undefined
+    ? options.jahr
+    : (variante.jahr !== undefined ? variante.jahr : generateJahr());
   const archivsignatur = options.archivsignatur || variante.archivsignatur || generateArchivsignatur(jahr);
   const meta = generateAktenMetadaten(variante, options);
   const ohneBild = !bild || bild.pfad == null;
-  const titel = options.titel !== undefined ? options.titel : (variante.titel || null);
-  const kurzbeschreibung = options.kurzbeschreibung !== undefined
-    ? options.kurzbeschreibung
-    : (variante.kurzbeschreibung || null);
-  const kontextbeschreibung = options.kontextbeschreibung !== undefined
-    ? options.kontextbeschreibung
-    : (variante.kontextbeschreibung || null);
-  const aktenartSource = {
-    objekttyp: meta.objekttyp,
-    materialhinweis: options.materialhinweis,
-    sammlung: meta.sammlung,
-    titel: titel,
-    kurzbeschreibung: kurzbeschreibung,
-    kontextbeschreibung: kontextbeschreibung,
-  };
-  const aktenart = resolveAktenart(ohneBild, options, aktenartSource);
-  const baseId = (bild && bild.id ? bild.id : 'ohne-bild') + '--' + (variante.id || 'generiert');
+  const texte = ohneBild
+    ? generateAktenTexte(meta)
+    : {
+      titel: null,
+      kontextbeschreibung: options.kontextbeschreibung !== undefined
+        ? options.kontextbeschreibung
+        : (variante.kontextbeschreibung || null),
+      kurzbeschreibung: null,
+    };
+  const baseId = (bild && bild.id ? bild.id : 'ohne-bild') + '--' + (variante.id || meta.kategorie || 'generiert');
 
   return {
     id: options.unique ? baseId + '--' + randomArchivSuffix() : baseId,
     bildId: bild && bild.id ? bild.id : null,
-    varianteId: variante && variante.id ? variante.id : null,
+    varianteId: variante.id || null,
     archivsignatur: archivsignatur,
-    kategorie: variante.kategorie || null,
-    titel: titel,
+    kategorie: meta.kategorie || variante.kategorie || null,
+    titel: options.titel !== undefined
+      ? options.titel
+      : (ohneBild ? texte.titel : (variante.titel || null)),
     jahr: jahr,
     bild: bild && bild.pfad != null ? bild.pfad : null,
-    aktenart: aktenart,
-    kurzbeschreibung: kurzbeschreibung,
-    kontextbeschreibung: kontextbeschreibung,
+    kurzbeschreibung: options.kurzbeschreibung !== undefined
+      ? options.kurzbeschreibung
+      : (ohneBild ? texte.kurzbeschreibung : (variante.kurzbeschreibung || null)),
+    kontextbeschreibung: options.kontextbeschreibung !== undefined
+      ? options.kontextbeschreibung
+      : (ohneBild ? texte.kontextbeschreibung : (variante.kontextbeschreibung || null)),
     objekttyp: meta.objekttyp,
     herkunft: meta.herkunft,
     provenienz: meta.provenienz,
     sammlung: meta.sammlung,
-    materialhinweis: options.materialhinweis,
-    erhaltungszustand: options.erhaltungszustand,
-    dokumentationsgrad: options.dokumentationsgrad,
-    fehlendeInformation: options.fehlendeInformation,
-    bewertungskriterien: generateBewertungskriterien(options),
+    bewertungskriterien: generateBewertungskriterien({
+      kategorie: meta.kategorie,
+      erhaltungszustand: meta.erhaltungszustand,
+      institutionelleRelevanz: meta.institutionelleRelevanz,
+      dokumentationsgrad: meta.dokumentationsgrad,
+      bewertungskriterien: options.bewertungskriterien,
+    }),
   };
 }
 
@@ -581,11 +791,10 @@ function normalizeAkte(akte) {
     kategorie: src.kategorie || akte.kategorie || akte.category || null,
     titel: titel,
     jahr: jahr,
-    bild: bild,
-    aktenart: aktenart,
-    kurzbeschreibung: kurzbeschreibung,
-    kontextbeschreibung: kontextbeschreibung,
-    objekttyp: objekttyp,
+    bild: src.bild !== undefined ? src.bild : (akte.bild !== undefined ? akte.bild : null),
+    kurzbeschreibung: src.kurzbeschreibung || akte.kurzbeschreibung || akte.shortText || akte.fragment || null,
+    kontextbeschreibung: src.kontextbeschreibung || akte.kontextbeschreibung || null,
+    objekttyp: 'objekttyp' in akte ? akte.objekttyp : (src.objekttyp || akte.objectType || fallbackMeta.objekttyp),
     herkunft: 'herkunft' in akte ? akte.herkunft : (src.herkunft != null ? src.herkunft : (akte.origin || fallbackMeta.herkunft)),
     provenienz: 'provenienz' in akte ? akte.provenienz : (src.provenienz || fallbackMeta.provenienz),
     sammlung: sammlung,
@@ -595,7 +804,7 @@ function normalizeAkte(akte) {
     fehlendeInformation: zusatz.fehlendeInformation,
     bewertungskriterien: 'bewertungskriterien' in akte
       ? akte.bewertungskriterien
-      : (src.bewertungskriterien || generateBewertungskriterien({})),
+      : (src.bewertungskriterien || generateBewertungskriterien({ kategorie: src.kategorie || akte.kategorie })),
   };
 }
 
@@ -622,31 +831,38 @@ function pickRandomOne(arr) {
 }
 
 /**
- * Erzeugt eine bildlose Akte für Auffüllung des Angebots.
- * @param {Array} ohneBild - Bild-Einträge ohne Pfad
+ * Erzeugt eine bildlose Akte vollständig aus Kategoriekatalogen und Textbausteinen.
  * @returns {Object|null}
  */
-function pickRandomOhneBildAkte(ohneBild) {
-  const bild = pickRandomOne(ohneBild);
-  if (!bild || !Array.isArray(bild.varianten) || bild.varianten.length === 0) {
+function pickRandomOhneBildAkte() {
+  const kategorie = resolveKategorie({});
+  if (!kategorie) {
     return null;
   }
 
-  const variante = pickRandomOne(bild.varianten);
+  const variante = {
+    id: 'generiert',
+    kategorie: kategorie,
+  };
+  const bild = {
+    id: 'ohne-bild-' + kategorie.toLowerCase().replace(/\s+/g, '-'),
+    pfad: null,
+  };
+
   return buildAkte(bild, variante, { unique: true });
 }
 
 /**
  * Wählt zufällig mehrere Archivakten aus ARCHIV_BILDER.
- * Pro Angebot zufällig 0–2 bildlose Akten, Rest mit Bild; Reihenfolge gemischt.
+ * Zuerst verfügbare Bilder mit Pfad, dann systemgenerierte bildlose Akten zur Auffüllung auf count.
  * Bilder im Erinnerungsraum werden ausgeschlossen; bildlose Akten dürfen mehrfach vorkommen.
  * @param {number} count - Anzahl der Akten
  * @param {Array<string>} [excludedBildIds] - Bild-IDs mit Pfad, die bereits im Erinnerungsraum sind
  * @returns {Array} Array von vorbereiteten Akten-Objekten
  */
 function pickArchiveAkten(count, excludedBildIds) {
-  if (!Array.isArray(ARCHIV_BILDER) || ARCHIV_BILDER.length === 0) {
-    console.warn('ARCHIV_BILDER ist leer oder nicht definiert.');
+  if (!Array.isArray(ARCHIV_BILDER)) {
+    console.warn('ARCHIV_BILDER ist nicht definiert.');
     return [];
   }
 
@@ -658,9 +874,6 @@ function pickArchiveAkten(count, excludedBildIds) {
   const excluded = new Set(excludedBildIds || []);
   const mitBild = ARCHIV_BILDER.filter(function (b) {
     return b.pfad && !excluded.has(b.id);
-  });
-  const ohneBild = ARCHIV_BILDER.filter(function (b) {
-    return !b.pfad;
   });
 
   const maxOhneBild = Math.min(2, count);
@@ -686,7 +899,7 @@ function pickArchiveAkten(count, excludedBildIds) {
   }
 
   while (akten.length < count) {
-    const akte = pickRandomOhneBildAkte(ohneBild);
+    const akte = pickRandomOhneBildAkte();
     if (!akte) {
       break;
     }

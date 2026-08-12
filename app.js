@@ -15,7 +15,6 @@
   const memoryReviewGrid = document.getElementById('memory-review-grid');
   const memoryReviewPrev = document.getElementById('memory-review-prev');
   const memoryReviewNext = document.getElementById('memory-review-next');
-  const displacementCancel = document.getElementById('displacement-cancel');
   const resetInstallation = document.getElementById('reset-installation');
   const startScreen = document.getElementById('start-screen');
   const archiveInterface = document.getElementById('archive-interface');
@@ -213,7 +212,7 @@
   }
 
   /**
-   * Rendert eine Spalte mit Akten-Karte und Löschen-Button.
+  
    * @param {Object} akte
    * @returns {string}
    */
@@ -222,7 +221,7 @@
       '<div class="archive-offer-column" role="listitem">' +
       renderAkteCard(akte, { variant: 'selectable' }) +
       '<button type="button" class="btn-memory-delete" data-id="' + escapeHtml(akte.id) + '">' +
-      'Diese Akte löschen' +
+      'Diese Akte verdrängen' +
       '</button>' +
       '</div>'
     );
@@ -507,7 +506,6 @@
     setViewMode('start');
     clearMemoryReview();
     openArchiveBtn.addEventListener('click', openArchive);
-    displacementCancel.addEventListener('click', exitDisplacementView);
     memoryReviewPrev.addEventListener('click', showPreviousMemoryReviewPage);
     memoryReviewNext.addEventListener('click', showNextMemoryReviewPage);
     confirmationContinue.addEventListener('click', dismissConfirmation);
@@ -517,6 +515,12 @@
     }
 
     document.addEventListener('keydown', function (event) {
+      if (event.shiftKey && event.key === 'R') {
+        event.preventDefault();
+        handleResetInstallation();
+        return;
+      }
+
       if (viewMode !== 'displacement') {
         return;
       }

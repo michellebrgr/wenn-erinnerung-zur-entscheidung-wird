@@ -138,11 +138,24 @@
   }
 
   /**
+   * Schaltet zwischen Dunkel- und Hellmodus um.
+   */
+  function toggleLightMode() {
+    document.body.classList.toggle('projection-view--light');
+  }
+
+  /**
    * Initialisierung: State abonnieren und bei Änderungen neu rendern.
    */
   function init() {
     subscribe(function (state) {
       renderMemoryRoom(state.memoryRoom);
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.shiftKey && e.key === 'L') {
+        toggleLightMode();
+      }
     });
   }
 

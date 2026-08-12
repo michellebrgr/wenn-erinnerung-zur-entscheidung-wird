@@ -14,6 +14,49 @@
 /** Präfix für Archivsignaturen, z. B. AK-1989-014 */
 const ARCHIV_PREFIX = 'AK';
 
+/**
+ * Aktenarten für bildlose Akten (keine hinterlegte Bilddatei).
+ * Gewichte steuern die Zufallsauswahl; Überlieferungslücke ist selten.
+ * vermerk + felder definieren die späteren Inhaltsprofile (ohne UI in diesem Schritt).
+ */
+const ARCHIV_AKTENARTEN = [
+  {
+    key: 'archivvermerk',
+    label: 'Archivvermerk',
+    gewicht: 235,
+    vermerk: 'Bilddokumentation nicht überliefert.',
+    felder: ['archivsignatur', 'materialhinweis'],
+  },
+  {
+    key: 'bestandsnotiz',
+    label: 'Bestandsnotiz',
+    gewicht: 235,
+    vermerk: 'Erfasst ohne visuelle Vorlage.',
+    felder: ['jahr', 'erhaltungszustand'],
+  },
+  {
+    key: 'dokumentfragment',
+    label: 'Dokumentfragment',
+    gewicht: 235,
+    vermerk: 'Nur fragmentarisch überliefert.',
+    felder: ['textauszug'],
+  },
+  {
+    key: 'digitaler-datensatz',
+    label: 'digitaler Datensatz',
+    gewicht: 235,
+    vermerk: 'Digital erschlossen; kein Analogbild.',
+    felder: ['archivsignatur', 'dokumentationsgrad'],
+  },
+  {
+    key: 'ueberlieferungsluecke',
+    label: 'Überlieferungslücke',
+    gewicht: 60,
+    vermerk: 'Lücke im Bestand.',
+    felder: ['dokumentationsgrad', 'fehlendeInformation'],
+  },
+];
+
 
 /**
  * Kontrollierte Werte — Kataloge und Textbausteine für die automatische Aktengenerierung.

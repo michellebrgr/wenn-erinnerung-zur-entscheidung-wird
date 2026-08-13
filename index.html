@@ -7,37 +7,86 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="archive-view">
-  <header class="site-header">
-    <h1>Wenn Erinnerung zur Entscheidung wird</h1>
-    <p class="intro">
-      Wählen Sie eine der drei Archivakten aus. Ihre Entscheidung erscheint in der Projektionsansicht.
-    </p>
-  </header>
+  <section id="start-screen" class="start-screen" aria-labelledby="start-screen-title">
+    <div class="start-screen__topbar" aria-hidden="true"></div>
+    <div class="start-screen__content">
+      <h1 id="start-screen-title" class="start-screen__title">Archiv</h1>
+      <div class="start-screen__card">
+        <p class="start-screen__welcome">Willkommen im Archiv.</p>
+        <p class="start-screen__lead">
+          <strong>Im Folgenden erhalten Sie Zugriff auf einen begrenzten Archivbestand.</strong>
+        </p>
+        <p class="start-screen__text">
+          Schauen Sie sich die bereitgestellten Akten genau an und wählen Sie diejenige aus,
+          die Ihrer Einschätzung nach in den Erinnerungsraum aufgenommen werden soll.
+        </p>
+        <p class="start-screen__disclaimer">
+          Bei den Akten handelt es sich um fiktive Ereignisse, Informationen und Dokumente, die nicht in der Realität stattgefunden haben.
+        </p>
+  
+        <button type="button" id="open-archive-btn" class="btn-start">Archiv öffnen</button>
+      </div>
+    </div>
+    <div class="start-screen__footerbar" aria-hidden="true"></div>
+  </section>
 
-  <main class="archive-main">
-    <section class="offer-section" id="offer-section" aria-labelledby="offer-heading">
-      <h2 id="offer-heading">Aktuelle Archivakten</h2>
-      <div id="offer-container" class="offer-grid" role="list"></div>
-    </section>
+  <div id="archive-interface" hidden>
+    <div class="archive-shell">
+      <div class="archive-shell__topbar" aria-hidden="true"></div>
+      <div class="archive-shell__content">
+        <h1 class="archive-shell__title">Archiv</h1>
+        <main class="archive-main">
+          <section class="offer-section" id="offer-section" aria-labelledby="offer-heading">
+            <h2 id="offer-heading" class="sr-only">Aktuelle Archivakten</h2>
+            <div id="offer-container" class="offer-grid" role="list"></div>
+          </section>
 
-    <section class="displacement-section" id="displacement-section" hidden aria-labelledby="displacement-heading">
-      <h2 id="displacement-heading">Erinnerungsraum</h2>
-      <p class="displacement-hint">
-        Der Erinnerungsraum ist voll. Wählen Sie eine bestehende Akte, die durch Ihre neue Auswahl ersetzt werden soll.
-      </p>
-      <div id="pending-akte-preview" class="pending-akte-preview" aria-label="Neu ausgewählte Akte"></div>
-      <div id="archive-memory-room" class="archive-memory-room" role="list" aria-label="Gemeinsamer Erinnerungsraum"></div>
-      <button type="button" id="displacement-cancel" class="btn-cancel">Abbrechen</button>
-    </section>
-  </main>
+          <section class="confirmation-section" id="confirmation-section" hidden aria-live="polite">
+            <div class="confirmation-card">
+              <p class="confirmation-card__primary">
+                Die ausgewählte Akte wurde in den Erinnerungsraum aufgenommen.
+              </p>
+              <p class="confirmation-card__secondary">
+                Die beiden nicht ausgewählten Akten wurden aus dem Archiv entfernt.
+                Sie stehen zukünftigen Besucher*innen nicht mehr zur Verfügung.
+              </p>
+              <button type="button" id="confirmation-continue" class="btn-start">Archiv verlassen</button>
+            </div>
+          </section>
 
-  <footer class="site-footer">
-    <p>Projektionsansicht: <a href="projection.html" target="_blank">projection.html</a> im Beamer-Fenster öffnen.</p>
-  </footer>
+          <section class="displacement-section" id="displacement-section">
+            <div class="memory-review" aria-label="Akten im Erinnerungsraum">
+              <button type="button" id="memory-review-prev" class="memory-review__nav memory-review__nav--prev" aria-label="Vorherige Akten">
+                ‹
+              </button>
+              <div id="memory-review-grid" class="offer-grid" role="list" aria-live="polite"></div>
+              <button type="button" id="memory-review-next" class="memory-review__nav memory-review__nav--next" aria-label="Nächste Akten">
+                ›
+              </button>
+            </div>
+          
+          </section>
+        </main>
+      </div>
+      <div class="archive-shell__footerbar" aria-hidden="true"></div>
+    </div>
 
-  <button type="button" id="reset-installation" class="btn-reset" title="Installation zurücksetzen">
-    Installation zurücksetzen
-  </button>
+    <div id="memory-full-modal" class="memory-full-modal" hidden
+         role="dialog" aria-modal="true" aria-labelledby="memory-full-modal-title">
+      <div class="memory-full-modal__backdrop" aria-hidden="true"></div>
+      <div class="memory-full-modal__card">
+        <p id="memory-full-modal-title" class="memory-full-modal__primary">
+          Der Erinnerungsraum ist vollständig belegt.
+        </p>
+        <p class="memory-full-modal__secondary">
+          Um die ausgewählte Akte aufnehmen zu können, muss eine bestehende Akte aus dem Erinnerungsraum verdrängt werden.
+        </p>
+        <button type="button" id="memory-full-modal-confirm" class="btn-start">
+          Verdrängung Starten
+        </button>
+      </div>
+    </div>
+  </div>
 
   <script src="data.js"></script>
   <script src="generator.js"></script>

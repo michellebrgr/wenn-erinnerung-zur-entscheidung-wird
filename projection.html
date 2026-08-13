@@ -6,15 +6,17 @@
   <title>Wenn Erinnerung zur Entscheidung wird — Erinnerungsraum</title>
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="projection-view">
-  <header class="projection-header">
-    <h1>Erinnerungsraum</h1>
-    <p class="projection-subtitle">Wenn Erinnerung zur Entscheidung wird</p>
-  </header>
-
-  <main class="projection-main">
-    <div id="memory-room" class="memory-room" role="list" aria-label="Öffentlicher Erinnerungsraum"></div>
-  </main>
+<body class="projection-view projection-view--dark">
+  <div class="projection-shell">
+    <div class="projection-shell__topbar" aria-hidden="true"></div>
+    <div class="projection-shell__content">
+      <h1 class="projection-shell__title">Erinnerungsraum</h1>
+      <main class="projection-main">
+        <div id="memory-room" class="memory-room" role="list" aria-label="Öffentlicher Erinnerungsraum"></div>
+      </main>
+    </div>
+    <div class="projection-shell__footerbar" aria-hidden="true"></div>
+  </div>
 
   <script src="data.js"></script>
   <script src="generator.js"></script>

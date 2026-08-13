@@ -113,7 +113,7 @@ body.archive-view {
   flex-shrink: 0;
   margin: 0;
   font-family: var(--font-sans);
-  font-size: clamp(2rem, 4.5vh, 3rem);
+  font-size: 3rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -598,120 +598,16 @@ body.archive-view {
   opacity: 0.55;
 }
 
-/* Projektion */
-.archiv-fragment--projection {
-  max-height: none;
-  height: 100%;
-  aspect-ratio: 4 / 3;
-  padding: 0.9vmin;
+.memory-exhibit__figure .archiv-fragment__art {
+  font-size: max(0.5rem, 1vmin);
 }
 
-.archiv-fragment--projection .archiv-fragment__art {
-  top: 0.8vmin;
-  right: 1vmin;
-  font-size: 1vmin;
+.memory-exhibit__figure .archiv-fragment__body {
+  font-size: max(0.92rem, 1.7vmin);
 }
 
-.archiv-fragment--projection .archiv-fragment__content {
-  padding: 1.8vmin 1.6vmin;
-  padding-right: 4.5vmin;
-}
-
-.archiv-fragment--projection .archiv-fragment__body {
-  font-size: 2.3vmin;
-  line-height: 1.3;
-}
-
-.archiv-fragment--projection .archiv-fragment__excerpt {
-  font-size: 2vmin;
-  line-height: 1.4;
-  -webkit-line-clamp: 4;
-}
-
-.archiv-fragment--projection .archiv-fragment__sheet {
-  box-shadow:
-    0 0.15vmin 0 rgba(255, 252, 245, 0.2) inset,
-    0.25vmin 0.4vmin 0.8vmin rgba(0, 0, 0, 0.18);
-}
-
-.archiv-fragment--projection.archiv-fragment--bestandsnotiz .archiv-fragment__sheet {
-  width: 66%;
-  height: 68%;
-}
-
-.archiv-fragment--projection.archiv-fragment--bestandsnotiz .archiv-fragment__body {
-  font-size: 1.85vmin;
-}
-
-.archiv-fragment--projection.archiv-fragment--digitaler-datensatz .archiv-fragment__body {
-  font-size: 1.95vmin;
-}
-
-.archiv-fragment--projection.archiv-fragment--ueberlieferungsluecke .archiv-fragment__body {
-  font-size: 2vmin;
-}
-
-.projection-view--dark .archiv-fragment {
-  color: #f2ebe0;
-  background:
-    linear-gradient(160deg, #2c2721 0%, #241f1a 100%);
-}
-
-.projection-view--dark .archiv-fragment__art {
-  color: rgba(242, 235, 224, 0.5);
-}
-
-.projection-view--dark .archiv-fragment__body,
-.projection-view--dark .archiv-fragment__excerpt {
-  color: #f7f1e8;
-}
-
-.projection-view--dark .archiv-fragment__sheet {
-  background: #4f463b;
-  border-color: rgba(255, 248, 235, 0.28);
-  box-shadow:
-    0 0.15vmin 0 rgba(255, 248, 235, 0.08) inset,
-    0.25vmin 0.45vmin 0.9vmin rgba(0, 0, 0, 0.4);
-}
-
-.projection-view--dark .archiv-fragment--archivvermerk .archiv-fragment__sheet {
-  background:
-    linear-gradient(135deg, rgba(255, 248, 235, 0.1) 0%, transparent 45%),
-    #564c40;
-  border-left-color: #d98989;
-}
-
-.projection-view--dark .archiv-fragment--bestandsnotiz .archiv-fragment__sheet {
-  background: #5a5044;
-}
-
-.projection-view--dark .archiv-fragment--dokumentfragment .archiv-fragment__sheet {
-  background: #52483d;
-}
-
-.projection-view--dark .archiv-fragment--dokumentfragment .archiv-fragment__excerpt {
-  border-left-color: rgba(242, 235, 224, 0.35);
-}
-
-.projection-view--dark .archiv-fragment--digitaler-datensatz .archiv-fragment__sheet {
-  background:
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 1.9vmin,
-      rgba(255, 248, 235, 0.07) 1.9vmin,
-      rgba(255, 248, 235, 0.07) 1.95vmin
-    ),
-    #4a4137;
-  border-color: rgba(255, 248, 235, 0.3);
-}
-
-.projection-view--dark .archiv-fragment--ueberlieferungsluecke {
-  background: linear-gradient(180deg, #2a251f 0%, #211d18 100%);
-}
-
-.projection-view--dark .archiv-fragment--ueberlieferungsluecke .archiv-fragment__body {
-  color: rgba(242, 235, 224, 0.58);
+.memory-exhibit__figure .archiv-fragment__excerpt {
+  font-size: max(0.84rem, 1.55vmin);
 }
 
 .akte-card__meta {
@@ -1074,13 +970,14 @@ body.archive-view {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 2rem 2.5rem 2.5rem;
+  padding: 1.25rem 2.5rem 1.25rem;
 }
 
 .start-screen__title {
-  margin: 0 0 2rem;
+  flex-shrink: 0;
+  margin: 0;
   font-family: var(--font-sans);
-  font-size: clamp(2.5rem, 6vw, 4rem);
+  font-size: 3rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;

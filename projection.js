@@ -174,7 +174,7 @@
 
     return (
       '<figure class="memory-exhibit__figure">' +
-      renderArchivDarstellung(akte, 'projection') +
+      renderArchivDarstellung(akte, 'card') +
       '</figure>'
     );
   }

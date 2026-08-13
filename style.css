@@ -196,8 +196,8 @@ body.archive-view {
   padding: 1.75rem 1.5rem 1.5rem calc(var(--binder-width) + 1.25rem);
   box-shadow: 0 2px 6px var(--color-shadow);
   cursor: default;
-  min-height: 34rem;
-  overflow: hidden;
+  min-height: 0;
+  overflow: visible;
 }
 
 /* Untere Seite im Stapel */
@@ -322,7 +322,7 @@ body.archive-view {
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: clamp(200px, 22vh, 260px);
+  height: clamp(160px, 18vh, 220px);
 }
 
 .akte-card__image {
@@ -660,7 +660,7 @@ body.archive-view {
   margin: 0 0 0.75rem;
   padding: 0;
   font-family: var(--font-sans);
-  font-size: 0.75rem;
+  font-size: 0.7rem;
 }
 
 .akte-card__meta li {
@@ -674,8 +674,8 @@ body.archive-view {
 }
 
 .akte-card__fragment {
-  margin: 0 0 1rem;
-  font-size: 0.95rem;
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
   color: var(--color-ink);
 }
 
@@ -709,6 +709,11 @@ body.archive-view {
 .criterion__value {
   font-size: 0.75rem;
   color: var(--color-ink);
+}
+
+.criterion:last-child .criterion__value {
+  color: var(--color-stamp);
+  font-weight: 600;
 }
 
 .akte-card__action-hint {

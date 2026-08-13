@@ -76,10 +76,6 @@ Die Kontextbeschreibung wird innerhalb der ausführlichen Aktenansicht angezeigt
 - Verwaltung und Infrastruktur 
 - Wissensarbeit und technische Medien 
 
-### Institutionelle Relevanz:
-
-- von lokaler Bedeutung
-
 ## Alltagskultur 
 
 ### Sammlungen: 
@@ -87,10 +83,6 @@ Die Kontextbeschreibung wird innerhalb der ausführlichen Aktenansicht angezeigt
 - Familien und private Fotografien
 - Wohnen, Freizeit und soziale Beziehungen 
 - Medien und Alltagsobjekte
-
-### Institutionelle Relevanz:
-
-- von regionaler Vedeutung 
 
 ## Migration
 
@@ -100,10 +92,6 @@ Die Kontextbeschreibung wird innerhalb der ausführlichen Aktenansicht angezeigt
 - Korrespondenz und transnationale Beziehungen
 - Institutionelle Erfassung und Zugehörigkeit
 
-### Institutionelle Relevanz:
-
-- von überregionalen Relevanz 
-
 ## Protest 
 
 ### Sammlungen:
@@ -111,10 +99,6 @@ Die Kontextbeschreibung wird innerhalb der ausführlichen Aktenansicht angezeigt
 - Demonstrationen und politische Versammlungen 
 - Politische Kommunikation und Protestmedien
 - Spuren, Kontrolle und Unsichtbarmachung 
-
-### Institutionelle Relevanz:
-
-- von gesellschaftlicher Bedeutung 
 
 ## Öffentlicher Raum 
 
@@ -124,10 +108,6 @@ Die Kontextbeschreibung wird innerhalb der ausführlichen Aktenansicht angezeigt
 - Öffentliche Einrichtungen und Versorgung
 - Ereignisse, Kommunikation und urbane Spuren 
 
-### Institutionelle Relevanz: 
-
-- von wissenschaftlicher Bedeutung 
-
 ## Kultur und Rituale 
 
 ### Sammlungen: 
@@ -136,26 +116,63 @@ Die Kontextbeschreibung wird innerhalb der ausführlichen Aktenansicht angezeigt
 - Feste, Zeremonien und Gedenkkultur
 - Materielle und schriftliche Überlieferungen 
 
-### Institutionelle Relevanz: 
+# Institutionelle Relevanz
 
-- von medienhistorischer Bedeutung
-- von sammlungsgeschichtlciher Bedeutung
+Die institutionelle Relevanz wird als Einschätzung des Archivsystems verstanden. Sie wird nicht manuell als feste Bedeutung der Akte vergeben und ist nicht unmittelbar an eine bestimmte Kategorie gekoppelt.
 
+Das System leitet die institutionelle Relevanz aus festgelegten Eigenschaften der jeweiligen Akte ab. Dadurch entsteht eine scheinbar institutionelle Bewertung, die den Besucher*innen vor ihrer eigenen Auswahl angezeigt wird.
+
+Die Bewertung stellt keine objektive Aussage über den kulturellen oder gesellschaftlichen Wert einer Erinnerung dar. Sie bildet ausschließlich die innerhalb des Systems festgelegte Bewertungs- und Selektionslogik ab.
+
+## Bewertungsstufen
+
+Das System unterscheidet zwischen den Stufen hoch, mittel und gering.
+
+## Aufnahmehinweis
+
+Aus der ermittelten Bewertungsstufe wird ein Aufnahmehinweis abgeleitet:
+
+- hoch = Aufnahme empfohlen
+- mittel = Aufnahme prüfenswert
+- gering = Aufnahme nicht priorisiert
+
+Die Besucher*innen können sich gegen diesen Hinweis entscheiden.
+
+## Grundlage der Bewertung
+
+Die institutionelle Relevanz wird aus mehreren Merkmalen der Akte abgeleitet. Dazu zählen:
+
+- institutionelle / sammlungsbezogene Passung
+- Dokumentationsgrad
+- Erhaltungs- / Bewahrungsbedarf
+
+Die einzelnen Merkmale werden intern gewichtet und zu einer Gesamtbewertung zusammengeführt. Der daraus entstehende Zahlenwert wird im Interface nicht angezeigt. Sichtbar sind ausschließlich die daraus abgeleitete institutionelle Relevanz sowie der Aufnahmehinweis.
 
 # Allgemeine Kataloge
 
-Die folgenden Kataloge werden unabhängig von den Kategoriene genutzt.
+Die folgenden Kataloge werden unabhängig von den Kategorien genutzt.
 
 ## Provenienz
 
+Die Provenienz beschreibt den Überlieferungsweg der Akte, nicht ihren geografischen Entstehungsort. Der Katalog gilt kategorieübergreifend.
+
+- Überlieferung durch private Nachlässe; Zeitpunkt der Archivaufnahme nicht dokumentiert.
+- Erhalt über kommunale Sammlung; vorheriger Besitz unbekannt.
+- Übernahme aus institutionellem Archivbestand ohne vollständige Herkunftsangabe.
+- Fund im Rahmen einer Bestandsaufnahme; ursprünglicher Erwerb nicht rekonstruierbar.
+- Weitergabe im Familienkreis; spätere Ablage im Archiv ohne Protokoll.
+- Digitalisierung aus einem unsortierten Vorlass; analoge Vorlage nicht mehr vorhanden.
+- Sekundärüberlieferung über mündliche Erzählung; schriftliche Belege fragmentarisch.
+- Zugang über Schenkung; genaue Übernahmebedingungen nicht überliefert.
 
 ## Dokumentationsgrad
 
+Der Dokumentationsgrad beschreibt, wie vollständig die Akte erschlossen ist. Der Katalog gilt kategorieübergreifend.
 
-## Erhaltungszustand
-
-
-## Objekttyp
+- gut dokumentiert
+- teilweise dokumentiert
+- spärlich dokumentiert
+- undokumentiert
 
 
 # Textbausteine
@@ -599,35 +616,27 @@ Die Titel der systemgenerierten Akten werden aus dem Objekttyp und einem inhaltl
 
 Mögliche Strukturen sind:
 
-- `[Objekttyp] zu [Motiv oder Inhalt]`
+- `[Objekttyp]: [Motiv oder Inhalt]`
 - `[Objekttyp] aus [Ort oder Kontext]`
-- `[Objekttyp] mit Bezug zu [Motiv oder Inhalt]`
-- `[Objekttyp] eines nicht dokumentierten Ereignisses`
+- `[Objekttyp] mit unbekanntem Zusammenhang`
+- `[Objekttyp] aus einem nicht vollständig dokumentierten Bestand`
 - `[Objekttyp] aus einem fragmentarisch überlieferten Bestand`
 
 # Bildung der Kontextbeschreibung
 
-Die Kontextbeschreibung wird aus mehreren Bausteinen zusammengesetzt. Sie beschreibt das Objekt, ordnet es einem Zusammenhang zu und verweist gegebenenfalls auf fehlende Informationen.
+Die Kontextbeschreibung umfasst höchstens zwei kurze Sätze. Der erste Satz beschreibt, worauf das überlieferte Objekt verweist oder was es dokumentiert. Optional folgt ein zweiter Satz mit einer fehlenden oder nicht überlieferten Information.
 
-## Mögliche Satzanfänge
+*Grundstruktur:*
 
-- Das überlieferte Objekt dokumentiert
-- Das Dokument verweist auf
-- Die Aufnahme zeigt
-- Die erhaltene Unterlage beschreibt
-- Das Fragment steht im Zusammenhang mit
-- Das Objekt wurde einem Bestand zugeordnet, der
-- Die genaue Funktion des Objekts ist nicht vollständig überliefert. Es verweist jedoch auf
+- Das überlieferte Material verweist auf [Motiv].
+- Das Dokument verweist auf [Motiv].
+- Die Aufnahme dokumentiert [Motiv].
+- Die Unterlage verweist auf [Motiv].
+- Das Objekt steht im Zusammenhang mit [Motiv].
 
-## Mögliche Verbindungen
+*Optional:*
 
-- und gibt Einblick in
-- und dokumentiert zugleich
-- und lässt Rückschlüsse auf
-- und verweist auf
-- steht jedoch nur fragmentarisch zur Verfügung
-- konnte bisher keinem eindeutigen Ereignis zugeordnet werden
-- wurde aufgrund seines dokumentarischen Charakters in die Sammlung aufgenommen
+- [Fehlende Information].
 
 # Bildung der Kurzbeschreibung für den Erinnerungsraum
 
@@ -665,7 +674,7 @@ Durch die zufällige Kombination entstehen unterschiedliche Akten. Die Begrenzun
 
 Die Auswahl der Metadaten erfolgt abhängig von der gewählten Kategorie.
 
-Für jede Kategorie stehen eigene Sammlungen und institutionelle Relevanzen zur Verfügung. Die übrigen Metadaten werden aus allgemeinen Katalogen ergänzt und anschließend zu einer vollständigen Akte zusammengeführt.
+Für jede Kategorie stehen eigene Sammlungen zur Verfügung. Die institutionelle Relevanz entsteht aus dem internen Scoring und ist nicht an eine Kategorie gekoppelt. Die übrigen Metadaten werden aus allgemeinen und kategoriespezifischen Katalogen ergänzt und anschließend zu einer vollständigen Akte zusammengeführt.
 
 Dadurch entstehen unterschiedliche, aber in sich konsistente Akten, die einem archivischen Dokumentationsstil folgen.
 

@@ -113,12 +113,17 @@
   }
 
   /**
-   * Bereich 5: Bewertungskriterien mit Kategorie und Text.
+   * Bereich 5: Institutionelle Relevanz und Aufnahmehinweis.
    * @param {Object} akte
    * @returns {string}
    */
   function renderCriteria(akte) {
-    const kriterien = Array.isArray(akte.bewertungskriterien) ? akte.bewertungskriterien : [];
+    const kriterien = Array.isArray(akte.bewertungskriterien) && akte.bewertungskriterien.length
+      ? akte.bewertungskriterien
+      : [
+          { label: 'Institutionelle Relevanz', text: akte.institutionelleRelevanz },
+          { label: 'Aufnahmehinweis', text: akte.aufnahmehinweis },
+        ].filter(function (item) { return item.text; });
 
     if (kriterien.length === 0) {
       return '<li class="criterion"><span class="criterion__value">—</span></li>';
@@ -139,7 +144,7 @@
   }
 
   /**
-   * Bereich 4: Objekttyp, Herkunft, Provenienz, Sammlung.
+   * Bereich 4: ausführliche Archivdaten laut Taxonomie.
    * @param {Object} akte
    * @param {boolean} compact - Weniger Felder für kompakte Darstellung
    * @returns {string}
@@ -149,23 +154,65 @@
       ? [
           ['Objekttyp', akte.objekttyp],
           ['Herkunft', akte.herkunft],
+          ['Dokumentationsgrad', akte.dokumentationsgrad],
+          ['Erhaltungszustand', akte.erhaltungszustand],
         ]
       : [
           ['Objekttyp', akte.objekttyp],
+          ['Aktenart', akte.aktenartLabel || null],
           ['Herkunft', akte.herkunft],
           ['Provenienz', akte.provenienz],
           ['Sammlung', akte.sammlung],
+          ['Dokumentationsgrad', akte.dokumentationsgrad],
+          ['Erhaltungszustand', akte.erhaltungszustand],
+          ['Materialhinweis', akte.materialhinweis],
+          ['Fehlende Informationen', akte.fehlendeInformation],
         ];
 
-    const items = fields.map(function (field) {
-      return '<li><strong>' + escapeHtml(field[0]) + '</strong>: ' + escapeHtml(formatValue(field[1])) + '</li>';
-    });
+    const items = fields
+      .filter(function (field) {
+        if (field[0] === 'Aktenart' && !akte.aktenart) {
+          return false;
+        }
+        if (
+          (field[0] === 'Materialhinweis' || field[0] === 'Fehlende Informationen') &&
+          (field[1] == null || field[1] === '' || field[1] === 'nicht angegeben') &&
+          akte.bild
+        ) {
+          return false;
+        }
+        return true;
+      })
+      .map(function (field) {
+        return '<li><strong>' + escapeHtml(field[0]) + '</strong>: ' + escapeHtml(formatValue(field[1])) + '</li>';
+      });
 
     return '<ul class="akte-card__meta" aria-label="Archivdaten">' + items.join('') + '</ul>';
   }
 
   /**
-   * Rendert eine Archivkarte mit fünf Bereichen.
+   * Lesbares Label der Aktenart.
+   * @param {Object} akte
+   * @returns {string|null}
+   */
+  function resolveAktenartLabel(akte) {
+    if (!akte || !akte.aktenart) {
+      return null;
+    }
+    if (typeof getArchivAktenarten === 'function') {
+      const key = typeof canonicalAktenartKey === 'function'
+        ? canonicalAktenartKey(akte.aktenart)
+        : akte.aktenart;
+      const art = getArchivAktenarten().find(function (entry) {
+        return entry.key === key;
+      });
+      return art ? art.label : akte.aktenart;
+    }
+    return akte.aktenart;
+  }
+
+  /**
+   * Rendert eine Archivkarte mit institutioneller Einordnung.
    * @param {Object} akte
    * @param {Object} options
    * @param {string} options.variant - 'selectable', 'pending' oder 'review'
@@ -189,6 +236,12 @@
       '<span class="akte-card__binder-hole"></span>' +
       '<span class="akte-card__binder-hole"></span>' +
       '</div>';
+    const displayAkte = Object.assign({}, akte, {
+      aktenartLabel: resolveAktenartLabel(akte),
+    });
+    const beschreibung = compact
+      ? (akte.kurzbeschreibung || akte.kontextbeschreibung)
+      : (akte.kontextbeschreibung || akte.kurzbeschreibung);
 
     return (
       '<article class="akte-card ' + cardClass + '">' +
@@ -200,9 +253,9 @@
       '<h3 class="akte-card__title">' + escapeHtml(formatValue(akte.titel)) + '</h3>' +
       '<p class="akte-card__year">' + escapeHtml(formatValue(akte.jahr)) + '</p>' +
       renderAkteImage(akte) +
-      '<p class="akte-card__fragment">' + escapeHtml(formatValue(akte.kurzbeschreibung)) + '</p>' +
-      renderMetaList(akte, compact) +
-      '<ul class="akte-card__criteria" aria-label="Bewertungskriterien">' + renderCriteria(akte) + '</ul>' +
+      '<p class="akte-card__fragment">' + escapeHtml(formatValue(beschreibung)) + '</p>' +
+      renderMetaList(displayAkte, compact) +
+      '<ul class="akte-card__criteria" aria-label="Institutionelle Bewertung">' + renderCriteria(akte) + '</ul>' +
       '</article>'
     );
   }

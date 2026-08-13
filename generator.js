@@ -180,8 +180,159 @@ function capitalizeFirst(text) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
+function normalizeDokumentationsgrad(value) {
+  if (value == null || value === '') {
+    return value == null ? null : value;
+  }
+  const raw = String(value).trim().toLowerCase();
+  if (raw === 'teilweise' || raw === 'teilweise dokumentiert') {
+    return 'teilweise dokumentiert';
+  }
+  if (raw === 'fragmentarisch' || raw === 'spärlich' || raw === 'spärlich dokumentiert') {
+    return 'spärlich dokumentiert';
+  }
+  if (raw === 'weitgehend' || raw === 'gut' || raw === 'gut dokumentiert') {
+    return 'gut dokumentiert';
+  }
+  if (raw === 'undokumentiert') {
+    return 'undokumentiert';
+  }
+  return String(value);
+}
+
+function normalizeErhaltungszustand(value) {
+  if (value == null || value === '') {
+    return value == null ? null : value;
+  }
+  const raw = String(value).trim().toLowerCase();
+  if (raw === 'gut' || raw === 'gut erhalten') {
+    return 'gut erhalten';
+  }
+  if (
+    raw === 'altersbedingt' ||
+    raw === 'gut bis altersbedingt' ||
+    raw === 'altersbedingt, gut' ||
+    raw.indexOf('reproduktion') !== -1
+  ) {
+    return 'mit leichten Gebrauchsspuren';
+  }
+  if (raw === 'beschädigt' || raw === 'teilweise beschädigt') {
+    return 'teilweise beschädigt';
+  }
+  if (raw.indexOf('stark beschädigt') !== -1) {
+    return 'an mehreren Stellen beschädigt';
+  }
+  if (raw.indexOf('lesbarkeit') !== -1) {
+    return 'gut erhalten';
+  }
+  return String(value);
+}
+
+function normalizeSammlung(value) {
+  if (value == null || value === '') {
+    return value == null ? null : value;
+  }
+  if (value === 'Familie und private Fotografie') {
+    return 'Familien und private Fotografien';
+  }
+  if (value === 'Materielle und schriftliche Überlieferung') {
+    return 'Materielle und schriftliche Überlieferungen';
+  }
+  return value;
+}
+
+function looksDigital(text) {
+  return /digital|scan|datei|datensatz|bildschirm|elektron|pixel|online|pdf|diskette|speicher/i.test(String(text || ''));
+}
+
+function looksPhoto(text) {
+  return /fotografie|fotopapier|fotoabzug|farbdia|glasdia|\bdias?\b|album|negativ|cyanotyp|bilddokumentation/i.test(String(text || ''));
+}
+
+function looksAnalogOnlyProvenienz(text) {
+  const t = String(text || '').toLowerCase();
+  if (looksDigital(t)) {
+    return false;
+  }
+  return /private nachlässe|familienkreis|mündliche erzählung|fund im rahmen/.test(t);
+}
+
+function filterOrAll(list, predicate) {
+  if (!list || list.length === 0) {
+    return [];
+  }
+  const filtered = list.filter(predicate);
+  return filtered.length > 0 ? filtered : list;
+}
+
+function filterMaterialhinweise(list, objekttyp) {
+  if (looksPhoto(objekttyp)) {
+    return filterOrAll(list, function (item) {
+      return looksPhoto(item) || looksDigital(item) || /papier|karton|abzug/i.test(item);
+    });
+  }
+  if (looksDigital(objekttyp)) {
+    return filterOrAll(list, function (item) {
+      return looksDigital(item);
+    });
+  }
+  if (/transparent/i.test(objekttyp || '')) {
+    return filterOrAll(list, function (item) {
+      return /stoff|textil|karton|papier/i.test(item);
+    });
+  }
+  if (/hinweisschild/i.test(objekttyp || '')) {
+    return filterOrAll(list, function (item) {
+      return /schild|kunststoff|karton|papier/i.test(item);
+    });
+  }
+  return list || [];
+}
+
+function filterErhaltungszustaende(list, objekttyp, materialhinweis) {
+  const digital = looksDigital(objekttyp) || looksDigital(materialhinweis);
+  const photo = looksPhoto(objekttyp) || looksPhoto(materialhinweis);
+
+  return filterOrAll(list, function (item) {
+    const state = String(item || '').toLowerCase();
+    if (digital) {
+      return /digital|kopie|rekonstruiert|archiviert|konserviert|digitalisiert/.test(state);
+    }
+    if (photo && /verwittert|kunststoff|holz|metall|stoff/.test(state)) {
+      return false;
+    }
+    if (!digital && /digital rekonstruiert|digitalisiert|digital archiviert|digital konserviert/.test(state)) {
+      return looksDigital(materialhinweis);
+    }
+    return true;
+  });
+}
+
+function filterFehlendeInformationen(list, objekttyp) {
+  const photo = looksPhoto(objekttyp);
+  return filterOrAll(list, function (item) {
+    const info = String(item || '').toLowerCase();
+    const photoOnly = /abgebildet|aufnahmeort|aufnahmezeitpunkt|urheber\*in der aufnahme/.test(info);
+    if (photoOnly && !photo) {
+      return false;
+    }
+    return true;
+  });
+}
+
+function filterProvenienz(list, objekttyp, materialhinweis) {
+  const digital = looksDigital(objekttyp) || looksDigital(materialhinweis);
+  if (!digital) {
+    return list || [];
+  }
+  return filterOrAll(list, function (item) {
+    return !looksAnalogOnlyProvenienz(item);
+  });
+}
+
 /**
  * Zieht kohärente Bausteine aus dem Katalog einer Kategorie.
+ * Offensichtliche Widersprüche zwischen Objekttyp, Material und Zustand werden gefiltert.
  * @param {string} kategorie
  * @param {Object} [options] - Bereits gesetzte Feldwerte
  * @returns {Object}
@@ -189,12 +340,16 @@ function capitalizeFirst(text) {
 function pickKategorieBausteine(kategorie, options) {
   options = options || {};
   const katalog = getKategorieKatalog(kategorie);
+  const objekttyp = options.objekttyp !== undefined
+    ? options.objekttyp
+    : pickRandomOne(katalog.objekttypen || []);
+  const materialhinweis = options.materialhinweis !== undefined
+    ? options.materialhinweis
+    : pickRandomOne(filterMaterialhinweise(katalog.materialhinweise || [], objekttyp));
 
   return {
     kategorie: kategorie,
-    objekttyp: options.objekttyp !== undefined
-      ? options.objekttyp
-      : pickRandomOne(katalog.objekttypen || []),
+    objekttyp: objekttyp,
     motiv: options.motiv !== undefined
       ? options.motiv
       : pickRandomOne(katalog.motive || []),
@@ -202,20 +357,15 @@ function pickKategorieBausteine(kategorie, options) {
       ? options.ort
       : pickRandomOne(katalog.orte || []),
     erhaltungszustand: options.erhaltungszustand !== undefined
-      ? options.erhaltungszustand
-      : pickRandomOne(katalog.erhaltungszustaende || []),
+      ? normalizeErhaltungszustand(options.erhaltungszustand)
+      : pickRandomOne(filterErhaltungszustaende(katalog.erhaltungszustaende || [], objekttyp, materialhinweis)),
     fehlendeInformation: options.fehlendeInformation !== undefined
       ? options.fehlendeInformation
-      : pickRandomOne(katalog.fehlendeInformationen || []),
-    materialhinweis: options.materialhinweis !== undefined
-      ? options.materialhinweis
-      : pickRandomOne(katalog.materialhinweise || []),
+      : pickRandomOne(filterFehlendeInformationen(katalog.fehlendeInformationen || [], objekttyp)),
+    materialhinweis: materialhinweis,
     sammlung: options.sammlung !== undefined
-      ? options.sammlung
+      ? normalizeSammlung(options.sammlung)
       : pickRandomOne(katalog.sammlungen || []),
-    institutionelleRelevanz: options.institutionelleRelevanz !== undefined
-      ? options.institutionelleRelevanz
-      : pickRandomOne(katalog.institutionelleRelevanz || []),
   };
 }
 
@@ -234,38 +384,21 @@ function generateAktenTitel(bausteine) {
 }
 
 /**
- * Erzeugt eine Kontextbeschreibung aus Satzanfängen, Verbindungen und Bausteinen.
+ * Erzeugt eine Kontextbeschreibung aus Satzanfang, Motiv und optional fehlender Information.
+ * Höchstens zwei kurze Sätze.
  * @param {Object} bausteine
  * @returns {string|null}
  */
 function generateKontextbeschreibung(bausteine) {
   const listen = getKontrollierteWerte();
   const anfang = pickRandomOne(listen.kontextSatzanfaenge || []);
-  const verbindung = pickRandomOne(listen.kontextVerbindungen || []);
   const motiv = bausteine.motiv;
-  const ort = bausteine.ort;
 
   if (!anfang || !motiv) {
     return null;
   }
 
-  const needsContinuation = [
-    'und gibt Einblick in',
-    'und dokumentiert zugleich',
-    'und lässt Rückschlüsse auf',
-    'und verweist auf',
-  ].indexOf(verbindung) !== -1;
-
-  let text;
-  if (needsContinuation && ort) {
-    text = anfang + ' ' + motiv + ' ' + verbindung + ' ' + ort + '.';
-  } else if (needsContinuation) {
-    text = anfang + ' ' + motiv + '.';
-  } else if (verbindung) {
-    text = anfang + ' ' + motiv + ' und ' + verbindung + '.';
-  } else {
-    text = anfang + ' ' + motiv + '.';
-  }
+  let text = anfang + ' ' + motiv + '.';
 
   if (bausteine.fehlendeInformation && Math.random() < 0.7) {
     text += ' ' + capitalizeFirst(bausteine.fehlendeInformation) + '.';
@@ -334,11 +467,12 @@ function generateAktenMetadaten(variante, options) {
     ? options.kategorie
     : resolveKategorie(variante);
 
+  const curatedSammlung = pickCuratedOrFallback(options, variante, 'sammlung', undefined);
+  const curatedZustand = pickCuratedOrFallback(options, variante, 'erhaltungszustand', undefined);
   const curatedOverrides = {
     objekttyp: pickCuratedOrFallback(options, variante, 'objekttyp', undefined),
-    sammlung: pickCuratedOrFallback(options, variante, 'sammlung', undefined),
-    erhaltungszustand: pickCuratedOrFallback(options, variante, 'erhaltungszustand', undefined),
-    institutionelleRelevanz: pickCuratedOrFallback(options, variante, 'institutionelleRelevanz', undefined),
+    sammlung: curatedSammlung !== undefined ? normalizeSammlung(curatedSammlung) : undefined,
+    erhaltungszustand: curatedZustand !== undefined ? normalizeErhaltungszustand(curatedZustand) : undefined,
     materialhinweis: pickCuratedOrFallback(options, variante, 'materialhinweis', undefined),
     fehlendeInformation: pickCuratedOrFallback(options, variante, 'fehlendeInformation', undefined),
   };
@@ -347,18 +481,26 @@ function generateAktenMetadaten(variante, options) {
     objekttyp: curatedOverrides.objekttyp,
     sammlung: curatedOverrides.sammlung,
     erhaltungszustand: curatedOverrides.erhaltungszustand,
-    institutionelleRelevanz: curatedOverrides.institutionelleRelevanz,
     materialhinweis: curatedOverrides.materialhinweis,
     fehlendeInformation: curatedOverrides.fehlendeInformation,
   });
 
+  const provenienzListen = getKontrollierteWerte().provenienz || [];
   const provenienz = pickCuratedOrFallback(options, variante, 'provenienz', function () {
-    return pickFromListe('provenienz');
+    return pickRandomOne(filterProvenienz(provenienzListen, bausteine.objekttyp, bausteine.materialhinweis));
   });
-  const herkunft = pickCuratedOrFallback(options, variante, 'herkunft', null);
-  const dokumentationsgrad = pickCuratedOrFallback(options, variante, 'dokumentationsgrad', function () {
-    return pickFromListe('dokumentationsgrad');
+  const herkunft = pickCuratedOrFallback(options, variante, 'herkunft', function () {
+    return bausteine.ort ? capitalizeFirst(bausteine.ort) : null;
   });
+  const dokumentationsgrad = normalizeDokumentationsgrad(
+    pickCuratedOrFallback(options, variante, 'dokumentationsgrad', function () {
+      return pickFromListe('dokumentationsgrad');
+    })
+  );
+  const relevanzBegruendungRaw = pickCuratedOrFallback(options, variante, 'relevanzBegruendung', undefined);
+  const legacyRelevanz = pickCuratedOrFallback(options, variante, 'institutionelleRelevanz', undefined);
+  const relevanzBegruendung = relevanzBegruendungRaw
+    || (legacyRelevanz && !/^(hoch|mittel|gering)$/i.test(String(legacyRelevanz)) ? legacyRelevanz : null);
 
   return {
     kategorie: kategorie,
@@ -372,46 +514,88 @@ function generateAktenMetadaten(variante, options) {
     ort: bausteine.ort,
     fehlendeInformation: bausteine.fehlendeInformation,
     materialhinweis: bausteine.materialhinweis,
-    institutionelleRelevanz: bausteine.institutionelleRelevanz,
+    relevanzBegruendung: relevanzBegruendung || null,
   };
 }
 
-/**
- * Erzeugt Bewertungskriterien — Relevanz und Erhaltungszustand aus der Kategorie,
- * Dokumentationsgrad aus dem allgemeinen Katalog. Kuratierte Werte haben Vorrang.
- * @param {Object} [options]
- * @param {string} [options.kategorie]
- * @param {string} [options.erhaltungszustand]
- * @param {string} [options.institutionelleRelevanz]
- * @param {string} [options.dokumentationsgrad]
- * @returns {Array<{ label: string, text: string }>}
- */
-function generateBewertungskriterien(options) {
-  options = options || {};
+function scorePassung(source) {
+  source = source || {};
+  const haystack = [
+    source.provenienz,
+    source.sammlung,
+    source.objekttyp,
+    source.herkunft,
+  ].filter(Boolean).join(' ').toLowerCase();
 
-  if (options.bewertungskriterien !== undefined) {
-    return options.bewertungskriterien;
+  let score = 1;
+  if (/institutionell|kommunal|staatlich|archivbestand|behörd|museal|registratur|verwaltung|wetterdienst|gesundheitseinrichtung/.test(haystack)) {
+    score = 2;
+  } else if (/unsortiert|ungeordnet|fund im rahmen|mündliche erzählung|nicht dokumentiert|unbekannt/.test(haystack)) {
+    score = 0;
+  } else if (/nachlass|familienkreis|schenkung|privat/.test(haystack)) {
+    score = 0;
   }
 
-  const listen = getKontrollierteWerte();
-  const kategorie = options.kategorie || resolveKategorie({});
-  const katalog = getKategorieKatalog(kategorie);
+  if (/verwaltung und infrastruktur|institutionelle erfassung|wissensarbeit|öffentliche einrichtungen/.test(haystack)) {
+    score = Math.min(2, score + 1);
+  } else if (/familien und private|wohnen, freizeit|medien und alltagsobjekte/.test(haystack)) {
+    score = Math.max(0, score - 1);
+  }
 
-  const relevanz = options.institutionelleRelevanz !== undefined
-    ? options.institutionelleRelevanz
-    : pickRandomOne(katalog.institutionelleRelevanz || []);
-  const dokumentationsgrad = options.dokumentationsgrad !== undefined
-    ? options.dokumentationsgrad
-    : pickRandomOne(listen.dokumentationsgrad || []);
-  const erhaltungszustand = options.erhaltungszustand !== undefined
-    ? options.erhaltungszustand
-    : pickRandomOne(katalog.erhaltungszustaende || []);
+  return score;
+}
 
+function scoreDokumentation(dokumentationsgrad) {
+  const value = normalizeDokumentationsgrad(dokumentationsgrad) || '';
+  if (value === 'gut dokumentiert') {
+    return 2;
+  }
+  if (value === 'teilweise dokumentiert') {
+    return 1;
+  }
+  return 0;
+}
+
+function scoreBewahrungsbedarf(erhaltungszustand) {
+  const state = String(erhaltungszustand || '').toLowerCase();
+  if (/fragmentarisch|beschädigt|verwittert|eingerissen|unleserlich|unvollständig|ausschnittsweise|übermalt|stark vergilbt/.test(state)) {
+    return 2;
+  }
+  if (/gebrauchsspuren|knick|verblasst|gefaltet|altersbedingt|rändern|klebe|vergilbt|kopie/.test(state)) {
+    return 1;
+  }
+  return 0;
+}
+
+function generateInstitutionelleBewertung(source) {
+  source = source || {};
+  const total = scorePassung(source) + scoreDokumentation(source.dokumentationsgrad) + scoreBewahrungsbedarf(source.erhaltungszustand);
+  let stufe = 'mittel';
+  if (total <= 2) {
+    stufe = 'gering';
+  } else if (total >= 5) {
+    stufe = 'hoch';
+  }
+
+  const hinweise = {
+    hoch: 'Aufnahme empfohlen',
+    mittel: 'Aufnahme prüfenswert',
+    gering: 'Aufnahme nicht priorisiert',
+  };
+
+  return {
+    stufe: stufe,
+    aufnahmehinweis: hinweise[stufe],
+  };
+}
+
+function generateBewertungskriterien(options) {
+  options = options || {};
+  const bewertung = generateInstitutionelleBewertung(options);
   return [
-    relevanz ? { label: 'Institutionelle Relevanz', text: relevanz } : null,
-    dokumentationsgrad ? { label: 'Dokumentationsgrad', text: dokumentationsgrad } : null,
-    erhaltungszustand ? { label: 'Erhaltungszustand', text: erhaltungszustand } : null,
-  ].filter(Boolean);
+    { label: 'Institutionelle Relevanz', text: bewertung.stufe },
+    { label: 'Aufnahmehinweis', text: bewertung.aufnahmehinweis },
+  ];
 }
 
 /**
@@ -481,9 +665,9 @@ function isPlausibleDigitalerDatensatz(source) {
     source.titel,
     source.kurzbeschreibung,
     source.kontextbeschreibung,
-  ].filter(Boolean).join(' ').toLowerCase();
+  ].filter(Boolean).join(' ');
 
-  return /digital|scan|datei|datensatz|bildschirm|pixel|elektron|software|online|pdf|speicher|netz/.test(haystack);
+  return looksDigital(haystack);
 }
 
 /**
@@ -505,13 +689,67 @@ function getEligibleAktenarten(source) {
  * @param {string|null|undefined} key
  * @returns {boolean}
  */
+function canonicalAktenartKey(key) {
+  if (key === 'dokumentationsfragment') {
+    return 'dokumentfragment';
+  }
+  return key || null;
+}
+
 function isValidAktenart(key) {
-  if (!key) {
+  const canonical = canonicalAktenartKey(key);
+  if (!canonical) {
     return false;
   }
   return getArchivAktenarten().some(function (art) {
-    return art.key === key;
+    return art.key === canonical;
   });
+}
+
+function getAktenartVermerke(art) {
+  if (!art) {
+    return [];
+  }
+  if (Array.isArray(art.vermerke) && art.vermerke.length > 0) {
+    return art.vermerke;
+  }
+  if (art.vermerk) {
+    return [art.vermerk];
+  }
+  return [];
+}
+
+function pickAktenvermerk(aktenart, akteId, stored) {
+  if (stored) {
+    return stored;
+  }
+  const canonical = canonicalAktenartKey(aktenart);
+  const art = getArchivAktenarten().find(function (entry) {
+    return entry.key === canonical;
+  });
+  const vermerke = getAktenartVermerke(art);
+  if (vermerke.length === 0) {
+    return null;
+  }
+  if (akteId) {
+    return vermerke[hashString(akteId + ':vermerk') % vermerke.length];
+  }
+  return pickRandomOne(vermerke);
+}
+
+function pickDokumentationsfragment(kategorie, akteId, stored) {
+  if (stored) {
+    return stored;
+  }
+  const katalog = getKategorieKatalog(kategorie);
+  const pool = katalog.dokumentationsfragmente || [];
+  if (pool.length === 0) {
+    return null;
+  }
+  if (akteId) {
+    return pool[hashString(akteId + ':fragment') % pool.length];
+  }
+  return pickRandomOne(pool);
 }
 
 /**
@@ -609,9 +847,10 @@ function resolveAktenart(ohneBild, options, source) {
   if (!ohneBild) {
     return null;
   }
-  if (options.aktenart !== undefined && isValidAktenart(options.aktenart)) {
-    if (options.aktenart !== 'digitaler-datensatz' || isPlausibleDigitalerDatensatz(source)) {
-      return options.aktenart;
+  const requested = canonicalAktenartKey(options.aktenart);
+  if (requested && isValidAktenart(requested)) {
+    if (requested !== 'digitaler-datensatz' || isPlausibleDigitalerDatensatz(source)) {
+      return requested;
     }
   }
   return pickWeightedAktenart(source);
@@ -637,6 +876,10 @@ function buildAkte(bild, variante, options) {
   const archivsignatur = options.archivsignatur || variante.archivsignatur || generateArchivsignatur(jahr);
   const meta = generateAktenMetadaten(variante, options);
   const ohneBild = !bild || bild.pfad == null;
+  if (!ohneBild) {
+    meta.materialhinweis = pickCuratedOrFallback(options, variante, 'materialhinweis', null);
+    meta.fehlendeInformation = pickCuratedOrFallback(options, variante, 'fehlendeInformation', null);
+  }
   const texte = ohneBild
     ? generateAktenTexte(meta)
     : {
@@ -665,9 +908,24 @@ function buildAkte(bild, variante, options) {
   };
   const aktenart = resolveAktenart(ohneBild, options, aktenartSource);
   const baseId = (bild && bild.id ? bild.id : 'ohne-bild') + '--' + (variante.id || meta.kategorie || 'generiert');
+  const id = options.unique ? baseId + '--' + randomArchivSuffix() : baseId;
+  const bewertung = generateInstitutionelleBewertung({
+    provenienz: meta.provenienz,
+    sammlung: meta.sammlung,
+    objekttyp: meta.objekttyp,
+    herkunft: meta.herkunft,
+    dokumentationsgrad: meta.dokumentationsgrad,
+    erhaltungszustand: meta.erhaltungszustand,
+  });
+  const fragmentText = aktenart === 'dokumentfragment'
+    ? pickDokumentationsfragment(meta.kategorie, id, options.fragmentText)
+    : null;
+  const aktenvermerk = ohneBild && aktenart !== 'dokumentfragment'
+    ? pickAktenvermerk(aktenart, id, options.aktenvermerk)
+    : null;
 
   return {
-    id: options.unique ? baseId + '--' + randomArchivSuffix() : baseId,
+    id: id,
     bildId: bild && bild.id ? bild.id : null,
     varianteId: variante.id || null,
     archivsignatur: archivsignatur,
@@ -676,6 +934,8 @@ function buildAkte(bild, variante, options) {
     jahr: jahr,
     bild: bild && bild.pfad != null ? bild.pfad : null,
     aktenart: aktenart,
+    aktenvermerk: aktenvermerk,
+    fragmentText: fragmentText,
     kurzbeschreibung: kurzbeschreibung,
     kontextbeschreibung: kontextbeschreibung,
     objekttyp: meta.objekttyp,
@@ -686,12 +946,16 @@ function buildAkte(bild, variante, options) {
     erhaltungszustand: meta.erhaltungszustand,
     dokumentationsgrad: meta.dokumentationsgrad,
     fehlendeInformation: meta.fehlendeInformation,
+    institutionelleRelevanz: bewertung.stufe,
+    aufnahmehinweis: bewertung.aufnahmehinweis,
+    relevanzBegruendung: meta.relevanzBegruendung,
     bewertungskriterien: generateBewertungskriterien({
-      kategorie: meta.kategorie,
-      erhaltungszustand: meta.erhaltungszustand,
-      institutionelleRelevanz: meta.institutionelleRelevanz,
+      provenienz: meta.provenienz,
+      sammlung: meta.sammlung,
+      objekttyp: meta.objekttyp,
+      herkunft: meta.herkunft,
       dokumentationsgrad: meta.dokumentationsgrad,
-      bewertungskriterien: options.bewertungskriterien,
+      erhaltungszustand: meta.erhaltungszustand,
     }),
   };
 }
@@ -768,7 +1032,9 @@ function normalizeAkte(akte) {
       dokumentationsgrad: 'dokumentationsgrad' in akte ? akte.dokumentationsgrad : undefined,
       fehlendeInformation: 'fehlendeInformation' in akte ? akte.fehlendeInformation : undefined,
       aktenart: 'aktenart' in akte ? akte.aktenart : undefined,
-      bewertungskriterien: 'bewertungskriterien' in akte ? akte.bewertungskriterien : undefined,
+      aktenvermerk: 'aktenvermerk' in akte ? akte.aktenvermerk : undefined,
+      fragmentText: 'fragmentText' in akte ? akte.fragmentText : undefined,
+      relevanzBegruendung: 'relevanzBegruendung' in akte ? akte.relevanzBegruendung : undefined,
     })
     : null;
   const src = fromData || akte;
@@ -783,7 +1049,11 @@ function normalizeAkte(akte) {
   const kurzbeschreibung = src.kurzbeschreibung || akte.kurzbeschreibung || akte.shortText || akte.fragment || null;
   const kontextbeschreibung = src.kontextbeschreibung || akte.kontextbeschreibung || null;
   const objekttyp = 'objekttyp' in akte ? akte.objekttyp : (src.objekttyp || akte.objectType || fallbackMeta.objekttyp);
-  const sammlung = 'sammlung' in akte ? akte.sammlung : (src.sammlung || fallbackMeta.sammlung);
+  const sammlung = normalizeSammlung('sammlung' in akte ? akte.sammlung : (src.sammlung || fallbackMeta.sammlung));
+  const dokumentationsgrad = normalizeDokumentationsgrad(zusatz.dokumentationsgrad);
+  const erhaltungszustand = normalizeErhaltungszustand(zusatz.erhaltungszustand);
+  const provenienz = 'provenienz' in akte ? akte.provenienz : (src.provenienz || fallbackMeta.provenienz);
+  const herkunft = 'herkunft' in akte ? akte.herkunft : (src.herkunft != null ? src.herkunft : (akte.origin || fallbackMeta.herkunft));
   const aktenartSource = {
     objekttyp: objekttyp,
     materialhinweis: zusatz.materialhinweis,
@@ -794,9 +1064,10 @@ function normalizeAkte(akte) {
   };
   let aktenart = null;
   if (ohneBild) {
-    const candidate = isValidAktenart(akte.aktenart)
+    const rawCandidate = isValidAktenart(akte.aktenart)
       ? akte.aktenart
       : (isValidAktenart(src.aktenart) ? src.aktenart : null);
+    const candidate = canonicalAktenartKey(rawCandidate);
     if (candidate && (candidate !== 'digitaler-datensatz' || isPlausibleDigitalerDatensatz(aktenartSource))) {
       aktenart = candidate;
     } else {
@@ -804,8 +1075,36 @@ function normalizeAkte(akte) {
     }
   }
 
+  const akteId = src.id || akte.id;
+  const fragmentText = aktenart === 'dokumentfragment'
+    ? pickDokumentationsfragment(
+      src.kategorie || akte.kategorie,
+      akteId,
+      akte.fragmentText || src.fragmentText
+    )
+    : null;
+  const aktenvermerk = ohneBild && aktenart !== 'dokumentfragment'
+    ? pickAktenvermerk(aktenart, akteId, akte.aktenvermerk || src.aktenvermerk)
+    : null;
+  const bewertungSource = {
+    provenienz: provenienz,
+    sammlung: sammlung,
+    objekttyp: objekttyp,
+    herkunft: herkunft,
+    dokumentationsgrad: dokumentationsgrad,
+    erhaltungszustand: erhaltungszustand,
+  };
+  const bewertung = generateInstitutionelleBewertung(bewertungSource);
+  const relevanzBegruendung = akte.relevanzBegruendung
+    || src.relevanzBegruendung
+    || (typeof akte.institutionelleRelevanz === 'string' && /von /.test(akte.institutionelleRelevanz)
+      ? akte.institutionelleRelevanz
+      : null)
+    || fallbackMeta.relevanzBegruendung
+    || null;
+
   return {
-    id: src.id || akte.id,
+    id: akteId,
     bildId: src.bildId || akte.bildId || null,
     varianteId: src.varianteId || akte.varianteId || null,
     archivsignatur: akte.archivsignatur || akte.inventoryNumber || akte.reference || src.archivsignatur || generateArchivsignatur(jahr),
@@ -813,19 +1112,23 @@ function normalizeAkte(akte) {
     titel: titel,
     jahr: jahr,
     bild: src.bild !== undefined ? src.bild : (akte.bild !== undefined ? akte.bild : null),
-    kurzbeschreibung: src.kurzbeschreibung || akte.kurzbeschreibung || akte.shortText || akte.fragment || null,
-    kontextbeschreibung: src.kontextbeschreibung || akte.kontextbeschreibung || null,
-    objekttyp: 'objekttyp' in akte ? akte.objekttyp : (src.objekttyp || akte.objectType || fallbackMeta.objekttyp),
-    herkunft: 'herkunft' in akte ? akte.herkunft : (src.herkunft != null ? src.herkunft : (akte.origin || fallbackMeta.herkunft)),
-    provenienz: 'provenienz' in akte ? akte.provenienz : (src.provenienz || fallbackMeta.provenienz),
+    aktenart: aktenart,
+    aktenvermerk: aktenvermerk,
+    fragmentText: fragmentText,
+    kurzbeschreibung: kurzbeschreibung,
+    kontextbeschreibung: kontextbeschreibung,
+    objekttyp: objekttyp,
+    herkunft: herkunft,
+    provenienz: provenienz,
     sammlung: sammlung,
     materialhinweis: zusatz.materialhinweis,
-    erhaltungszustand: zusatz.erhaltungszustand,
-    dokumentationsgrad: zusatz.dokumentationsgrad,
+    erhaltungszustand: erhaltungszustand,
+    dokumentationsgrad: dokumentationsgrad,
     fehlendeInformation: zusatz.fehlendeInformation,
-    bewertungskriterien: 'bewertungskriterien' in akte
-      ? akte.bewertungskriterien
-      : (src.bewertungskriterien || generateBewertungskriterien({ kategorie: src.kategorie || akte.kategorie })),
+    institutionelleRelevanz: bewertung.stufe,
+    aufnahmehinweis: bewertung.aufnahmehinweis,
+    relevanzBegruendung: relevanzBegruendung,
+    bewertungskriterien: generateBewertungskriterien(bewertungSource),
   };
 }
 

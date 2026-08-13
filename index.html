@@ -18,8 +18,12 @@
         </p>
         <p class="start-screen__text">
           Schauen Sie sich die bereitgestellten Akten genau an und wählen Sie diejenige aus,
-          die Ihrer Einschätzung nach in das kulturelle Gedächtnis aufgenommen werden soll.
+          die Ihrer Einschätzung nach in den Erinnerungsraum aufgenommen werden soll.
         </p>
+        <p class="start-screen__disclaimer">
+          Bei den Akten handelt es sich um fiktive Ereignisse, Informationen und Dokumente, die nicht in der Realität stattgefunden haben.
+        </p>
+  
         <button type="button" id="open-archive-btn" class="btn-start">Archiv öffnen</button>
       </div>
     </div>
@@ -40,18 +44,17 @@
           <section class="confirmation-section" id="confirmation-section" hidden aria-live="polite">
             <div class="confirmation-card">
               <p class="confirmation-card__primary">
-                Die ausgewählte Akte wurde in das kulturelle Gedächtnis aufgenommen.
+                Die ausgewählte Akte wurde in den Erinnerungsraum aufgenommen.
               </p>
               <p class="confirmation-card__secondary">
-                Die beiden nicht ausgewählten Akten wurden aus dem Archiv entfernt und unwiderruflich gelöscht.
+                Die beiden nicht ausgewählten Akten wurden aus dem Archiv entfernt.
                 Sie stehen zukünftigen Besucher*innen nicht mehr zur Verfügung.
               </p>
-              <button type="button" id="confirmation-continue" class="btn-start">Weiter</button>
+              <button type="button" id="confirmation-continue" class="btn-start">Archiv verlassen</button>
             </div>
           </section>
 
-          <section class="displacement-section" id="displacement-section" hidden aria-labelledby="displacement-heading">
-            <h2 id="displacement-heading">Erinnerungsraum</h2>
+          <section class="displacement-section" id="displacement-section">
             <div class="memory-review" aria-label="Akten im Erinnerungsraum">
               <button type="button" id="memory-review-prev" class="memory-review__nav memory-review__nav--prev" aria-label="Vorherige Akten">
                 ‹
@@ -61,16 +64,12 @@
                 ›
               </button>
             </div>
-            <button type="button" id="displacement-cancel" class="btn-cancel">Abbrechen</button>
+          
           </section>
         </main>
       </div>
       <div class="archive-shell__footerbar" aria-hidden="true"></div>
     </div>
-
-    <button type="button" id="reset-installation" class="btn-reset" title="Installation zurücksetzen">
-      Installation zurücksetzen
-    </button>
 
     <div id="memory-full-modal" class="memory-full-modal" hidden
          role="dialog" aria-modal="true" aria-labelledby="memory-full-modal-title">
@@ -80,10 +79,10 @@
           Der Erinnerungsraum ist vollständig belegt.
         </p>
         <p class="memory-full-modal__secondary">
-          Um die ausgewählte Akte aufnehmen zu können, muss eine bestehende Akte entfernt werden.
+          Um die ausgewählte Akte aufnehmen zu können, muss eine bestehende Akte aus dem Erinnerungsraum verdrängt werden.
         </p>
         <button type="button" id="memory-full-modal-confirm" class="btn-start">
-          Löschung Starten
+          Verdrängung Starten
         </button>
       </div>
     </div>
@@ -91,6 +90,7 @@
 
   <script src="data.js"></script>
   <script src="generator.js"></script>
+  <script src="archiv-darstellung.js"></script>
   <script src="state.js"></script>
   <script src="app.js"></script>
 </body>

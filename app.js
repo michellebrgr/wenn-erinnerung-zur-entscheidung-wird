@@ -15,7 +15,6 @@
   const memoryReviewGrid = document.getElementById('memory-review-grid');
   const memoryReviewPrev = document.getElementById('memory-review-prev');
   const memoryReviewNext = document.getElementById('memory-review-next');
-  const displacementCancel = document.getElementById('displacement-cancel');
   const resetInstallation = document.getElementById('reset-installation');
   const startScreen = document.getElementById('start-screen');
   const archiveInterface = document.getElementById('archive-interface');
@@ -61,22 +60,54 @@
   }
 
   /**
+   * Setzt die Portrait-Klasse anhand der natürlichen Bildmaße.
+   * @param {HTMLImageElement} img
+   * @param {string} portraitClass
+   */
+  function applyImageOrientation(img, portraitClass) {
+    function set() {
+      img.classList.toggle(portraitClass, img.naturalHeight > img.naturalWidth);
+    }
+    if (img.complete && img.naturalWidth) {
+      set();
+    } else {
+      img.addEventListener('load', set);
+    }
+  }
+
+  /**
+   * Wendet Orientierungs-Klassen auf alle Bilder in einem Container an.
+   * @param {Element} root
+   * @param {string} selector
+   * @param {string} portraitClass
+   */
+  function applyImageOrientationsIn(root, selector, portraitClass) {
+    if (!root) {
+      return;
+    }
+    root.querySelectorAll(selector).forEach(function (img) {
+      applyImageOrientation(img, portraitClass);
+    });
+  }
+
+  /**
    * Bildpfad pro Akte in data.js im Feld `bild` eintragen.
-   * @param {string|null} bild
+   * Ohne Bild: Archivfragment aus aktenart.
+   * @param {Object} akte
    * @returns {string}
    */
-  function renderAkteImage(bild) {
-    if (bild) {
+  function renderAkteImage(akte) {
+    if (akte && akte.bild) {
       return (
         '<figure class="akte-card__figure">' +
-        '<img class="akte-card__image" src="' + escapeHtml(bild) + '" alt="">' +
+        '<img class="akte-card__image" src="' + escapeHtml(akte.bild) + '" alt="">' +
         '</figure>'
       );
     }
 
     return (
       '<figure class="akte-card__figure">' +
-      '<div class="akte-card__image-placeholder">Kein Bild vorhanden</div>' +
+      renderArchivDarstellung(akte, 'card') +
       '</figure>'
     );
   }
@@ -168,7 +199,7 @@
       '</header>' +
       '<h3 class="akte-card__title">' + escapeHtml(formatValue(akte.titel)) + '</h3>' +
       '<p class="akte-card__year">' + escapeHtml(formatValue(akte.jahr)) + '</p>' +
-      renderAkteImage(akte.bild) +
+      renderAkteImage(akte) +
       '<p class="akte-card__fragment">' + escapeHtml(formatValue(akte.kurzbeschreibung)) + '</p>' +
       renderMetaList(akte, compact) +
       '<ul class="akte-card__criteria" aria-label="Bewertungskriterien">' + renderCriteria(akte) + '</ul>' +
@@ -212,7 +243,7 @@
   }
 
   /**
-   * Rendert eine Spalte mit Akten-Karte und Löschen-Button.
+  
    * @param {Object} akte
    * @returns {string}
    */
@@ -221,7 +252,7 @@
       '<div class="archive-offer-column" role="listitem">' +
       renderAkteCard(akte, { variant: 'selectable' }) +
       '<button type="button" class="btn-memory-delete" data-id="' + escapeHtml(akte.id) + '">' +
-      'Diese Akte löschen' +
+      'Diese Akte verdrängen' +
       '</button>' +
       '</div>'
     );
@@ -261,6 +292,7 @@
     );
 
     memoryReviewGrid.innerHTML = pageAkten.map(renderDisplacementColumn).join('');
+    applyImageOrientationsIn(memoryReviewGrid, '.akte-card__image', 'akte-card__image--portrait');
 
     memoryReviewGrid.querySelectorAll('.btn-memory-delete').forEach(function (button) {
       button.addEventListener('click', function () {
@@ -278,6 +310,7 @@
    */
   function renderOfferSet(offer) {
     offerContainer.innerHTML = offer.map(renderOfferColumn).join('');
+    applyImageOrientationsIn(offerContainer, '.akte-card__image', 'akte-card__image--portrait');
 
     offerContainer.querySelectorAll('.btn-archive-select').forEach(function (button) {
       button.addEventListener('click', function () {
@@ -506,14 +539,21 @@
     setViewMode('start');
     clearMemoryReview();
     openArchiveBtn.addEventListener('click', openArchive);
-    displacementCancel.addEventListener('click', exitDisplacementView);
     memoryReviewPrev.addEventListener('click', showPreviousMemoryReviewPage);
     memoryReviewNext.addEventListener('click', showNextMemoryReviewPage);
     confirmationContinue.addEventListener('click', dismissConfirmation);
     memoryFullModalConfirm.addEventListener('click', confirmMemoryFullModal);
-    resetInstallation.addEventListener('click', handleResetInstallation);
+    if (resetInstallation) {
+      resetInstallation.addEventListener('click', handleResetInstallation);
+    }
 
     document.addEventListener('keydown', function (event) {
+      if (event.shiftKey && event.key === 'R') {
+        event.preventDefault();
+        handleResetInstallation();
+        return;
+      }
+
       if (viewMode !== 'displacement') {
         return;
       }

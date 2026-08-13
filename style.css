@@ -1189,6 +1189,7 @@ body.projection-view.projection-view--light {
   border: 1px solid var(--projection-card-border);
   border-radius: var(--radius-card);
   padding: var(--proj-space-sm);
+  padding-bottom: calc(var(--proj-space-sm) + 30px);
   display: flex;
   flex-direction: column;
   gap: var(--proj-space-xs);
@@ -1302,8 +1303,8 @@ body.projection-view.projection-view--light {
 .memory-exhibit__description {
   margin: 0;
   font-family: var(--font-sans);
-  font-size: var(--proj-font-xs);
-  line-height: 1.4;
+  font-size: var(--proj-font-sm);
+  line-height: 1.45;
   color: var(--projection-text-muted);
 }
 

@@ -29,12 +29,40 @@
   }
 
   /**
+   * @param {string} key
+   * @returns {string}
+   */
+  function canonicalKey(key) {
+    if (typeof canonicalAktenartKey === 'function') {
+      return canonicalAktenartKey(key);
+    }
+    return key === 'dokumentationsfragment' ? 'dokumentfragment' : key;
+  }
+
+  /**
+   * @param {Object} art
+   * @returns {Array<string>}
+   */
+  function vermerkeOf(art) {
+    if (typeof getAktenartVermerke === 'function') {
+      return getAktenartVermerke(art);
+    }
+    if (!art) {
+      return [];
+    }
+    if (Array.isArray(art.vermerke) && art.vermerke.length) {
+      return art.vermerke;
+    }
+    return art.vermerk ? [art.vermerk] : [];
+  }
+
+  /**
    * @param {Object} akte
    * @returns {Object|null}
    */
   function resolveAktenartEntry(akte) {
     var arten = getArten();
-    var key = akte && akte.aktenart;
+    var key = canonicalKey(akte && akte.aktenart);
 
     if (!key && typeof pickAktenartByHash === 'function') {
       key = pickAktenartByHash(akte && akte.id ? akte.id : '', akte);
@@ -50,28 +78,34 @@
   }
 
   /**
-   * Fragmentarischer Textauszug für Dokumentfragment.
-   * @param {string} text
+   * Textkörper für Dokumentationsfragment oder Aktenart-Vermerk.
+   * @param {Object} akte
+   * @param {Object} entry
    * @returns {string}
    */
-  function makeTextauszug(text) {
-    var raw = String(text || '').replace(/\s+/g, ' ').trim();
-    if (!raw) {
+  function resolveFragmentBody(akte, entry) {
+    if (entry.key === 'dokumentfragment') {
+      if (akte && akte.fragmentText) {
+        return akte.fragmentText;
+      }
+      if (typeof pickDokumentationsfragment === 'function') {
+        return pickDokumentationsfragment(akte && akte.kategorie, akte && akte.id) || '…';
+      }
       return '…';
     }
 
-    var max = 140;
-    if (raw.length <= max) {
-      return raw;
+    if (akte && akte.aktenvermerk) {
+      return akte.aktenvermerk;
     }
 
-    var slice = raw.slice(0, max);
-    var breakAt = Math.max(slice.lastIndexOf('. '), slice.lastIndexOf(', '), slice.lastIndexOf(' '));
-    if (breakAt > 60) {
-      slice = slice.slice(0, breakAt);
+    var vermerke = vermerkeOf(entry);
+    if (vermerke.length === 0) {
+      return '';
     }
-
-    return slice.replace(/[.,;:\s]+$/, '') + ' …';
+    if (typeof pickAktenvermerk === 'function') {
+      return pickAktenvermerk(entry.key, akte && akte.id) || vermerke[0];
+    }
+    return vermerke[0];
   }
 
   /**
@@ -91,16 +125,15 @@
       );
     }
 
+    var bodyText = resolveFragmentBody(akte, entry);
     var isDokumentfragment = entry.key === 'dokumentfragment';
     var usesSheet = entry.key !== 'ueberlieferungsluecke';
     var bodyHtml = '';
 
-    if (isDokumentfragment) {
-      var source = (akte && akte.kontextbeschreibung) || (akte && akte.kurzbeschreibung) || '';
-      bodyHtml = '<p class="archiv-fragment__body archiv-fragment__excerpt">' +
-        escapeHtml(makeTextauszug(source)) + '</p>';
-    } else if (entry.vermerk) {
-      bodyHtml = '<p class="archiv-fragment__body">' + escapeHtml(entry.vermerk) + '</p>';
+    if (bodyText) {
+      bodyHtml = '<p class="archiv-fragment__body' +
+        (isDokumentfragment ? ' archiv-fragment__excerpt' : '') + '">' +
+        escapeHtml(bodyText) + '</p>';
     }
 
     var inner =
@@ -112,7 +145,7 @@
     }
 
     var aria = (entry.label || 'Archivfragment') +
-      (entry.vermerk ? ': ' + entry.vermerk : '');
+      (bodyText ? ': ' + bodyText : '');
 
     return (
       '<div class="archiv-fragment archiv-fragment--' + escapeHtml(entry.key) +

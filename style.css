@@ -117,8 +117,31 @@ body.archive-view {
   background: var(--color-paper-dark);
 }
 
+.site-header {
+  padding: 2rem 2rem 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.site-header h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.75rem;
+  color: var(--color-ink);
+}
+
+.intro {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--color-ink-muted);
+  max-width: 60ch;
+}
+
 .archive-main {
   width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem 3rem;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -196,8 +219,8 @@ body.archive-view {
   padding: 1.75rem 1.5rem 1.5rem calc(var(--binder-width) + 1.25rem);
   box-shadow: 0 2px 6px var(--color-shadow);
   cursor: default;
-  min-height: 34rem;
-  overflow: hidden;
+  min-height: 0;
+  overflow: visible;
 }
 
 /* Untere Seite im Stapel */
@@ -270,14 +293,15 @@ body.archive-view {
 }
 
 .akte-card--selectable {
-  cursor: default;
+  cursor: pointer;
 }
 
 .akte-card--selectable:hover,
 .akte-card--selectable:focus-visible {
-  transform: none;
-  box-shadow: 0 2px 8px var(--color-shadow);
-  outline: none;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px var(--color-shadow);
+  outline: 2px solid var(--color-stamp);
+  outline-offset: 2px;
 }
 
 .akte-card__header {
@@ -322,7 +346,7 @@ body.archive-view {
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: clamp(200px, 22vh, 260px);
+  height: clamp(160px, 18vh, 220px);
 }
 
 .akte-card__image {
@@ -660,7 +684,7 @@ body.archive-view {
   margin: 0 0 0.75rem;
   padding: 0;
   font-family: var(--font-sans);
-  font-size: 0.75rem;
+  font-size: 0.7rem;
 }
 
 .akte-card__meta li {
@@ -674,8 +698,8 @@ body.archive-view {
 }
 
 .akte-card__fragment {
-  margin: 0 0 1rem;
-  font-size: 0.95rem;
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
   color: var(--color-ink);
 }
 
@@ -709,6 +733,11 @@ body.archive-view {
 .criterion__value {
   font-size: 0.75rem;
   color: var(--color-ink);
+}
+
+.criterion:last-child .criterion__value {
+  color: var(--color-stamp);
+  font-weight: 600;
 }
 
 .akte-card__action-hint {
@@ -746,6 +775,133 @@ body.archive-view {
   letter-spacing: 0.06em;
   color: var(--color-ink-muted);
   margin: 0 0 1rem;
+}
+
+.displacement-hint {
+  margin: 0 0 1.25rem;
+  color: var(--color-ink-muted);
+  font-size: 0.95rem;
+  max-width: 70ch;
+}
+
+.pending-akte-preview {
+  margin-bottom: 1.5rem;
+}
+
+.pending-akte-preview__label {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-stamp);
+}
+
+.archive-memory-room {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.archive-memory-slot {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 180px;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.archive-memory-slot--displacement {
+  cursor: pointer;
+}
+
+.archive-memory-slot--displacement:hover,
+.archive-memory-slot--displacement:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px var(--color-shadow);
+  outline: 2px solid var(--color-stamp);
+  outline-offset: 2px;
+  border-color: var(--color-stamp);
+}
+
+.archive-memory-slot__reference {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-stamp);
+  letter-spacing: 0.04em;
+  margin-bottom: 0.25rem;
+}
+
+.archive-memory-slot__category {
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-ink-muted);
+  margin-bottom: 0.5rem;
+}
+
+.archive-memory-slot__title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.archive-memory-slot__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  color: var(--color-ink);
+  margin-bottom: 0.5rem;
+}
+
+.archive-memory-slot__meta strong {
+  color: var(--color-ink-muted);
+  font-weight: 600;
+}
+
+.archive-memory-slot__fragment {
+  margin: 0 0 auto;
+  font-size: 0.85rem;
+  color: var(--color-ink);
+}
+
+.archive-memory-slot__action-hint {
+  margin: 0.75rem 0 0;
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  color: var(--color-stamp);
+  text-align: center;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.archive-memory-slot--displacement:hover .archive-memory-slot__action-hint {
+  opacity: 1;
+}
+
+.btn-cancel {
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  cursor: pointer;
+  color: var(--color-ink-muted);
+}
+
+.btn-cancel:hover {
+  background: var(--color-paper-dark);
+  color: var(--color-ink);
 }
 
 .memory-review {
@@ -1371,7 +1527,8 @@ body.projection-view.projection-view--light {
 }
 
 @media (max-width: 768px) {
-  .memory-room {
+  .memory-room,
+  .archive-memory-room {
     grid-template-columns: 1fr;
     grid-template-rows: auto;
     min-height: auto;

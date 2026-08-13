@@ -6,6 +6,10 @@ Die Daten der Akten werden teilweise automatisch durch das System generiert. Gru
 
 Die Kataloge dokumnterien zudem die konzeptionelle Grundlage der Generieungslogik. Dadurch soll nachvollziebar bleiben, aus welchen Informationen die Daten der Akten entstehen.
 
+Eine wichtige Anmerkung hierbei ist aber, dass die Generierunglogik keine vollständigen oder historischen Datensätze erzeugen soll. Die Akten können bewusst Lücken oder unterschiedliche Dokumentationsgrade haben.
+
+Das Archivsystem nimmt zudem eine institutionelle Bewertung der Akten vor. Die Bewertung basiert auf festgelegten Kriterien. 
+
 # Aufbau der Akten
 
 Das System unterscheidet zwischen zwei Akten von Akten:
@@ -13,7 +17,7 @@ Das System unterscheidet zwischen zwei Akten von Akten:
 - Akten mit Bild
 - Akten ohne Bild
 
-Abhängen von der Art der Akte setzen sich die Akten aus manuell festgelegten und automatisch generierten Informationen oder ausschließlich aus atomatisch generieten Informationen zusammen.
+Je nach Art der Akte unterscheiden sich die Herkunft und die Generierung der erhaltenen Informationen. Akten mit Bild verfügen überwiegend über kuratierte Informationen. Akten ohne Bild werden vollständig aus vorgegebenen Katalogen und Textbausteinen erstellt. Die Bewertung durch das System wird bei beiden Aktenarten genutzt. 
 
 ## Akten mit Bild
 
@@ -24,22 +28,24 @@ Die Inhalte der Akten werden auf grundlage der Bildes festgelegt, dies geschieht
 #### Inhaltliche Informationen
 
 - Bild
+- Kategorie
 - Aktentitel
-- Kontextbeschreibung innerhalb der Akte (nur im Akteninterface sichtbar)
+- Kontextbeschreibung 
+- Jahr / Datierung
+- Herkunft
+- Provenienz
+- Sammlung
+- Objkettyp
+- Dokumentationsgrad
 - Erhaltungszustand
-- Objekttyp 
 - Kurzbeschreibung für die Projektion / Erinnerungsraum
-- Begründung der institutionellen Relevanz
 
 #### Automatisch generiete Informationen 
 
 Die im folgenden aufgelisteten Daten werden durch das System ergänzt:
 
-- Archivsignatur/Aktennummer
-- Sammlung
-- Provenienz
-- Dokumentationsgrad
-- Institutionelle Relevanz 
+- Aktennummer / Archivsignatur 
+- Institutionelle Relevanz / Systembewertung
 
 ## Akten ohne Bild
 
@@ -47,16 +53,75 @@ Akten ohen Bild werden vollstänidg durch das System generiert. Grundlage hierf�
 
 ### Automatische generierte Informationen 
 
+- Kategorie
 - Aktentitel
 - Kontextbeschreibung
-- Erhaltungszustand
+- Jahr / Datierung
 - Objekttyp
-- Kurzbeschreibung für die Projektion / Erinnerungsraum
-- Archivsignatur / Aktennummer
-- Sammlung
+- Herkunft
 - Provenienz
+- Sammlung
 - Dokumentationsgrad
-- Institutionelle Relevanz
+- Erhaltungszustand
+- Materialhinweis
+- fehelnde Informationen
+- Kurzbeschreibung für die Projektion / Erinnerungsraum
+- Aktenart
+- Archivsignatur / Aktennummer
+- Institutionelle Relevanz / Systembewertung
+
+Hinweis: Die einzelnen Informationen werden nicht vollständig unabhängig voneinander erzeugt. Die Kategorie bildet den Ausgangspunkt für die Auswahl weiterer Informationen. Zusätzlich sollen offensichtliche Widersprüche zwischen Objekttyp, Material, Provenienz, Erhaltungszustand und Aktenart vermieden werden.
+
+### Aktenarten ohne Bild
+
+Besitzt eine Akte keine hinterlegte visuelle Datei, wird anstelle eines Bildes eine archivische Darstellung erzeugt. Die Art der Darstellung orientiert sich an der Überlieferungssituation der Akte.
+
+#### Archivvermerk 
+
+Kurzer institutioneller Hinweis auf fehelndes visuelles Material 
+
+*Beispiele:* 
+- Bilddokumentation nicht überliefert.
+- Visuelle Vorlage nicht erhalten.
+- Nur schriftlich erschlossen.
+- Zugehöriges Bildmaterial fehlt.
+
+#### Bestandsnotiz
+
+Kurzer Hinweis auf die Überlieferung oder den Bestandszusammenhang.
+
+*Beispiele:*
+- Erfasst ohne visuelle Vorlage.
+- Zusammenhang nur teilweise erhalten.
+- Bestand unvollständig überliefert.
+- Weitere Unterlagen nicht erhalten.
+
+#### Dokumentationsfragment
+
+Ein sehr kurzer fragmentarischer Textausschnitt. Das Dokumentfragment wird aus eigenen Textbausteinen erzeugt und nicht aus der vollständigen Kontextbeschreibung gekürzt.
+
+*Beispiele:*
+- ...weitere Unterlagen fehlen...
+- ...Zugang zeitweise eingeschränkt...
+
+#### Digitaler Datensatz
+
+Der digitale Datensatz wird ausschließlich verwendet, wenn eine digitale Überlieferung aufgrund des Objekttyps, Materials oder Kontexts plausibel ist.
+
+*Beispiele:*
+- digitales Dokument
+- digitales Bild
+- gescannte Vorlage
+- elektronische Datei
+
+#### Überlieferungslücke
+
+Die Überlieferungslücke verweist auf fehlendes oder verlorenes Material und tritt seltener als die übrigen Aktenarten auf.
+
+*Beispiele:*
+- Vorlage nicht erhalten.
+- Zugehöriges Material verloren.
+- Lücke im Bestand.
 
 # Kategorien
 
@@ -76,10 +141,6 @@ Die Kontextbeschreibung wird innerhalb der ausführlichen Aktenansicht angezeigt
 - Verwaltung und Infrastruktur 
 - Wissensarbeit und technische Medien 
 
-### Institutionelle Relevanz:
-
-- von lokaler Bedeutung
-
 ## Alltagskultur 
 
 ### Sammlungen: 
@@ -87,10 +148,6 @@ Die Kontextbeschreibung wird innerhalb der ausführlichen Aktenansicht angezeigt
 - Familien und private Fotografien
 - Wohnen, Freizeit und soziale Beziehungen 
 - Medien und Alltagsobjekte
-
-### Institutionelle Relevanz:
-
-- von regionaler Vedeutung 
 
 ## Migration
 
@@ -100,10 +157,6 @@ Die Kontextbeschreibung wird innerhalb der ausführlichen Aktenansicht angezeigt
 - Korrespondenz und transnationale Beziehungen
 - Institutionelle Erfassung und Zugehörigkeit
 
-### Institutionelle Relevanz:
-
-- von überregionalen Relevanz 
-
 ## Protest 
 
 ### Sammlungen:
@@ -111,10 +164,6 @@ Die Kontextbeschreibung wird innerhalb der ausführlichen Aktenansicht angezeigt
 - Demonstrationen und politische Versammlungen 
 - Politische Kommunikation und Protestmedien
 - Spuren, Kontrolle und Unsichtbarmachung 
-
-### Institutionelle Relevanz:
-
-- von gesellschaftlicher Bedeutung 
 
 ## Öffentlicher Raum 
 
@@ -124,10 +173,6 @@ Die Kontextbeschreibung wird innerhalb der ausführlichen Aktenansicht angezeigt
 - Öffentliche Einrichtungen und Versorgung
 - Ereignisse, Kommunikation und urbane Spuren 
 
-### Institutionelle Relevanz: 
-
-- von wissenschaftlicher Bedeutung 
-
 ## Kultur und Rituale 
 
 ### Sammlungen: 
@@ -136,11 +181,36 @@ Die Kontextbeschreibung wird innerhalb der ausführlichen Aktenansicht angezeigt
 - Feste, Zeremonien und Gedenkkultur
 - Materielle und schriftliche Überlieferungen 
 
-### Institutionelle Relevanz: 
+# Institutionelle Relevanz
 
-- von medienhistorischer Bedeutung
-- von sammlungsgeschichtlciher Bedeutung
+Die institutionelle Relevanz wird als Einschätzung des Archivsystems verstanden. Sie wird nicht manuell als feste Bedeutung der Akte vergeben und ist nicht unmittelbar an eine bestimmte Kategorie gekoppelt.
 
+Das System leitet die institutionelle Relevanz aus festgelegten Eigenschaften der jeweiligen Akte ab. Dadurch entsteht eine scheinbar institutionelle Bewertung, die den Besucher*innen vor ihrer eigenen Auswahl angezeigt wird.
+
+Die Bewertung stellt keine objektive Aussage über den kulturellen oder gesellschaftlichen Wert einer Erinnerung dar. Sie bildet ausschließlich die innerhalb des Systems festgelegte Bewertungs- und Selektionslogik ab.
+
+## Bewertungsstufen
+
+Das System unterscheidet zwischen den Stufen hoch, mittel und gering
+
+## Aufnahmehinweis
+
+Aus der ermittelten Bewertungsstufe wird ein Aufnahmehinweis abgeleitet:
+
+- hoch = Aufnahme empfohlen
+- mittel = Aufnahme prüfenswert
+- gering = Aufnahme nicht priorisiert
+
+Die Besucher*innen können sich gegen diesen Hinweis entscheiden. 
+
+## Grundlage der Bewertung
+
+Die institutionelle Relevanz wird aus meherern Merkmalen der Akte abgeleitet. Dazu zählen:
+- institutionelle / Sammlungsbezogenen Passung
+- Dokumentationsgrad
+- Erhalrung- /Bewahrungsbedarf
+
+Die einzelnen Merkmale werden intern gewichtet und zu einer Gesamtbewertung zusammengeführt. Der daraus entstehende Zahlenwert wird im Interface nicht angezeigt. Sichtbar sind ausschließlich die daraus abgeleitete institutionelle Relevanz sowie der Aufnahmehinweis.
 
 # Allgemeine Kataloge
 
@@ -148,14 +218,25 @@ Die folgenden Kataloge werden unabhängig von den Kategoriene genutzt.
 
 ## Provenienz
 
+Die Provenienz beschreibt den Überlieferungsweg der Akte, nicht ihren geografischen Entstehungsort. Der Katalog gilt kategorieübergreifend.
+
+- Überlieferung durch private Nachlässe; Zeitpunkt der Archivaufnahme nicht dokumentiert.
+- Erhalt über kommunale Sammlung; vorheriger Besitz unbekannt.
+- Übernahme aus institutionellem Archivbestand ohne vollständige Herkunftsangabe.
+- Fund im Rahmen einer Bestandsaufnahme; ursprünglicher Erwerb nicht rekonstruierbar.
+- Weitergabe im Familienkreis; spätere Ablage im Archiv ohne Protokoll.
+- Digitalisierung aus einem unsortierten Vorlass; analoge Vorlage nicht mehr vorhanden.
+- Sekundärüberlieferung über mündliche Erzählung; schriftliche Belege fragmentarisch.
+- Zugang über Schenkung; genaue Übernahmebedingungen nicht überliefert.
 
 ## Dokumentationsgrad
 
+Der Dokumentationsgrad beschreibt, wie vollständig die Akte erschlossen ist. Der Katalog gilt kategorieübergreifend.
 
-## Erhaltungszustand
-
-
-## Objekttyp
+- gut dokumentiert
+- teilweise dokumentiert
+- spärlich dokumentiert
+- undokumentiert
 
 
 # Textbausteine
@@ -595,39 +676,31 @@ Für jede Kategorie stehen folgende Bausteine zur Verfügung:
 
 # Bildung der Aktentitel
 
-Die Titel der systemgenerierten Akten werden aus dem Objekttyp und einem inhaltlichen oder räumlichen Bezug gebildet.
+Die Titel systemgenerierter Akten werden aus dem Objekttyp und einem inhaltlichen oder räumlichen Bezug gebildet. Die verwendeten Strukturen sollen möglichst unabhängig vom eingesetzten Textbaustein grammatikalisch funktionieren.
 
 Mögliche Strukturen sind:
 
-- `[Objekttyp] zu [Motiv oder Inhalt]`
-- `[Objekttyp] aus [Ort oder Kontext]`
-- `[Objekttyp] mit Bezug zu [Motiv oder Inhalt]`
-- `[Objekttyp] eines nicht dokumentierten Ereignisses`
-- `[Objekttyp] aus einem fragmentarisch überlieferten Bestand`
+- [Objekttyp]: [Motiv oder Inhalt]
+- [Objekttyp] aus [Ort oder Kontext]
+- [Objekttyp] mit unbekannten Zusammenhang
+- [Objekttyp] aus einem nicht vollständig dokumentierten Bestand
+- [Objekttyp] aus einem fragmentarisch überlieferten Bestand
 
 # Bildung der Kontextbeschreibung
 
-Die Kontextbeschreibung wird aus mehreren Bausteinen zusammengesetzt. Sie beschreibt das Objekt, ordnet es einem Zusammenhang zu und verweist gegebenenfalls auf fehlende Informationen.
+Die Kontextbeschreibung umfasst höchstens zwei kurze Sätze. Der erste Satz beschreibt, worauf das überlieferte Objekt verweist oder was es dokumentiert. Optional folgt ein zweiter Satz mit einer fehlenden oder nicht überlieferten Information.
 
-## Mögliche Satzanfänge
+*Grundstruktur:*
+- Das überlieferte Material verweist auf [Motiv].
+- Das Dokument verweist auf [Motiv].
+- Die Aufnahme dokumentiert [Motiv].
+- Die Unterlage verweist auf [Motiv].
+- Das Objekt steht im Zusammenhang mit [Motiv].
 
-- Das überlieferte Objekt dokumentiert
-- Das Dokument verweist auf
-- Die Aufnahme zeigt
-- Die erhaltene Unterlage beschreibt
-- Das Fragment steht im Zusammenhang mit
-- Das Objekt wurde einem Bestand zugeordnet, der
-- Die genaue Funktion des Objekts ist nicht vollständig überliefert. Es verweist jedoch auf
+*Optional*: 
+- [Fehlende Information].
 
-## Mögliche Verbindungen
-
-- und gibt Einblick in
-- und dokumentiert zugleich
-- und lässt Rückschlüsse auf
-- und verweist auf
-- steht jedoch nur fragmentarisch zur Verfügung
-- konnte bisher keinem eindeutigen Ereignis zugeordnet werden
-- wurde aufgrund seines dokumentarischen Charakters in die Sammlung aufgenommen
+*Beispiel:* Die Unterlage verweist auf Veränderungen eines handwerklichen Berufs. Der genaue Betrieb ist nicht bekannt.
 
 # Bildung der Kurzbeschreibung für den Erinnerungsraum
 
@@ -635,15 +708,13 @@ Die Kurzbeschreibung reduziert den Inhalt der Akte auf einen kurzen Satz. Sie en
 
 ## Mögliche Strukturen
 
-- Dokumentiert `[Motiv oder Inhalt]`.
-- Verweist auf `[Motiv oder Inhalt]`.
-- Überliefert eine Spur von `[Motiv oder Inhalt]`.
-- Bewahrt ein Fragment von `[Motiv oder Inhalt]`.
-- Zeigt `[Motiv oder Inhalt]`.
-- Erinnert an `[Motiv oder Inhalt]`.
+- Dokumentiert [Motiv oder Inhalt].
+- Verweist auf [Motiv oder Inhalt].
+- Überliefert eine Spur von [Motiv oder Inhalt].
+- Bewahrt ein Fragment von [Motiv oder Inhalt].
+- Zeigt [Motiv oder Inhalt].
 
-## Beispiele
-
+*Beispiele:*
 - Dokumentiert alltägliche Arbeitsabläufe.
 - Bewahrt ein Fragment privaten Alltags.
 - Verweist auf einen biografischen Übergang.
@@ -651,23 +722,105 @@ Die Kurzbeschreibung reduziert den Inhalt der Akte auf einen kurzen Satz. Sie en
 - Zeigt die Veränderung eines öffentlichen Ortes.
 - Erinnert an eine gemeinschaftliche Tradition.
 
+# Texte für Dokumentationsfragemente
+
+Dokumentfragmente verwenden einen eigenen Pool kurzer Textschnipsel. Sie werden nicht aus der Kontextbeschreibung gekürzt. Die Texte sollen fragmentarisch wirken und ungefähr ein bis zwei kurze Zeilen umfassen.
+
+*Arbeit:*
+- … weitere Unterlagen fehlen …
+- … Arbeitsablauf später verändert …
+- … Name der beschäftigten Person fehlt …
+- … technische Umstellung vermerkt …
+- … Tätigkeit nicht näher dokumentiert …
+- … Zusammenhang mit weiteren Unterlagen verloren …
+
+*Alltagskultur:*
+- … Anlass nicht mehr bekannt …
+- … innerhalb des Haushalts weitergegeben …
+- … persönliche Zuordnung verloren …
+- … weitere Aufzeichnungen fehlen …
+- … ursprüngliche Verwendung unbekannt …
+- … nur fragmentarisch erhalten …
+
+*Migration:* 
+- … weiterer Reiseweg nicht dokumentiert …
+- … Aufenthaltsdauer unbekannt …
+- … Herkunftsort nicht eindeutig vermerkt …
+- … weitere Dokumente fehlen …
+- … Ankunft nur teilweise überliefert …
+- … persönliche Zuordnung nicht erhalten …
+
+*Protest:*
+- … Anlass der Versammlung unvollständig dokumentiert …
+- … Urheber*in nicht vermerkt …
+- … weitere Flugblätter fehlen …
+- … ursprünglicher Veröffentlichungskontext verloren …
+- … Beteiligte nicht identifiziert …
+- … politische Botschaft nur teilweise erhalten …
+
+*Öffentlicher Raum:*
+- … Nutzung des Platzes vorübergehend verändert …
+- … genauer Ort nicht überliefert …
+- … ursprünglicher Nutzungskontext fehlt …
+- … weitere Veränderungen nicht dokumentiert …
+- … Zugang zeitweise eingeschränkt …
+- … spätere Nutzung unbekannt …
+
+*Kultur und Rituale:*
+- … Bedeutung der Handlung nicht überliefert …
+- … weitere Angaben zur Zeremonie fehlen …
+- … ursprüngliche Verwendung ungeklärt …
+- … beteiligte Personen nicht identifiziert …
+- … Zusammenhang nur teilweise erhalten …
+- … institutionelle Zuordnung verloren …
+
 # Kombination der Textbausteine
 
 Bei der Generierung werden ausschließlich Bausteine miteinander verbunden, die derselben Kategorie zugeordnet sind.
 
 Eine Akte der Kategorie `Arbeit` kombiniert beispielsweise einen Objekttyp, ein Motiv und einen Ort aus den Katalogen der Kategorie `Arbeit`.
 
-Allgemeine Angaben wie Provenienz und Dokumentationsgrad werden aus übergeordneten Katalogen ergänzt.
+Allgemeine Angaben wie Provenienz und Dokumentationsgrad werden anschließend ergänzt.
 
-Durch die zufällige Kombination entstehen unterschiedliche Akten. Die Begrenzung auf kategoriespezifische Bausteine soll gleichzeitig verhindern, dass inhaltlich unpassende oder widersprüchliche Verbindungen erzeugt werden.
+Eine gemeinsame Kategorie allein garantiert noch keine plausible Kombination. Deshalb sollen zusätzlich offensichtliche Widersprüche vermieden werden.
+
+*Beispiele:*
+- Ein digitaler Datensatz wird nur bei plausibel digitalem Material erzeugt.
+- Eine Fotografie sollte keinen Erhaltungszustand erhalten, der eindeutig nur zu einem anderen Material passt.
+- Eine digitale Quelle sollte nicht ohne weiteren Zusammenhang mit einer rein analogen Provenienz kombiniert werden.
+- Fehlende Informationen sollen zum jeweiligen Objekttyp passen.
+
 
 #  Generierungslogik 
 
-Die Auswahl der Metadaten erfolgt abhängig von der gewählten Kategorie.
+Die systemgenerierten Akten werden aus den hinterlegten Kategorien, Katalogen und Textbausteinen zusammengesetzt.
 
-Für jede Kategorie stehen eigene Sammlungen und institutionelle Relevanzen zur Verfügung. Die übrigen Metadaten werden aus allgemeinen Katalogen ergänzt und anschließend zu einer vollständigen Akte zusammengeführt.
+Dabei sollen die einzelnen Angaben inhaltlich aufeinander abgestimmt sein. Offensichtliche Widersprüche zwischen Objekttyp, Material, Provenienz, Erhaltungszustand, fehlenden Informationen und Aktenart sollen vermieden werden.
 
-Dadurch entstehen unterschiedliche, aber in sich konsistente Akten, die einem archivischen Dokumentationsstil folgen.
+Die konkrete technische Reihenfolge und Umsetzung dieser Abhängigkeiten wird innerhalb der Anwendung festgelegt.
+
+# Verhältnis von Archivinterface und Erinnerungsraum
+
+Die beiden Ansichten erfüllen unterschiedliche Funktionen.
+
+## Archivinterface
+
+Das Archivinterface zeigt die ausführlichere institutionelle Einordnung der Akte. Dabei sind alle Kategorien sichtbar bzw. Informationen.
+
+## Erinnerungsraum
+
+Der Erinnerungsraum zeigt eine reduzierte Form der ausgewählten Akte.
+
+*Sichtbar sind:*
+
+Bild oder archivisches Fragment
+Titel
+Datierung
+kurze Beschreibung
+
+Ausführliche Metadaten und Bewertungskriterien werden dort nicht erneut dargestellt.
+
+Bei bildlosen Akten wird auch im Erinnerungsraum die jeweilige Aktenart sichtbar. Die Darstellung bleibt dort jedoch stärker reduziert als im Archivinterface.
 
 # Hinweis 
 

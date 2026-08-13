@@ -96,7 +96,7 @@ body.archive-view {
   align-items: center;
   padding: 2rem 2.5rem 2.5rem;
   width: 100%;
-  max-width: 1400px;
+  max-width: 1600px;
   margin: 0 auto;
 }
 
@@ -196,7 +196,7 @@ body.archive-view {
   padding: 1.75rem 1.5rem 1.5rem calc(var(--binder-width) + 1.25rem);
   box-shadow: 0 2px 6px var(--color-shadow);
   cursor: default;
-  min-height: 28rem;
+  min-height: 34rem;
   overflow: hidden;
 }
 
@@ -318,15 +318,27 @@ body.archive-view {
 
 .akte-card__figure {
   margin: 0 0 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: clamp(200px, 22vh, 260px);
 }
 
 .akte-card__image {
   display: block;
   width: 100%;
-  max-height: 160px;
+  height: 100%;
   object-fit: cover;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
+}
+
+.akte-card__image--portrait {
+  width: auto;
+  max-width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 /* --- Archivfragmente: Karton-Slot + eingelegtes Papier --- */
@@ -336,8 +348,7 @@ body.archive-view {
   align-items: center;
   justify-content: center;
   width: 100%;
-  aspect-ratio: 4 / 3;
-  max-height: 160px;
+  height: 100%;
   box-sizing: border-box;
   padding: 0.45rem;
   background:
@@ -1221,14 +1232,25 @@ body.projection-view.projection-view--light {
   flex: 0 0 65%;
   margin: 0;
   min-width: 0;
+  aspect-ratio: 4 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .memory-exhibit__image {
   display: block;
   width: 100%;
-  aspect-ratio: 4 / 3;
+  height: 100%;
   object-fit: cover;
   border-radius: 2px;
+}
+
+.memory-exhibit__image--portrait {
+  width: auto;
+  max-width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .memory-exhibit__sign {

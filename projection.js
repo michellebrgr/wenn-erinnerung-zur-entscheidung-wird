@@ -51,6 +51,37 @@
   }
 
   /**
+   * Setzt die Portrait-Klasse anhand der natürlichen Bildmaße.
+   * @param {HTMLImageElement} img
+   * @param {string} portraitClass
+   */
+  function applyImageOrientation(img, portraitClass) {
+    function set() {
+      img.classList.toggle(portraitClass, img.naturalHeight > img.naturalWidth);
+    }
+    if (img.complete && img.naturalWidth) {
+      set();
+    } else {
+      img.addEventListener('load', set);
+    }
+  }
+
+  /**
+   * Wendet Orientierungs-Klassen auf alle Bilder in einem Container an.
+   * @param {Element} root
+   * @param {string} selector
+   * @param {string} portraitClass
+   */
+  function applyImageOrientationsIn(root, selector, portraitClass) {
+    if (!root) {
+      return;
+    }
+    root.querySelectorAll(selector).forEach(function (img) {
+      applyImageOrientation(img, portraitClass);
+    });
+  }
+
+  /**
    * Rendert das Ausstellungsbild einer Akte.
    * Ohne Bild: Archivfragment aus aktenart.
    * @param {Object} akte
@@ -134,6 +165,7 @@
     }
 
     memoryRoomEl.innerHTML = slots.join('');
+    applyImageOrientationsIn(memoryRoomEl, '.memory-exhibit__image', 'memory-exhibit__image--portrait');
     previousIds = currentIds;
   }
 

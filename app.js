@@ -246,12 +246,14 @@
     return (
       '<article class="akte-card ' + cardClass + '">' +
       binderHoles +
+      '<div class="akte-card__heading">' +
       '<header class="akte-card__header">' +
       '<span class="akte-card__reference">' + escapeHtml(formatValue(akte.archivsignatur)) + '</span>' +
       '<span class="akte-card__category">' + escapeHtml(formatValue(akte.kategorie)) + '</span>' +
       '</header>' +
       '<h3 class="akte-card__title">' + escapeHtml(formatValue(akte.titel)) + '</h3>' +
       '<p class="akte-card__year">' + escapeHtml(formatValue(akte.jahr)) + '</p>' +
+      '</div>' +
       renderAkteImage(akte) +
       '<p class="akte-card__fragment">' + escapeHtml(formatValue(beschreibung)) + '</p>' +
       renderMetaList(displayAkte, compact) +

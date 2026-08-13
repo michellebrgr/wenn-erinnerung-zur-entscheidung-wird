@@ -890,15 +890,31 @@ body.projection-view.projection-view--light {
   flex-direction: column;
   gap: var(--proj-space-xs);
   min-height: 0;
-  transition: opacity var(--transition-fast), transform var(--transition-fast);
+  position: relative;
+  transition: opacity var(--transition-fast);
 }
 
 .memory-exhibit--empty {
-  align-items: center;
-  justify-content: center;
+  align-items: flex-start;
+  justify-content: flex-start;
   border-style: dashed;
   border-color: var(--projection-card-border-empty);
   opacity: 0.45;
+}
+
+.memory-exhibit--empty::before {
+  content: '';
+  width: 65%;
+  aspect-ratio: 4 / 3;
+  flex-shrink: 0;
+}
+
+.memory-exhibit--empty::after {
+  content: '';
+  display: block;
+  width: 100%;
+  min-height: calc(var(--proj-font-sm) * 1.45 * 3);
+  flex-shrink: 0;
 }
 
 .memory-exhibit--filled {
@@ -906,27 +922,52 @@ body.projection-view.projection-view--light {
 }
 
 .memory-exhibit--enter {
-  animation: exhibitEnter 0.5s ease forwards;
+  animation: exhibitEnter 2.4s cubic-bezier(0.45, 0.05, 0.55, 0.95) both;
+}
+
+.memory-exhibit--exit {
+  animation: exhibitExit 2s cubic-bezier(0.45, 0.05, 0.55, 0.95) forwards;
 }
 
 @keyframes exhibitEnter {
   from {
     opacity: 0;
-    transform: scale(0.96);
   }
   to {
     opacity: 1;
-    transform: scale(1);
+  }
+}
+
+@keyframes exhibitExit {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .memory-exhibit--enter,
+  .memory-exhibit--exit {
+    animation: none;
   }
 }
 
 .memory-exhibit__placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
   font-family: var(--font-sans);
   font-size: var(--proj-font-xs);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--projection-text-muted);
   text-align: center;
+  pointer-events: none;
 }
 
 .memory-exhibit__visual {

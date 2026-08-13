@@ -6,7 +6,7 @@
  * So ergänzt du später eigene Inhalte:
  * 1. Neues Bild: Datei in den Ordner assests/ legen und neuen Eintrag in ARCHIV_BILDER anlegen.
  * 2. Weitere Archivlesart zum selben Bild: weiteres Objekt in `varianten` desselben Bild-Eintrags.
- * 3. Akte ohne Bild: wird zur Laufzeit aus kategorienKataloge und Textvorlagen erzeugt.
+ * 3. Akte ohne Bild: wird zur Laufzeit aus kategorienKataloge, Textvorlagen und ARCHIV_AKTENARTEN erzeugt.
  * 4. Vokabulare: kategorienKataloge und Vorlagen in KONTROLLIERTE_WERTE erweitern —
  *    daraus werden Objekttyp, Sammlung, Provenienz, Texte und Bewertungskriterien erzeugt.
  */

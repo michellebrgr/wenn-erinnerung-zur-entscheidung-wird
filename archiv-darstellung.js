@@ -92,7 +92,7 @@
     }
 
     var isDokumentfragment = entry.key === 'dokumentfragment';
-    var isZettel = entry.key === 'bestandsnotiz';
+    var usesSheet = entry.key !== 'ueberlieferungsluecke';
     var bodyHtml = '';
 
     if (isDokumentfragment) {
@@ -107,7 +107,7 @@
       '<span class="archiv-fragment__art">' + escapeHtml(entry.label || '') + '</span>' +
       '<div class="archiv-fragment__content">' + bodyHtml + '</div>';
 
-    if (isZettel) {
+    if (usesSheet) {
       inner = '<div class="archiv-fragment__sheet">' + inner + '</div>';
     }
 

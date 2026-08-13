@@ -339,6 +339,8 @@ function generateAktenMetadaten(variante, options) {
     sammlung: pickCuratedOrFallback(options, variante, 'sammlung', undefined),
     erhaltungszustand: pickCuratedOrFallback(options, variante, 'erhaltungszustand', undefined),
     institutionelleRelevanz: pickCuratedOrFallback(options, variante, 'institutionelleRelevanz', undefined),
+    materialhinweis: pickCuratedOrFallback(options, variante, 'materialhinweis', undefined),
+    fehlendeInformation: pickCuratedOrFallback(options, variante, 'fehlendeInformation', undefined),
   };
 
   const bausteine = pickKategorieBausteine(kategorie, {
@@ -346,6 +348,8 @@ function generateAktenMetadaten(variante, options) {
     sammlung: curatedOverrides.sammlung,
     erhaltungszustand: curatedOverrides.erhaltungszustand,
     institutionelleRelevanz: curatedOverrides.institutionelleRelevanz,
+    materialhinweis: curatedOverrides.materialhinweis,
+    fehlendeInformation: curatedOverrides.fehlendeInformation,
   });
 
   const provenienz = pickCuratedOrFallback(options, variante, 'provenienz', function () {
@@ -642,6 +646,24 @@ function buildAkte(bild, variante, options) {
         : (variante.kontextbeschreibung || null),
       kurzbeschreibung: null,
     };
+  const titel = options.titel !== undefined
+    ? options.titel
+    : (ohneBild ? texte.titel : (variante.titel || null));
+  const kurzbeschreibung = options.kurzbeschreibung !== undefined
+    ? options.kurzbeschreibung
+    : (ohneBild ? texte.kurzbeschreibung : (variante.kurzbeschreibung || null));
+  const kontextbeschreibung = options.kontextbeschreibung !== undefined
+    ? options.kontextbeschreibung
+    : (ohneBild ? texte.kontextbeschreibung : (variante.kontextbeschreibung || null));
+  const aktenartSource = {
+    objekttyp: meta.objekttyp,
+    materialhinweis: meta.materialhinweis,
+    sammlung: meta.sammlung,
+    titel: titel,
+    kurzbeschreibung: kurzbeschreibung,
+    kontextbeschreibung: kontextbeschreibung,
+  };
+  const aktenart = resolveAktenart(ohneBild, options, aktenartSource);
   const baseId = (bild && bild.id ? bild.id : 'ohne-bild') + '--' + (variante.id || meta.kategorie || 'generiert');
 
   return {
@@ -650,21 +672,20 @@ function buildAkte(bild, variante, options) {
     varianteId: variante.id || null,
     archivsignatur: archivsignatur,
     kategorie: meta.kategorie || variante.kategorie || null,
-    titel: options.titel !== undefined
-      ? options.titel
-      : (ohneBild ? texte.titel : (variante.titel || null)),
+    titel: titel,
     jahr: jahr,
     bild: bild && bild.pfad != null ? bild.pfad : null,
-    kurzbeschreibung: options.kurzbeschreibung !== undefined
-      ? options.kurzbeschreibung
-      : (ohneBild ? texte.kurzbeschreibung : (variante.kurzbeschreibung || null)),
-    kontextbeschreibung: options.kontextbeschreibung !== undefined
-      ? options.kontextbeschreibung
-      : (ohneBild ? texte.kontextbeschreibung : (variante.kontextbeschreibung || null)),
+    aktenart: aktenart,
+    kurzbeschreibung: kurzbeschreibung,
+    kontextbeschreibung: kontextbeschreibung,
     objekttyp: meta.objekttyp,
     herkunft: meta.herkunft,
     provenienz: meta.provenienz,
     sammlung: meta.sammlung,
+    materialhinweis: meta.materialhinweis,
+    erhaltungszustand: meta.erhaltungszustand,
+    dokumentationsgrad: meta.dokumentationsgrad,
+    fehlendeInformation: meta.fehlendeInformation,
     bewertungskriterien: generateBewertungskriterien({
       kategorie: meta.kategorie,
       erhaltungszustand: meta.erhaltungszustand,
@@ -854,7 +875,7 @@ function pickRandomOhneBildAkte() {
 
 /**
  * Wählt zufällig mehrere Archivakten aus ARCHIV_BILDER.
- * Zuerst verfügbare Bilder mit Pfad, dann systemgenerierte bildlose Akten zur Auffüllung auf count.
+ * Pro Angebot zufällig 0–2 bildlose Akten, Rest mit Bild; Reihenfolge gemischt.
  * Bilder im Erinnerungsraum werden ausgeschlossen; bildlose Akten dürfen mehrfach vorkommen.
  * @param {number} count - Anzahl der Akten
  * @param {Array<string>} [excludedBildIds] - Bild-IDs mit Pfad, die bereits im Erinnerungsraum sind
@@ -891,7 +912,7 @@ function pickArchiveAkten(count, excludedBildIds) {
   });
 
   for (let i = 0; i < ohneBildCount; i++) {
-    const akte = pickRandomOhneBildAkte(ohneBild);
+    const akte = pickRandomOhneBildAkte();
     if (!akte) {
       break;
     }

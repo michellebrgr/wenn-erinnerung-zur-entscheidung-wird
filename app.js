@@ -61,34 +61,72 @@
   }
 
   /**
-   * Bereich 2: Bild oder Platzhalter.
+   * Setzt die Portrait-Klasse anhand der natürlichen Bildmaße.
+   * @param {HTMLImageElement} img
+   * @param {string} portraitClass
+   */
+  function applyImageOrientation(img, portraitClass) {
+    function set() {
+      img.classList.toggle(portraitClass, img.naturalHeight > img.naturalWidth);
+    }
+    if (img.complete && img.naturalWidth) {
+      set();
+    } else {
+      img.addEventListener('load', set);
+    }
+  }
+
+  /**
+   * Wendet Orientierungs-Klassen auf alle Bilder in einem Container an.
+   * @param {Element} root
+   * @param {string} selector
+   * @param {string} portraitClass
+   */
+  function applyImageOrientationsIn(root, selector, portraitClass) {
+    if (!root) {
+      return;
+    }
+    root.querySelectorAll(selector).forEach(function (img) {
+      applyImageOrientation(img, portraitClass);
+    });
+  }
+
+  /**
    * Bildpfad pro Akte in data.js im Feld `bild` eintragen.
-   * @param {string|null} bild
+   * Ohne Bild: Archivfragment aus aktenart.
+   * @param {Object} akte
    * @returns {string}
    */
-  function renderAkteImage(bild) {
-    if (bild) {
+  function renderAkteImage(akte) {
+    if (akte && akte.bild) {
       return (
         '<figure class="akte-card__figure">' +
-        '<img class="akte-card__image" src="' + escapeHtml(bild) + '" alt="">' +
+        '<img class="akte-card__image" src="' + escapeHtml(akte.bild) + '" alt="">' +
         '</figure>'
       );
     }
 
     return (
       '<figure class="akte-card__figure">' +
-      '<div class="akte-card__image-placeholder">Kein Bild vorhanden</div>' +
+      (typeof renderArchivDarstellung === 'function'
+        ? renderArchivDarstellung(akte, 'card')
+        : '<div class="akte-card__image-placeholder">Kein Bild vorhanden</div>') +
       '</figure>'
     );
   }
 
   /**
-   * Bereich 5: Bewertungskriterien mit Kategorie und Text.
+   * Bereich 5: Institutionelle Relevanz und Aufnahmehinweis.
    * @param {Object} akte
    * @returns {string}
    */
   function renderCriteria(akte) {
-    const kriterien = Array.isArray(akte.bewertungskriterien) ? akte.bewertungskriterien : [];
+    const kriterien = Array.isArray(akte.bewertungskriterien) && akte.bewertungskriterien.length
+      ? akte.bewertungskriterien
+      : [
+          { label: 'Institutionelle Relevanz', text: akte.institutionelleRelevanz },
+          { label: 'Aufnahmehinweis', text: akte.aufnahmehinweis },
+        ].filter(function (item) { return item.text; });
 
     if (kriterien.length === 0) {
       return '<li class="criterion"><span class="criterion__value">—</span></li>';
@@ -109,7 +147,7 @@
   }
 
   /**
-   * Bereich 4: Objekttyp, Herkunft, Provenienz, Sammlung.
+   * Bereich 4: ausführliche Archivdaten laut Taxonomie.
    * @param {Object} akte
    * @param {boolean} compact - Weniger Felder für kompakte Darstellung
    * @returns {string}
@@ -119,26 +157,68 @@
       ? [
           ['Objekttyp', akte.objekttyp],
           ['Herkunft', akte.herkunft],
+          ['Dokumentationsgrad', akte.dokumentationsgrad],
+          ['Erhaltungszustand', akte.erhaltungszustand],
         ]
       : [
           ['Objekttyp', akte.objekttyp],
+          ['Aktenart', akte.aktenartLabel || null],
           ['Herkunft', akte.herkunft],
           ['Provenienz', akte.provenienz],
           ['Sammlung', akte.sammlung],
+          ['Dokumentationsgrad', akte.dokumentationsgrad],
+          ['Erhaltungszustand', akte.erhaltungszustand],
+          ['Materialhinweis', akte.materialhinweis],
+          ['Fehlende Informationen', akte.fehlendeInformation],
         ];
 
-    const items = fields.map(function (field) {
-      return '<li><strong>' + escapeHtml(field[0]) + '</strong>: ' + escapeHtml(formatValue(field[1])) + '</li>';
-    });
+    const items = fields
+      .filter(function (field) {
+        if (field[0] === 'Aktenart' && !akte.aktenart) {
+          return false;
+        }
+        if (
+          (field[0] === 'Materialhinweis' || field[0] === 'Fehlende Informationen') &&
+          (field[1] == null || field[1] === '' || field[1] === 'nicht angegeben') &&
+          akte.bild
+        ) {
+          return false;
+        }
+        return true;
+      })
+      .map(function (field) {
+        return '<li><strong>' + escapeHtml(field[0]) + '</strong>: ' + escapeHtml(formatValue(field[1])) + '</li>';
+      });
 
     return '<ul class="akte-card__meta" aria-label="Archivdaten">' + items.join('') + '</ul>';
   }
 
   /**
-   * Rendert eine Archivkarte mit fünf Bereichen.
+   * Lesbares Label der Aktenart.
+   * @param {Object} akte
+   * @returns {string|null}
+   */
+  function resolveAktenartLabel(akte) {
+    if (!akte || !akte.aktenart) {
+      return null;
+    }
+    if (typeof getArchivAktenarten === 'function') {
+      const key = typeof canonicalAktenartKey === 'function'
+        ? canonicalAktenartKey(akte.aktenart)
+        : akte.aktenart;
+      const art = getArchivAktenarten().find(function (entry) {
+        return entry.key === key;
+      });
+      return art ? art.label : akte.aktenart;
+    }
+    return akte.aktenart;
+  }
+
+  /**
+   * Rendert eine Archivkarte mit institutioneller Einordnung.
    * @param {Object} akte
    * @param {Object} options
-   * @param {string} options.variant - 'selectable' oder 'pending'
+   * @param {string} options.variant - 'selectable', 'pending' oder 'review'
    * @param {boolean} [options.compact=false]
    * @returns {string}
    */
@@ -146,22 +226,42 @@
     const variant = options.variant;
     const compact = options.compact || false;
     const isSelectable = variant === 'selectable';
-    const cardClass = isSelectable ? 'akte-card--selectable' : 'akte-card--pending';
+    const cardClass =
+      variant === 'selectable'
+        ? 'akte-card--selectable'
+        : variant === 'pending'
+          ? 'akte-card--pending'
+          : variant === 'review'
+            ? 'akte-card--review'
+            : '';
     const dataAttr = isSelectable ? 'data-id="' + escapeHtml(akte.id) + '"' : '';
     const actionHint = isSelectable ? 'Klicken zum Aufnehmen' : '';
+    const binderHoles =
+      '<div class="akte-card__binder" aria-hidden="true">' +
+      '<span class="akte-card__binder-hole"></span>' +
+      '<span class="akte-card__binder-hole"></span>' +
+      '<span class="akte-card__binder-hole"></span>' +
+      '</div>';
+    const displayAkte = Object.assign({}, akte, {
+      aktenartLabel: resolveAktenartLabel(akte),
+    });
+    const beschreibung = compact
+      ? (akte.kurzbeschreibung || akte.kontextbeschreibung)
+      : (akte.kontextbeschreibung || akte.kurzbeschreibung);
 
     return (
       '<article class="akte-card ' + cardClass + '" role="listitem" tabindex="0" ' + dataAttr + '>' +
+      binderHoles +
       '<header class="akte-card__header">' +
       '<span class="akte-card__reference">' + escapeHtml(formatValue(akte.archivsignatur)) + '</span>' +
       '<span class="akte-card__category">' + escapeHtml(formatValue(akte.kategorie)) + '</span>' +
       '</header>' +
       '<h3 class="akte-card__title">' + escapeHtml(formatValue(akte.titel)) + '</h3>' +
       '<p class="akte-card__year">' + escapeHtml(formatValue(akte.jahr)) + '</p>' +
-      renderAkteImage(akte.bild) +
-      '<p class="akte-card__fragment">' + escapeHtml(formatValue(akte.kurzbeschreibung)) + '</p>' +
-      renderMetaList(akte, compact) +
-      '<ul class="akte-card__criteria" aria-label="Bewertungskriterien">' + renderCriteria(akte) + '</ul>' +
+      renderAkteImage(akte) +
+      '<p class="akte-card__fragment">' + escapeHtml(formatValue(beschreibung)) + '</p>' +
+      renderMetaList(displayAkte, compact) +
+      '<ul class="akte-card__criteria" aria-label="Institutionelle Bewertung">' + renderCriteria(akte) + '</ul>' +
       (actionHint ? '<p class="akte-card__action-hint">' + actionHint + '</p>' : '') +
       '</article>'
     );
@@ -209,6 +309,7 @@
    */
   function renderOfferSet(offer) {
     offerContainer.innerHTML = offer.map(renderOfferCard).join('');
+    applyImageOrientationsIn(offerContainer, '.akte-card__image', 'akte-card__image--portrait');
 
     offerContainer.querySelectorAll('.akte-card--selectable').forEach(function (card) {
       card.addEventListener('click', function () {
@@ -246,6 +347,7 @@
     pendingAktePreview.innerHTML =
       '<p class="pending-akte-preview__label">Neu ausgewählte Akte</p>' +
       renderAkteCard(akte, { variant: 'pending', compact: true });
+    applyImageOrientationsIn(pendingAktePreview, '.akte-card__image', 'akte-card__image--portrait');
 
     archiveMemoryRoom.innerHTML = memoryRoom.map(renderArchiveMemorySlot).join('');
 

@@ -6,21 +6,79 @@
  * So ergänzt du später eigene Inhalte:
  * 1. Neues Bild: Datei in den Ordner assests/ legen und neuen Eintrag in ARCHIV_BILDER anlegen.
  * 2. Weitere Archivlesart zum selben Bild: weiteres Objekt in `varianten` desselben Bild-Eintrags.
- * 3. Akte ohne Bild: Eintrag mit `pfad: null` und passender Variante.
- * 4. Vokabulare: Listen und Profile in KONTROLLIERTE_WERTE erweitern — daraus werden
- *    Objekttyp, Herkunft, Provenienz, Sammlung und Bewertungskriterien erzeugt.
+ * 3. Akte ohne Bild: wird zur Laufzeit aus kategorienKataloge, Textvorlagen und ARCHIV_AKTENARTEN erzeugt.
+ * 4. Vokabulare: kategorienKataloge und Vorlagen in KONTROLLIERTE_WERTE erweitern —
+ *    daraus werden Objekttyp, Sammlung, Provenienz, Texte und Bewertungskriterien erzeugt.
  */
 
 /** Präfix für Archivsignaturen, z. B. AK-1989-014 */
 const ARCHIV_PREFIX = 'AK';
 
+/**
+ * Aktenarten für bildlose Akten (keine hinterlegte Bilddatei).
+ * Gewichte steuern die Zufallsauswahl; Überlieferungslücke ist selten.
+ * vermerke sind Pools kurzer institutioneller Hinweise; ein Eintrag wird pro Akte gewählt.
+ */
+const ARCHIV_AKTENARTEN = [
+  {
+    key: 'archivvermerk',
+    label: 'Archivvermerk',
+    gewicht: 235,
+    vermerke: [
+      'Bilddokumentation nicht überliefert.',
+      'Visuelle Vorlage nicht erhalten.',
+      'Nur schriftlich erschlossen.',
+      'Zugehöriges Bildmaterial fehlt.',
+    ],
+  },
+  {
+    key: 'bestandsnotiz',
+    label: 'Bestandsnotiz',
+    gewicht: 235,
+    vermerke: [
+      'Erfasst ohne visuelle Vorlage.',
+      'Zusammenhang nur teilweise erhalten.',
+      'Bestand unvollständig überliefert.',
+      'Weitere Unterlagen nicht erhalten.',
+    ],
+  },
+  {
+    key: 'dokumentfragment',
+    label: 'Dokumentationsfragment',
+    gewicht: 235,
+    vermerke: [],
+  },
+  {
+    key: 'digitaler-datensatz',
+    label: 'digitaler Datensatz',
+    gewicht: 235,
+    vermerke: [
+      'digitales Dokument',
+      'digitales Bild',
+      'gescannte Vorlage',
+      'elektronische Datei',
+    ],
+  },
+  {
+    key: 'ueberlieferungsluecke',
+    label: 'Überlieferungslücke',
+    gewicht: 60,
+    vermerke: [
+      'Vorlage nicht erhalten.',
+      'Zugehöriges Material verloren.',
+      'Lücke im Bestand.',
+    ],
+  },
+];
+
 
 /**
- * Kontrollierte Werte — Vokabulare und Profile für die automatische Aktengenerierung.
+ * Kontrollierte Werte — Kataloge und Textbausteine für die automatische Aktengenerierung.
  *
- * Globale Listen (objekttypen, sammlung, …) dienen als Fallback.
- * aktenProfile steuern kohärente Kombinationen: Sammlung passt zur Kategorie,
- * Provenienz passt zur Herkunft. Erweitere Profile oder Einträge nach Bedarf.
+ * Allgemeine Kataloge (provenienz, dokumentationsgrad) gelten kategorieübergreifend.
+ * kategorienKataloge bündeln Sammlungen und Textbausteine pro Kategorie.
+ * Die institutionelle Relevanz entsteht zur Laufzeit aus einem internen Scoring.
+ * Titel-, Kontext- und Kurzbeschreibungsvorlagen erzeugen Texte für bildlose Akten.
  */
 const KONTROLLIERTE_WERTE = {
 
@@ -32,36 +90,6 @@ const KONTROLLIERTE_WERTE = {
     'Öffentlicher Raum',
     'Protest',
     'Kultur und Rituale',
-  ],
-
-  /** Form des Archivfragments (nicht identisch mit Kategorie) */
-  objekttypen: [
-    'Gegenstandsfragment',
-    'Raumfragment',
-    'Tonspur',
-    'Gesprächsfragment',
-    'Plakatrest',
-    'Notizzettel',
-    'digitaler Scan',
-    'Fotokopie',
-    'Fotografie',
-    'Markierung',
-    'Abdruck',
-    'Protokollfragment',
-    'beschädigte Datei',
-    'Wandspur',
-    'Alltagsobjekt',
-    'Fundstück',
-  ],
-
-  /** Herkunft des Materials oder der Überlieferung */
-  herkunft: [
-    'kommunale Sammlung',
-    'private Überlieferung',
-    'institutionelles Archiv',
-    'unbekannte Provenienz',
-    'mündliche Überlieferung',
-    'digitaler Bestand',
   ],
 
   /** Überlieferungsgeschichte — wird pro Akte zufällig vergeben */
@@ -76,256 +104,1567 @@ const KONTROLLIERTE_WERTE = {
     'Zugang über Schenkung; genaue Übernahmebedingungen nicht überliefert.',
   ],
 
-  /** Zugehörige Sammlung oder Bestand */
-  sammlung: [
-    'Bestand Stadtgeschichte',
-    'Sammlung Alltagskultur',
-    'Konvolut private Überlieferung',
-    'Magazin offene Bestände',
-    'Dokumentationsarchiv öffentlicher Raum',
-    'Sammlung Arbeit und Migration',
-    'Vorlassensammlung ohne Signaturenzuordnung',
-    'Digitaler Bildbestand — unsortiert',
-    'Sammlung Fest- und Vereinskultur',
-    'Depot unzugeordneter Fundstücke',
+  /** Dokumentationsgrad — allgemeiner Katalog */
+  dokumentationsgrad: [
+    'teilweise dokumentiert',
+    'gut dokumentiert',
+    'spärlich dokumentiert',
+    'undokumentiert',
   ],
 
   /**
-   * Bewertungskriterien — je Kategorie ein zufälliger Anzeigetext pro Akte.
-   * Schlüssel = Kategoriename in der Anzeige (z. B. „Institutionelle Relevanz:“).
+   * Kategoriespezifische Kataloge — Sammlungen, Relevanz und Textbausteine.
+   * Bei der Generierung werden ausschließlich Bausteine derselben Kategorie kombiniert.
    */
-  bewertungskriterienListen: {
-    'Institutionelle Relevanz': [
-      'archivwürdig',
-      'von regionaler Bedeutung',
-      'von lokaler Bedeutung',
-      'von überregionaler Bedeutung',
-      'bedingt relevant',
-      'nicht priorisiert',
-    ],
-    'Dokumentationsgrad': [
-      'teilweise dokumentiert',
-      'gut dokumentiert',
-      'spärlich dokumentiert',
-      'undokumentiert',
-    ],
-    'Erhaltungszustand': [
-      'gut erhalten',
-      'fragil erhalten',
-      'beschädigt',
-      'fragmentarisch erhalten',
-    ],
+  kategorienKataloge: {
+    'Arbeit': {
+      sammlungen: [
+        'Handwerk und Produktion',
+        'Verwaltung und Infrastruktur',
+        'Wissensarbeit und technische Medien',
+      ],
+      objekttypen: [
+        'Arbeitsprotokoll',
+        'Personalakte',
+        'Schichtplan',
+        'Lohnabrechnung',
+        'Betriebsfotografie',
+        'Ausbildungsnachweis',
+        'technisches Handbuch',
+        'interne Mitteilung',
+        'handschriftliche Arbeitsnotiz',
+        'Dokumentation eines Arbeitsplatzes',
+      ],
+      motive: [
+        'Arbeitsabläufe innerhalb eines kleinen Betriebs',
+        'Veränderungen eines handwerklichen Berufs',
+        'alltägliche Tätigkeiten während einer Arbeitsschicht',
+        'Zusammenarbeit mehrerer Beschäftigter',
+        'technische Veränderungen am Arbeitsplatz',
+        'Ausbildung und Weitergabe von Wissen',
+        'Arbeitsbedingungen innerhalb eines Betriebs',
+        'Übergang von manueller zu automatisierter Arbeit',
+        'informelle Kommunikation unter Beschäftigten',
+        'nicht dokumentierte Tätigkeiten im Arbeitsalltag',
+      ],
+      orte: [
+        'Werkstatt',
+        'Produktionshalle',
+        'Verwaltungsgebäude',
+        'Lagerraum',
+        'Büroarbeitsplatz',
+        'Betriebskantine',
+        'Ausbildungsstätte',
+        'Baustelle',
+        'technischer Arbeitsraum',
+        'nicht eindeutig bestimmbarer Arbeitsplatz',
+      ],
+      erhaltungszustaende: [
+        'vollständig erhalten',
+        'mit leichten Gebrauchsspuren',
+        'teilweise beschädigt',
+        'stark vergilbt',
+        'nur fragmentarisch erhalten',
+        'digital rekonstruiert',
+      ],
+      fehlendeInformationen: [
+        'Name der beschäftigten Person nicht überliefert',
+        'genauer Betrieb nicht bekannt',
+        'Aufnahmezeitpunkt nicht eindeutig bestimmbar',
+        'Funktion des Dokuments nicht vollständig geklärt',
+        'Zusammenhang mit weiteren Unterlagen fehlt',
+        'Urheber*in nicht dokumentiert',
+      ],
+      materialhinweise: [
+        'Papier mit handschriftlichen Ergänzungen',
+        'maschinenschriftliches Dokument',
+        'Fotopapier',
+        'dünner Karton',
+        'digitales Textdokument',
+        'gescanntes Original',
+        'mehrseitige Papierakte',
+        'thermisch bedrucktes Papier',
+      ],
+      dokumentationsfragmente: [
+        '… weitere Unterlagen fehlen …',
+        '… Arbeitsablauf später verändert …',
+        '… Name der beschäftigten Person fehlt …',
+        '… technische Umstellung vermerkt …',
+        '… Tätigkeit nicht näher dokumentiert …',
+        '… Zusammenhang mit weiteren Unterlagen verloren …',
+      ],
+    },
+
+    'Alltagskultur': {
+      sammlungen: [
+        'Familien und private Fotografien',
+        'Wohnen, Freizeit und soziale Beziehungen',
+        'Medien und Alltagsobjekte',
+      ],
+      objekttypen: [
+        'private Fotografie',
+        'Einkaufszettel',
+        'Tagebuchseite',
+        'Postkarte',
+        'Haushaltsnotiz',
+        'Familienalbum',
+        'Gebrauchsanweisung',
+        'Eintrittskarte',
+        'persönlicher Brief',
+        'Verpackung eines Alltagsprodukts',
+      ],
+      motive: [
+        'alltägliche Abläufe innerhalb eines Haushalts',
+        'gemeinsames Essen',
+        'private Freizeitgestaltung',
+        'familiäre Beziehungen',
+        'Nutzung eines Alltagsgegenstands',
+        'Veränderungen des Wohnraums',
+        'persönliche Gewohnheiten',
+        'informelle Treffen im privaten Umfeld',
+        'Weitergabe familiärer Erinnerungen',
+        'Spuren eines nicht näher dokumentierten Alltags',
+      ],
+      orte: [
+        'private Wohnung',
+        'Küche',
+        'Wohnzimmer',
+        'Garten',
+        'Freizeitgelände',
+        'öffentlicher Park',
+        'privater Veranstaltungsraum',
+        'Urlaubsort',
+        'familiäres Umfeld',
+        'nicht eindeutig bestimmbarer Innenraum',
+      ],
+      erhaltungszustaende: [
+        'gut erhalten',
+        'mit leichten Knickspuren',
+        'an den Rändern beschädigt',
+        'teilweise verblasst',
+        'unvollständig erhalten',
+        'digitalisiert',
+      ],
+      fehlendeInformationen: [
+        'abgebildete Personen nicht identifiziert',
+        'genauer Ort nicht überliefert',
+        'familiärer Zusammenhang nicht dokumentiert',
+        'ursprüngliche Verwendung unbekannt',
+        'Datierung nur ungefähr möglich',
+        'Herkunft innerhalb des Bestands ungeklärt',
+      ],
+      materialhinweise: [
+        'Fotopapier',
+        'beschichtetes Papier',
+        'handschriftlich beschriebenes Papier',
+        'Karton',
+        'digitales Bild',
+        'Albumseite',
+        'farbiger Papierabzug',
+        'gescanntes Privatdokument',
+      ],
+      dokumentationsfragmente: [
+        '… Anlass nicht mehr bekannt …',
+        '… innerhalb des Haushalts weitergegeben …',
+        '… persönliche Zuordnung verloren …',
+        '… weitere Aufzeichnungen fehlen …',
+        '… ursprüngliche Verwendung unbekannt …',
+        '… nur fragmentarisch erhalten …',
+      ],
+    },
+
+    'Migration': {
+      sammlungen: [
+        'Mobilität und biografische Übergänge',
+        'Korrespondenz und transnationale Beziehungen',
+        'Institutionelle Erfassung und Zugehörigkeit',
+      ],
+      objekttypen: [
+        'Reisedokument',
+        'Meldebescheinigung',
+        'persönlicher Brief',
+        'Fahrkarte',
+        'Antragsformular',
+        'Aufenthaltsdokument',
+        'private Fotografie',
+        'Karte',
+        'Gepäckanhänger',
+        'behördliche Korrespondenz',
+      ],
+      motive: [
+        'räumlicher und biografischer Übergang',
+        'Ankunft an einem neuen Wohnort',
+        'Kontakt zu zurückgelassenen Familienmitgliedern',
+        'behördliche Erfassung einer Person',
+        'Suche nach Arbeit und Unterkunft',
+        'Veränderung persönlicher Zugehörigkeit',
+        'Reise zwischen mehreren Orten',
+        'transnationale Familienbeziehungen',
+        'Weitergabe persönlicher Erinnerungen',
+        'fragmentarisch dokumentierte Migrationsgeschichte',
+      ],
+      orte: [
+        'Bahnhof',
+        'Grenzübergang',
+        'Meldebehörde',
+        'Übergangsunterkunft',
+        'privater Wohnraum',
+        'Arbeitsplatz',
+        'Verkehrsmittel',
+        'Beratungsstelle',
+        'Herkunftsort',
+        'nicht eindeutig bestimmter Ankunftsort',
+      ],
+      erhaltungszustaende: [
+        'vollständig erhalten',
+        'mehrfach gefaltet',
+        'mit handschriftlichen Ergänzungen',
+        'teilweise unleserlich',
+        'nur als Kopie erhalten',
+        'digital rekonstruiert',
+      ],
+      fehlendeInformationen: [
+        'Name der betroffenen Person anonymisiert',
+        'genauer Reiseweg nicht dokumentiert',
+        'Herkunftsort nicht eindeutig bestimmbar',
+        'Aufenthaltsdauer unbekannt',
+        'familiärer Zusammenhang nur teilweise überliefert',
+        'weitere zugehörige Dokumente fehlen',
+      ],
+      materialhinweise: [
+        'amtliches Papierdokument',
+        'Fotopapier',
+        'Durchschlagpapier',
+        'handschriftlicher Brief',
+        'gefaltete Landkarte',
+        'digitales Dokument',
+        'laminierter Ausweis',
+        'maschinenschriftliches Formular',
+      ],
+      dokumentationsfragmente: [
+        '… weiterer Reiseweg nicht dokumentiert …',
+        '… Aufenthaltsdauer unbekannt …',
+        '… Herkunftsort nicht eindeutig vermerkt …',
+        '… weitere Dokumente fehlen …',
+        '… Ankunft nur teilweise überliefert …',
+        '… persönliche Zuordnung nicht erhalten …',
+      ],
+    },
+
+    'Protest': {
+      sammlungen: [
+        'Demonstrationen und politische Versammlungen',
+        'Politische Kommunikation und Protestmedien',
+        'Spuren, Kontrolle und Unsichtbarmachung',
+      ],
+      objekttypen: [
+        'Flugblatt',
+        'Protestplakat',
+        'Demonstrationsfotografie',
+        'Versammlungsaufruf',
+        'Transparent',
+        'Zeitungsausschnitt',
+        'polizeiliche Dokumentation',
+        'handschriftliche Notiz',
+        'digitales Posting',
+        'Informationsbroschüre',
+      ],
+      motive: [
+        'öffentliche politische Forderung',
+        'Teilnahme an einer Demonstration',
+        'Organisation einer Protestaktion',
+        'Reaktion auf eine gesellschaftliche Entscheidung',
+        'Verbreitung politischer Botschaften',
+        'Kontrolle und Beobachtung einer Versammlung',
+        'Aneignung des öffentlichen Raums',
+        'Entfernung oder Überdeckung politischer Zeichen',
+        'gemeinschaftliche Form des Widerstands',
+        'nicht eindeutig zuordenbare Protestspur',
+      ],
+      orte: [
+        'öffentlicher Platz',
+        'Straße',
+        'Universitätsgelände',
+        'Betriebsgelände',
+        'Verwaltungsgebäude',
+        'Veranstaltungsraum',
+        'Bahnhofsvorplatz',
+        'Innenstadt',
+        'digitaler Kommunikationsraum',
+        'nicht näher bestimmter Versammlungsort',
+      ],
+      erhaltungszustaende: [
+        'gut erhalten',
+        'mit Klebe- und Nutzungsspuren',
+        'eingerissen',
+        'teilweise übermalt',
+        'nur fragmentarisch erhalten',
+        'digital archiviert',
+      ],
+      fehlendeInformationen: [
+        'Urheber*in nicht bekannt',
+        'genaue Protestgruppe nicht dokumentiert',
+        'Anlass der Aktion nicht vollständig überliefert',
+        'Aufnahmeort nicht eindeutig bestimmbar',
+        'beteiligte Personen nicht identifiziert',
+        'ursprünglicher Veröffentlichungskontext fehlt',
+      ],
+      materialhinweise: [
+        'bedrucktes Papier',
+        'handbeschriebener Karton',
+        'Stoff',
+        'Fotopapier',
+        'Zeitungspapier',
+        'digitales Bild',
+        'vervielfältigtes Flugblatt',
+        'gesicherter Bildschirmausschnitt',
+      ],
+      dokumentationsfragmente: [
+        '… Anlass der Versammlung unvollständig dokumentiert …',
+        '… Urheber*in nicht vermerkt …',
+        '… weitere Flugblätter fehlen …',
+        '… ursprünglicher Veröffentlichungskontext verloren …',
+        '… Beteiligte nicht identifiziert …',
+        '… politische Botschaft nur teilweise erhalten …',
+      ],
+    },
+
+    'Öffentlicher Raum': {
+      sammlungen: [
+        'Stadtraum und Nachbarschaft',
+        'Öffentliche Einrichtungen und Versorgung',
+        'Ereignisse, Kommunikation und urbane Spuren',
+      ],
+      objekttypen: [
+        'Straßenfotografie',
+        'Stadtplan',
+        'Hinweisschild',
+        'kommunales Dokument',
+        'Bauplan',
+        'Nutzungsgenehmigung',
+        'Veranstaltungshinweis',
+        'Fahrplan',
+        'Postkarte',
+        'fotografische Zustandsdokumentation',
+      ],
+      motive: [
+        'alltägliche Nutzung eines öffentlichen Ortes',
+        'Veränderung des Stadtbildes',
+        'Begegnung verschiedener Personengruppen',
+        'Nutzung öffentlicher Infrastruktur',
+        'vorübergehende Veränderung eines Platzes',
+        'Spuren öffentlicher Kommunikation',
+        'Einschränkung oder Kontrolle eines Zugangs',
+        'Gestaltung einer gemeinschaftlich genutzten Fläche',
+        'Verschwinden eines vertrauten Ortes',
+        'nicht dokumentierte Veränderung im Stadtraum',
+      ],
+      orte: [
+        'Marktplatz',
+        'Straße',
+        'Haltestelle',
+        'Bahnhof',
+        'Parkanlage',
+        'Fußgängerzone',
+        'öffentlicher Verwaltungsbereich',
+        'Spielplatz',
+        'Wohnviertel',
+        'nicht eindeutig bestimmbarer Stadtraum',
+      ],
+      erhaltungszustaende: [
+        'vollständig erhalten',
+        'mit sichtbaren Gebrauchsspuren',
+        'teilweise beschädigt',
+        'stark verwittert',
+        'nur ausschnittsweise überliefert',
+        'digital rekonstruiert',
+      ],
+      fehlendeInformationen: [
+        'genauer Aufnahmeort nicht bekannt',
+        'Funktion des Ortes nicht eindeutig dokumentiert',
+        'Zeitpunkt der Veränderung unbekannt',
+        'beteiligte Institution nicht überliefert',
+        'Urheber*in der Aufnahme nicht identifiziert',
+        'ursprünglicher Nutzungskontext fehlt',
+      ],
+      materialhinweise: [
+        'Fotopapier',
+        'beschichteter Karton',
+        'amtliches Papierdokument',
+        'gefalteter Stadtplan',
+        'digitales Bild',
+        'Kunststoffschild',
+        'gescanntes Planmaterial',
+        'bedrucktes Informationsblatt',
+      ],
+      dokumentationsfragmente: [
+        '… Nutzung des Platzes vorübergehend verändert …',
+        '… genauer Ort nicht überliefert …',
+        '… ursprünglicher Nutzungskontext fehlt …',
+        '… weitere Veränderungen nicht dokumentiert …',
+        '… Zugang zeitweise eingeschränkt …',
+        '… spätere Nutzung unbekannt …',
+      ],
+    },
+
+    'Kultur und Rituale': {
+      sammlungen: [
+        'Religion und Glaubenspraxis',
+        'Feste, Zeremonien und Gedenkkultur',
+        'Materielle und schriftliche Überlieferungen',
+      ],
+      objekttypen: [
+        'Veranstaltungsprogramm',
+        'Einladung',
+        'Ritualgegenstand',
+        'private Fotografie',
+        'Gedenkkarte',
+        'Liedblatt',
+        'Festschrift',
+        'religiöses Dokument',
+        'Plakat',
+        'handschriftliche Überlieferung',
+      ],
+      motive: [
+        'gemeinschaftlich ausgeübtes Ritual',
+        'religiöse oder spirituelle Praxis',
+        'Vorbereitung eines Festes',
+        'öffentliche oder private Gedenkhandlung',
+        'Weitergabe kultureller Traditionen',
+        'wiederkehrende gemeinschaftliche Veranstaltung',
+        'Veränderung eines überlieferten Brauchs',
+        'Verbindung materieller Objekte mit Erinnerung',
+        'symbolische Handlung innerhalb einer Gemeinschaft',
+        'nicht vollständig dokumentierte kulturelle Praxis',
+      ],
+      orte: [
+        'religiöser Versammlungsort',
+        'privater Wohnraum',
+        'öffentlicher Festplatz',
+        'Gemeindehaus',
+        'Friedhof',
+        'Kulturzentrum',
+        'Vereinsraum',
+        'Veranstaltungsstätte',
+        'Gedenkort',
+        'nicht eindeutig bestimmbarer Ritualort',
+      ],
+      erhaltungszustaende: [
+        'vollständig erhalten',
+        'mit leichten Gebrauchsspuren',
+        'teilweise verblasst',
+        'an mehreren Stellen beschädigt',
+        'nur fragmentarisch überliefert',
+        'digital konserviert',
+      ],
+      fehlendeInformationen: [
+        'beteiligte Personen nicht identifiziert',
+        'genaue Bedeutung des Rituals nicht dokumentiert',
+        'Herkunft des Objekts ungeklärt',
+        'Datierung nicht eindeutig möglich',
+        'institutioneller Zusammenhang nicht überliefert',
+        'ursprüngliche Verwendung nur teilweise rekonstruierbar',
+      ],
+      materialhinweise: [
+        'bedrucktes Papier',
+        'Fotopapier',
+        'Textil',
+        'Holz',
+        'Metall',
+        'beschrifteter Karton',
+        'digitales Dokument',
+        'gescanntes Original',
+      ],
+      dokumentationsfragmente: [
+        '… Bedeutung der Handlung nicht überliefert …',
+        '… weitere Angaben zur Zeremonie fehlen …',
+        '… ursprüngliche Verwendung ungeklärt …',
+        '… beteiligte Personen nicht identifiziert …',
+        '… Zusammenhang nur teilweise erhalten …',
+        '… institutionelle Zuordnung verloren …',
+      ],
+    },
   },
 
-  /**
-   * Akten-Profile — regelbasierte Metadaten-Generierung.
-   * Schlüssel '*' in Zuordnungstabellen = Fallback für unbekannte Kategorien/Herkünfte.
-   */
-  aktenProfile: [
-    {
-      id: 'bildliche-ueberlieferung',
-      objekttypen: ['Fotografie', 'Fotokopie', 'digitaler Scan'],
-      herkunft: ['private Überlieferung', 'kommunale Sammlung', 'institutionelles Archiv'],
-      sammlungNachKategorie: {
-        'Arbeit': ['Sammlung Arbeit und Migration', 'Bestand Stadtgeschichte'],
-        'Migration': ['Sammlung Arbeit und Migration', 'Bestand Stadtgeschichte'],
-        'Öffentlicher Raum': ['Dokumentationsarchiv öffentlicher Raum', 'Bestand Stadtgeschichte'],
-        'Protest': ['Magazin offene Bestände', 'Bestand Stadtgeschichte'],
-        'Alltagskultur': ['Sammlung Alltagskultur', 'Digitaler Bildbestand — unsortiert', 'Konvolut private Überlieferung'],
-        'Kultur und Rituale': ['Sammlung Fest- und Vereinskultur', 'Bestand Stadtgeschichte'],
-        '*': ['Digitaler Bildbestand — unsortiert', 'Bestand Stadtgeschichte'],
-      },
-      provenienzNachHerkunft: {
-        'private Überlieferung': [
-          'Überlieferung durch private Nachlässe; Zeitpunkt der Archivaufnahme nicht dokumentiert.',
-          'Weitergabe im Familienkreis; spätere Ablage im Archiv ohne Protokoll.',
-          'Digitalisierung aus einem unsortierten Vorlass; analoge Vorlage nicht mehr vorhanden.',
-        ],
-        'kommunale Sammlung': [
-          'Erhalt über kommunale Sammlung; vorheriger Besitz unbekannt.',
-          'Zugang über Schenkung; genaue Übernahmebedingungen nicht überliefert.',
-        ],
-        'institutionelles Archiv': [
-          'Übernahme aus institutionellem Archivbestand ohne vollständige Herkunftsangabe.',
-          'Fund im Rahmen einer Bestandsaufnahme; ursprünglicher Erwerb nicht rekonstruierbar.',
-        ],
-      },
-    },
-    {
-      id: 'schriftliche-fragmente',
-      objekttypen: ['Notizzettel', 'Plakatrest', 'Protokollfragment', 'Gesprächsfragment', 'Abdruck', 'beschädigte Datei'],
-      herkunft: ['mündliche Überlieferung', 'unbekannte Provenienz', 'private Überlieferung', 'digitaler Bestand'],
-      sammlungNachKategorie: {
-        'Arbeit': ['Sammlung Arbeit und Migration', 'Magazin offene Bestände'],
-        'Migration': ['Sammlung Arbeit und Migration', 'Vorlassensammlung ohne Signaturenzuordnung'],
-        'Migration / Arbeit': ['Sammlung Arbeit und Migration', 'Magazin offene Bestände'],
-        'Protest': ['Magazin offene Bestände', 'Depot unzugeordneter Fundstücke'],
-        'Alltagskultur': ['Konvolut private Überlieferung', 'Sammlung Alltagskultur', 'Vorlassensammlung ohne Signaturenzuordnung'],
-        'Öffentlicher Raum': ['Dokumentationsarchiv öffentlicher Raum', 'Magazin offene Bestände'],
-        '*': ['Magazin offene Bestände', 'Vorlassensammlung ohne Signaturenzuordnung'],
-      },
-      provenienzNachHerkunft: {
-        'mündliche Überlieferung': [
-          'Sekundärüberlieferung über mündliche Erzählung; schriftliche Belege fragmentarisch.',
-        ],
-        'unbekannte Provenienz': [
-          'Fund im Rahmen einer Bestandsaufnahme; ursprünglicher Erwerb nicht rekonstruierbar.',
-        ],
-        'private Überlieferung': [
-          'Überlieferung durch private Nachlässe; Zeitpunkt der Archivaufnahme nicht dokumentiert.',
-          'Weitergabe im Familienkreis; spätere Ablage im Archiv ohne Protokoll.',
-        ],
-        'digitaler Bestand': [
-          'Digitalisierung aus einem unsortierten Vorlass; analoge Vorlage nicht mehr vorhanden.',
-        ],
-      },
-    },
-    {
-      id: 'raum-und-fundstuecke',
-      objekttypen: ['Gegenstandsfragment', 'Raumfragment', 'Fundstück', 'Alltagsobjekt', 'Wandspur', 'Markierung', 'Tonspur'],
-      herkunft: ['unbekannte Provenienz', 'kommunale Sammlung', 'institutionelles Archiv'],
-      sammlungNachKategorie: {
-        'Arbeit': ['Sammlung Arbeit und Migration', 'Depot unzugeordneter Fundstücke'],
-        'Migration': ['Sammlung Arbeit und Migration', 'Depot unzugeordneter Fundstücke'],
-        'Öffentlicher Raum': ['Dokumentationsarchiv öffentlicher Raum', 'Depot unzugeordneter Fundstücke'],
-        'Protest': ['Magazin offene Bestände', 'Depot unzugeordneter Fundstücke'],
-        'Kultur und Rituale': ['Sammlung Fest- und Vereinskultur', 'Bestand Stadtgeschichte'],
-        'Alltagskultur': ['Sammlung Alltagskultur', 'Depot unzugeordneter Fundstücke'],
-        '*': ['Depot unzugeordneter Fundstücke', 'Magazin offene Bestände'],
-      },
-      provenienzNachHerkunft: {
-        'unbekannte Provenienz': [
-          'Fund im Rahmen einer Bestandsaufnahme; ursprünglicher Erwerb nicht rekonstruierbar.',
-        ],
-        'kommunale Sammlung': [
-          'Erhalt über kommunale Sammlung; vorheriger Besitz unbekannt.',
-        ],
-        'institutionelles Archiv': [
-          'Übernahme aus institutionellem Archivbestand ohne vollständige Herkunftsangabe.',
-        ],
-      },
-    },
+  /** Strukturen für systemgenerierte Aktentitel */
+  titelstrukturen: [
+    '{objekttyp}: {motiv}',
+    '{objekttyp} aus {ort}',
+    '{objekttyp} mit unbekanntem Zusammenhang',
+    '{objekttyp} aus einem nicht vollständig dokumentierten Bestand',
+    '{objekttyp} aus einem fragmentarisch überlieferten Bestand',
+  ],
+
+  /** Satzanfänge für Kontextbeschreibungen */
+  kontextSatzanfaenge: [
+    'Das überlieferte Material verweist auf',
+    'Das Dokument verweist auf',
+    'Die Aufnahme dokumentiert',
+    'Die Unterlage verweist auf',
+    'Das Objekt steht im Zusammenhang mit',
+  ],
+
+  /** Strukturen für Kurzbeschreibungen im Erinnerungsraum */
+  kurzbeschreibungStrukturen: [
+    'Dokumentiert {motiv}.',
+    'Verweist auf {motiv}.',
+    'Überliefert eine Spur von {motiv}.',
+    'Bewahrt ein Fragment von {motiv}.',
+    'Zeigt {motiv}.',
+    'Erinnert an {motiv}.',
   ],
 };
 
 
 /**
- * Archivbilder — Hauptdatenbestand der Installation.
+ * Archivbilder — kuratierte Bildakten aus assests/documentation/image-documentation.md
  *
- * Archivakten entstehen zur Laufzeit aus Bild + Variante.
- * Jedes Bild kann mehrere Varianten haben (unterschiedliche Titel, Beschreibungen, Kategorien).
- * Die Datierung (Jahr), Metadaten (Objekttyp, Herkunft, …) und Bewertungskriterien werden beim
- * Erzeugen einer Akte regelbasiert vergeben — siehe generator.js und KONTROLLIERTE_WERTE.
+ * Pro Bild eine Variante mit festgelegten Akteninhalten.
+ * Archivsignatur wird zur Laufzeit erzeugt; übrige Felder kommen aus der Dokumentation.
+ * Umbenannte Dateien (z. B. privat_1 → alltagskultur_1) sind den Kategorieordnern zugeordnet.
  *
  * Felder pro Bild:
- *   id        — eindeutige interne Kennung
- *   pfad      — Pfad zum Bild, relativ zum Projektordner; null für Akten ohne Bild
- *   varianten — Array möglicher Archivlesarten für dieses Bild
+ *   id, pfad, varianten
  *
  * Felder pro Variante:
- *   id                    — eindeutige Kennung innerhalb des Bildes
- *   archivsignatur        — optional; wird sonst automatisch aus der Datierung erzeugt
- *   kategorie             — thematisches Feld; steuert die Sammlungs-Zuordnung in aktenProfile
- *   titel                 — Anzeigetitel der Akte
- *   kurzbeschreibung      — 1–3 Sätze für Vorschau und Auswahl
- *
- * Metadaten-Erweiterung: In KONTROLLIERTE_WERTE.aktenProfile neue Profile anlegen oder
- * sammlungNachKategorie / provenienzNachHerkunft um Einträge ergänzen. Schlüssel '*' = Fallback.
- * Bewertungskriterien: bewertungskriterienListen in KONTROLLIERTE_WERTE erweitern
- * (Schlüssel = Kategoriename, z. B. „Institutionelle Relevanz“).
+ *   kategorie, titel, kurzbeschreibung, kontextbeschreibung, jahr,
+ *   herkunft, provenienz, sammlung, objekttyp,
+ *   relevanzBegruendung, dokumentationsgrad, erhaltungszustand
  */
 const ARCHIV_BILDER = [
 
   {
-    id: 'bild-fotosammlung-01',
-    pfad: 'assests/fotosammlung_01.jpg',
+    id: 'bild-arbeit-1',
+    pfad: 'assests/images/arbeit/arbeit_1.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Arbeit',
+        titel: 'Metallwerkstatt im Stadtteil Grant Road',
+        kurzbeschreibung: 'Kleinbetriebliche Metallarbeit zwischen Handwerk und Maschine.',
+        kontextbeschreibung: 'Die Aufnahme zeigt einen kleinbetrieblichen Produktionsraum, in dem manuelle und maschinelle Fertigung nebeneinander bestehen. Die Erfahrungen der Beschäftigten bleiben unüberliefert.',
+        jahr: 2025,
+        herkunft: 'Mumbai, Indien',
+        provenienz: 'Digitale Fotodokumentation eines städtischen Metallverarbeitungsbetriebs; veröffentlicht auf Unsplash.',
+        sammlung: 'Handwerk und Produktion',
+        objekttyp: 'Fotografie',
+        relevanzBegruendung: 'von regionaler Bedeutung',
+        dokumentationsgrad: 'teilweise dokumentiert',
+        erhaltungszustand: 'gut erhalten',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-friedhof-1',
+    pfad: 'assests/images/kultur und rituale/kultur_11.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Kultur und Rituale',
+        titel: 'Materielle Zeichen des Gedenkens auf einem Grab',
+        kurzbeschreibung: 'Persönliche Zeichen bewahren Erinnerung an einem Grab.',
+        kontextbeschreibung: 'Religiöse Figuren und persönliche Gegenstände markieren einen individuell gestalteten Erinnerungsort. Ihre Bedeutung und die Biografie der bestatteten Person sind nicht überliefert.',
+        jahr: 2025,
+        herkunft: 'San José de Las Salinas, Córdoba, Argentinien',
+        provenienz: 'Digitale Fotodokumentation eines Grabmals auf einem Friedhof; veröffentlicht auf Pexels.',
+        sammlung: 'Feste, Zeremonien und Gedenkkultur',
+        objekttyp: 'Fotografie',
+        relevanzBegruendung: 'von lokaler Bedeutung',
+        dokumentationsgrad: 'teilweise dokumentiert',
+        erhaltungszustand: 'mit leichten Gebrauchsspuren',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-schriften-1',
+    pfad: 'assests/images/kultur und rituale/kultur_12.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Kultur und Rituale',
+        titel: 'Handschriftliches Manuskript unbekannter Provenienz',
+        kurzbeschreibung: 'Schrift bewahrt Wissen, während ihr Kontext verloren geht.',
+        kontextbeschreibung: 'Das Manuskript verweist auf schriftliche kulturelle Überlieferung. Autorenschaft, Entstehung und spätere Nutzung sind nur fragmentarisch nachvollziehbar.',
+        jahr: 'undatiert',
+        herkunft: 'Venedig, Italien – laut Verschlagwortung der Plattform',
+        provenienz: 'Fotografische Dokumentation eines historischen Manuskripts; ursprünglicher Bestand und besitzgeschichtlicher Zusammenhang nicht angegeben.',
+        sammlung: 'Materielle und schriftliche Überlieferungen',
+        objekttyp: 'Manuskript',
+        relevanzBegruendung: 'von wissenschaftlicher Bedeutung',
+        dokumentationsgrad: 'spärlich dokumentiert',
+        erhaltungszustand: 'mit leichten Gebrauchsspuren',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-privat-1',
+    pfad: 'assests/images/alltagskultur/alltagskultur_1.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Alltagskultur',
+        titel: 'Private Küstenaufnahme aus unbekanntem Nachlass',
+        kurzbeschreibung: 'Eine private Reiseerinnerung ohne überlieferten Zusammenhang.',
+        kontextbeschreibung: 'Die Fotografie zeigt eine unbekannte Person an einer Küste. Ort, Zeit und persönlicher Zusammenhang sind nicht überliefert.',
+        jahr: 'undatiert',
+        herkunft: 'Unbekannt',
+        provenienz: 'Digitale Reproduktion einer privaten Fotografie; ursprünglicher Nachlass und frühere Besitzer*innen nicht angegeben; veröffentlicht auf Unsplash.',
+        sammlung: 'Wohnen, Freizeit und soziale Beziehungen',
+        objekttyp: 'Fotografie',
+        relevanzBegruendung: 'von lokaler Bedeutung',
+        dokumentationsgrad: 'spärlich dokumentiert',
+        erhaltungszustand: 'gut erhalten',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-schriften-2',
+    pfad: 'assests/images/arbeit/arbeit_14.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Arbeit',
+        titel: 'Geschäftskorrespondenz aus einem aufgelösten Bürobestand',
+        kurzbeschreibung: 'Verwaltungsdokumente bleiben erhalten, ihr Zusammenhang nicht.',
+        kontextbeschreibung: 'Briefe, Formulare und Zahlungsunterlagen wurden in einem einfachen Ablagesystem aufbewahrt. Ihr ursprünglicher Zusammenhang und die beteiligten Personen bleiben unklar.',
+        jahr: 'undatiert',
+        herkunft: 'nicht angegeben',
+        provenienz: 'Fotografische Dokumentation eines historischen Schriftgutbestands; ursprüngliche Eigentümer*innen und institutioneller Zusammenhang sind nicht bekannt.',
+        sammlung: 'Verwaltung und Infrastruktur',
+        objekttyp: 'Schriftgutkonvolut',
+        relevanzBegruendung: 'von regionaler Bedeutung',
+        dokumentationsgrad: 'spärlich dokumentiert',
+        erhaltungszustand: 'mit leichten Gebrauchsspuren',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-zeitung-1',
+    pfad: 'assests/images/arbeit/arbeit_15.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Arbeit',
+        titel: 'Stellenanzeigen einer deutschen Tageszeitung, 1941',
+        kurzbeschreibung: 'Stellenanzeigen zeigen historische Arbeits- und Rollenbilder.',
+        kontextbeschreibung: 'Die Zeitungsseite dokumentiert Berufsbezeichnungen, Anforderungen und geschlechtsspezifische Rollenbilder des Arbeitsmarkts von 1941. Die Erfahrungen der Bewerber*innen bleiben unsichtbar.',
+        jahr: 1941,
+        herkunft: 'Deutschland; einzelne Ortsangaben im Ausschnitt lesbar',
+        provenienz: 'Erhaltener Zeitungsausschnitt mit Stellenanzeigen; fotografische Reproduktion durch Pezibear und Veröffentlichung auf Pixabay.',
+        sammlung: 'Verwaltung und Infrastruktur',
+        objekttyp: 'Zeitungsausschnitt',
+        relevanzBegruendung: 'von gesellschaftlicher Bedeutung',
+        dokumentationsgrad: 'teilweise dokumentiert',
+        erhaltungszustand: 'mit leichten Gebrauchsspuren',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-materialbestand-1',
+    pfad: 'assests/images/arbeit/arbeit_16.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Arbeit',
+        titel: 'Sortierter Materialbestand einer Uhrmacherwerkstatt',
+        kurzbeschreibung: 'Materialordnung bewahrt handwerkliches Wissen.',
+        kontextbeschreibung: 'Beschriftete Verpackungen bewahren technische Kleinteile und das Ordnungssystem einer Uhrmacherwerkstatt. Informationen zum Betrieb und zu den Beschäftigten fehlen.',
+        jahr: 'undatiert',
+        herkunft: 'Frankreich – erschlossen aus der französischen Beschriftung',
+        provenienz: 'Fotografische Dokumentation eines beschrifteten Ersatzteilbestands aus dem Bereich der Uhrmacherei; veröffentlicht auf Pixabay.',
+        sammlung: 'Handwerk und Produktion',
+        objekttyp: 'Materialbestand',
+        relevanzBegruendung: 'von regionaler Bedeutung',
+        dokumentationsgrad: 'teilweise dokumentiert',
+        erhaltungszustand: 'mit leichten Gebrauchsspuren',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-sammlung-1',
+    pfad: 'assests/images/alltagskultur/alltagskultur_2.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Alltagskultur',
+        titel: 'Porträtsammlung aus einem unbekannten Familiennachlass',
+        kurzbeschreibung: 'Gesichter bleiben sichtbar, ihre Geschichten verschwinden.',
+        kontextbeschreibung: 'Gerahmte Porträts werden gemeinsam in einer Schublade aufbewahrt. Namen, Beziehungen und Biografien der dargestellten Personen sind nicht überliefert.',
+        jahr: 'undatiert',
+        herkunft: 'nicht angegeben',
+        provenienz: 'Fotografische Dokumentation einer privaten Porträtsammlung; ursprünglicher Familien- oder Besitzkontext nicht bekannt.',
+        sammlung: 'Familien und private Fotografien',
+        objekttyp: 'Fotografiekonvolut',
+        relevanzBegruendung: 'von lokaler Bedeutung',
+        dokumentationsgrad: 'spärlich dokumentiert',
+        erhaltungszustand: 'mit leichten Gebrauchsspuren',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-arbeit-2',
+    pfad: 'assests/images/arbeit/arbeit_2.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Arbeit',
+        titel: 'Warentransport mit Zugtier im städtischen Handelsraum',
+        kurzbeschreibung: 'Historische Warenlogistik als körperliche Arbeit.',
+        kontextbeschreibung: 'Die Aufnahme zeigt den Transport zahlreicher Warenkisten mithilfe eines Zugtiers. Ort, Waren und betrieblicher Zusammenhang sind nur teilweise überliefert.',
+        jahr: 'undatiert',
+        herkunft: 'nicht angegeben',
+        provenienz: 'Historische Fotografiesammlung; digitale Veröffentlichung durch Museums Victoria auf Unsplash.',
+        sammlung: 'Verwaltung und Infrastruktur',
+        objekttyp: 'Fotografie',
+        relevanzBegruendung: 'von regionaler Bedeutung',
+        dokumentationsgrad: 'teilweise dokumentiert',
+        erhaltungszustand: 'gut erhalten',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-arbeit-3',
+    pfad: 'assests/images/arbeit/arbeit_3.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Arbeit',
+        titel: 'Verwaltungsarbeit in einem institutionellen Büro',
+        kurzbeschreibung: 'Verwaltungsarbeit ordnet und speichert Informationen.',
+        kontextbeschreibung: 'Eine Büroangestellte bearbeitet schriftliche Unterlagen zwischen Karteischränken, Ablagen und Schreibmaschine. Inhalt und institutionelle Funktion bleiben unklar.',
+        jahr: 'undatiert',
+        herkunft: 'nicht angegeben',
+        provenienz: 'Digitale Reproduktion einer historischen Fotografie; veröffentlicht durch die Boston Public Library auf Unsplash.',
+        sammlung: 'Verwaltung und Infrastruktur',
+        objekttyp: 'Fotografie',
+        relevanzBegruendung: 'von regionaler Bedeutung',
+        dokumentationsgrad: 'teilweise dokumentiert',
+        erhaltungszustand: 'gut erhalten',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-privat-2',
+    pfad: 'assests/images/alltagskultur/alltagskultur_3.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Alltagskultur',
+        titel: 'Diaaufnahme eines privaten Gartenspaziergangs',
+        kurzbeschreibung: 'Ein alltäglicher Moment bleibt als analoges Fragment.',
+        kontextbeschreibung: 'Das Dia zeigt eine unbekannte Person mit einem Hund in einem Garten. Ort, Zeit und persönlicher Zusammenhang fehlen.',
+        jahr: 'undatiert',
+        herkunft: 'nicht angegeben',
+        provenienz: 'Digitale Reproduktion eines privaten Dias; ursprünglicher Nachlass und frühere Besitzer*innen sind nicht bekannt.',
+        sammlung: 'Familien und private Fotografien',
+        objekttyp: 'Dia',
+        relevanzBegruendung: 'von lokaler Bedeutung',
+        dokumentationsgrad: 'spärlich dokumentiert',
+        erhaltungszustand: 'mit leichten Gebrauchsspuren',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-privat-3',
+    pfad: 'assests/images/alltagskultur/alltagskultur_4.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Alltagskultur',
+        titel: 'Gruppenaufnahme einer privaten Zusammenkunft',
+        kurzbeschreibung: 'Gemeinschaft bleibt sichtbar, ihr Anlass nicht.',
+        kontextbeschreibung: 'Sechs Frauen sind während einer privaten Zusammenkunft fotografiert. Anlass, Ort und Beziehungen zwischen ihnen sind nicht überliefert.',
+        jahr: 'undatiert',
+        herkunft: 'nicht angegeben',
+        provenienz: 'Digitale Reproduktion eines privaten Dias; ursprünglicher Nachlass und frühere Besitzer*innen sind nicht bekannt.',
+        sammlung: 'Familien und private Fotografien',
+        objekttyp: 'Fotografie',
+        relevanzBegruendung: 'von lokaler Bedeutung',
+        dokumentationsgrad: 'spärlich dokumentiert',
+        erhaltungszustand: 'mit leichten Gebrauchsspuren',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-kultur-1',
+    pfad: 'assests/images/kultur und rituale/kultur_1.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Kultur und Rituale',
+        titel: 'Historische Aufnahme einer Tempelanlage',
+        kurzbeschreibung: 'Ein religiöser Ort als räumlicher Erinnerungsträger.',
+        kontextbeschreibung: 'Die kolorierte Aufnahme zeigt eine sakrale Anlage. Standort, Nutzung und Bedeutung für die zugehörige Gemeinschaft sind nur unvollständig dokumentiert.',
+        jahr: 'undatiert',
+        herkunft: 'nicht eindeutig angegeben',
+        provenienz: 'Digitale Reproduktion einer historischen Fotografie aus dem Bestand der Austrian National Library; ursprünglicher Aufnahme- und Veröffentlichungskontext sollte anhand der Fundstelle ergänzt werden.',
+        sammlung: 'Religion und Glaubenspraxis',
+        objekttyp: 'Kolorierte Fotografie',
+        relevanzBegruendung: 'von überregionaler Bedeutung',
+        dokumentationsgrad: 'teilweise dokumentiert',
+        erhaltungszustand: 'mit leichten Gebrauchsspuren',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-oeffentlich-1',
+    pfad: 'assests/images/öffentlicher raum/öffentlich_1.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Öffentlicher Raum',
+        titel: 'Öffentliche Anschlagtafel mit lokalen Mitteilungen',
+        kurzbeschreibung: 'Öffentliche Informationen konkurrieren um Sichtbarkeit.',
+        kontextbeschreibung: 'Die Anschlagtafel vereint Veranstaltungshinweise, Informationsblätter und lokale Angebote. Einige Mitteilungen bleiben sichtbar, andere wurden überklebt oder entfernt.',
+        jahr: 'undatiert',
+        herkunft: 'nicht eindeutig angegeben',
+        provenienz: 'Digitale Fotodokumentation einer öffentlich zugänglichen Anschlagtafel; veröffentlicht auf Unsplash.',
+        sammlung: 'Ereignisse, Kommunikation und urbane Spuren',
+        objekttyp: 'Digitale Fotografie',
+        relevanzBegruendung: 'von lokaler Bedeutung',
+        dokumentationsgrad: 'teilweise dokumentiert',
+        erhaltungszustand: 'mit leichten Gebrauchsspuren',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-arbeit-4',
+    pfad: 'assests/images/arbeit/arbeit_4.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Arbeit',
+        titel: 'Restaurierungsarbeiten an einer historischen Arkadenanlage',
+        kurzbeschreibung: 'Kulturelles Erbe bleibt nur durch Erhaltungsarbeit bestehen.',
+        kontextbeschreibung: 'Arbeiter setzen eine historische Gebäudefassade instand. Das Gerüst macht sichtbar, dass bauliches Erbe kontinuierliche Pflege und institutionelle Entscheidungen erfordert.',
+        jahr: 2019,
+        herkunft: 'Historisches Stadtzentrum, Süddeutschland',
+        provenienz: 'Im Rahmen einer kommunalen Dokumentation zur Sanierung denkmalgeschützter Gebäude übernommen.',
+        sammlung: 'Handwerk und Produktion',
+        objekttyp: 'Digitale Fotografie',
+        relevanzBegruendung: 'von regionaler Bedeutung',
+        dokumentationsgrad: 'gut dokumentiert',
+        erhaltungszustand: 'gut erhalten',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-oeffentlich-2',
+    pfad: 'assests/images/öffentlicher raum/öffentlich_2.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Öffentlicher Raum',
+        titel: 'Straßenraum zwischen Wohnen, Handel und Alltag',
+        kurzbeschreibung: 'Alltag verdichtet sich im gemeinsam genutzten Straßenraum.',
+        kontextbeschreibung: 'Die Straße verbindet Wohnen, kleine Gewerbebetriebe, Verkehr und öffentliche Kommunikation. Die Beziehungen der Menschen zu diesem Ort bleiben undokumentiert.',
+        jahr: 'undatiert',
+        herkunft: 'nicht eindeutig aus dem Bild bestimmbar',
+        provenienz: 'Digitale Straßenfotografie eines alltäglich genutzten urbanen Raums; veröffentlicht auf Unsplash.',
+        sammlung: 'Stadtraum und Nachbarschaft',
+        objekttyp: 'Digitale Fotografie',
+        relevanzBegruendung: 'von lokaler Bedeutung',
+        dokumentationsgrad: 'teilweise dokumentiert',
+        erhaltungszustand: 'gut erhalten',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-arbeit-5',
+    pfad: 'assests/images/arbeit/arbeit_5.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Arbeit',
+        titel: 'Schutzarbeiten an freigelegten Bauresten',
+        kurzbeschreibung: 'Freigelegte Spuren werden durch Schutzarbeit bewahrt.',
+        kontextbeschreibung: 'Mehrere Arbeiter sichern freigelegte bauliche Überreste mit provisorischen Abdeckungen. Namen und Aufgabenverteilung sind nicht überliefert.',
+        jahr: 1986,
+        herkunft: 'Archäologisches Grabungsareal einer historischen Siedlung',
+        provenienz: 'Gemeinsam mit einer unvollständigen Grabungsdokumentation aus dem Bestand einer regionalen Denkmalbehörde übernommen.',
+        sammlung: 'Handwerk und Produktion',
+        objekttyp: 'Farbfotografie',
+        relevanzBegruendung: 'von wissenschaftlicher Bedeutung',
+        dokumentationsgrad: 'teilweise dokumentiert',
+        erhaltungszustand: 'gut erhalten',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-oeffentlich-3',
+    pfad: 'assests/images/öffentlicher raum/öffentlich_3.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Öffentlicher Raum',
+        titel: 'Städtische Verdichtung zwischen Altstadt und Großwohnsiedlung',
+        kurzbeschreibung: 'Stadtentwicklung bewahrt und verdrängt zugleich.',
+        kontextbeschreibung: 'Historische Quartiere, öffentliche Einrichtungen und Großwohnsiedlungen treffen unmittelbar aufeinander. Die sozialen Folgen dieser Stadtentwicklung bleiben im Bild unsichtbar.',
+        jahr: 2015,
+        herkunft: 'Marseille, Frankreich',
+        provenienz: 'Aus einem kommunalen Bildbestand zur Dokumentation städtebaulicher Veränderungen übernommen; ursprünglicher Auftragszusammenhang nur teilweise erhalten.',
+        sammlung: 'Stadtraum und Nachbarschaft',
+        objekttyp: 'Digitale Fotografie',
+        relevanzBegruendung: 'von regionaler Bedeutung',
+        dokumentationsgrad: 'gut dokumentiert',
+        erhaltungszustand: 'gut erhalten',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-familie-1',
+    pfad: 'assests/images/alltagskultur/alltagskultur_5.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Alltagskultur',
+        titel: 'Familienporträt in einem gemeinsamen Wohnraum',
+        kurzbeschreibung: 'Ein Wohnraum bewahrt Spuren familiären Alltags.',
+        kontextbeschreibung: 'Die Aufnahme zeigt sieben Personen in einem gemeinsam genutzten Wohnraum. Möbel, Zeitungen und Nähmaschine dokumentieren den häuslichen Alltag; Namen und Beziehungen fehlen.',
+        jahr: 1938,
+        herkunft: 'Wohnquartier einer nordamerikanischen Industriestadt',
+        provenienz: 'Aus einem ungeordneten privaten Fotonachlass übernommen; Angaben zu den dargestellten Personen und zum ursprünglichen Besitzkontext fehlen.',
+        sammlung: 'Familien und private Fotografien',
+        objekttyp: 'Fotografischer Abzug',
+        relevanzBegruendung: 'von lokaler Bedeutung',
+        dokumentationsgrad: 'spärlich dokumentiert',
+        erhaltungszustand: 'gut erhalten',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-familie-2',
+    pfad: 'assests/images/kultur und rituale/kultur_13.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Kultur und Rituale',
+        titel: 'Familienfeier anlässlich eines Geburtstags',
+        kurzbeschreibung: 'Ein privates Ritual wird fotografisch bewahrt.',
+        kontextbeschreibung: 'Mehrere Personen versammeln sich hinter einem gedeckten Tisch; Kuchen und Kerzen deuten auf einen Geburtstag hin. Namen und Beziehungen sind nicht überliefert.',
+        jahr: 1964,
+        herkunft: 'Privathaushalt einer nordamerikanischen Kleinstad',
+        provenienz: 'Aus einem ungeordneten privaten Fotonachlass übernommen; weitere Aufnahmen der Feier und schriftliche Angaben zu den dargestellten Personen fehlen.',
+        sammlung: 'Feste, Zeremonien und Gedenkkultur',
+        objekttyp: 'Farbfotografie',
+        relevanzBegruendung: 'von lokaler Bedeutung',
+        dokumentationsgrad: 'spärlich dokumentiert',
+        erhaltungszustand: 'mit leichten Gebrauchsspuren',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-geraete-1',
+    pfad: 'assests/images/alltagskultur/alltagskultur_6.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Alltagskultur',
+        titel: 'Fotografische Ausrüstung aus einem privaten Nachlass',
+        kurzbeschreibung: 'Technik und Bilder bilden einen privaten Erinnerungsbestand.',
+        kontextbeschreibung: 'Kamera, Filmmaterialien und ein Privatfoto stammen aus einem unbekannten Nachlass. Besitzer*innen und ursprüngliche Nutzung sind nicht dokumentiert.',
+        jahr: 1976,
+        herkunft: 'Privathaushalt einer nordenglischen Kleinstadt',
+        provenienz: 'Gemeinsam mit unsortierten Fotografien und Filmmaterialien aus einem privaten Haushaltsnachlass übernommen. Eine Zuordnung zu einzelnen Personen oder Ereignissen war nicht mehr möglich.',
+        sammlung: 'Medien und Alltagsobjekte',
+        objekttyp: 'Fotografische Ausrüstung',
+        relevanzBegruendung: 'von medienhistorischer Bedeutung',
+        dokumentationsgrad: 'spärlich dokumentiert',
+        erhaltungszustand: 'mit leichten Gebrauchsspuren',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-geraete-2',
+    pfad: 'assests/images/alltagskultur/alltagskultur_7.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Alltagskultur',
+        titel: 'Tragbarer Rundfunkempfänger aus einem Privathaushalt',
+        kurzbeschreibung: 'Ein Radio als Teil häuslicher Medienerfahrung.',
+        kontextbeschreibung: 'Der tragbare Rundfunkempfänger wurde in einem Privathaushalt genutzt. Welche Sendungen gehört wurden und welche Bedeutung das Gerät hatte, ist nicht überliefert.',
+        jahr: 1974,
+        herkunft: 'Privathaushalt einer südindischen Kleinstadt',
+        provenienz: 'Gemeinsam mit weiteren Haushaltsgegenständen aus einem aufgelösten Familienbesitz übernommen. Angaben zu den ursprünglichen Besitzer*innen und zur Nutzungsdauer fehlen.',
+        sammlung: 'Medien und Alltagsobjekte',
+        objekttyp: 'Rundfunkempfänger',
+        relevanzBegruendung: 'von medienhistorischer Bedeutung',
+        dokumentationsgrad: 'teilweise dokumentiert',
+        erhaltungszustand: 'mit leichten Gebrauchsspuren',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-kultur-2',
+    pfad: 'assests/images/kultur und rituale/kultur_2.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Kultur und Rituale',
+        titel: 'Religiöse und persönliche Bildobjekte in einem Wohnraum',
+        kurzbeschreibung: 'Glaube und persönliche Erinnerung teilen einen Wohnraum.',
+        kontextbeschreibung: 'Religiöse Darstellungen, Masken und gerahmte Bilder bilden eine persönliche Objektanordnung. Auswahlprinzip und individuelle Bedeutungen sind nicht überliefert.',
+        jahr: 1982,
+        herkunft: 'Privathaushalt eines innerstädtischen Wohnquartiers',
+        provenienz: 'Gemeinsam mit einer kleinen Sammlung privater Fotografien aus einem aufgelösten Haushalt übernommen. Informationen zu Herkunft und Nutzung der einzelnen Objekte fehlen.',
+        sammlung: 'Religion und Glaubenspraxis',
+        objekttyp: 'Polaroidfotografie',
+        relevanzBegruendung: 'von lokaler Bedeutung',
+        dokumentationsgrad: 'spärlich dokumentiert',
+        erhaltungszustand: 'mit leichten Gebrauchsspuren',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-arbeit-6',
+    pfad: 'assests/images/arbeit/arbeit_6.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Arbeit',
+        titel: 'Manuelle Holzbearbeitung in einer traditionellen Werkstatt',
+        kurzbeschreibung: 'Handwerkliches Wissen wird im Arbeitsprozess sichtbar.',
+        kontextbeschreibung: 'Die Aufnahme zeigt die manuelle Bearbeitung eines Holzstücks. Funktion des entstehenden Objekts sowie Name und Ausbildung der arbeitenden Person sind unbekannt.',
+        jahr: 1994,
+        herkunft: 'Werkstatt eines regionalen Handwerksbetriebs',
+        provenienz: 'Aus einer unvollständig erhaltenen fotografischen Dokumentation lokaler Handwerkspraktiken übernommen. Angaben zum Auftrag und zu den beteiligten Personen fehlen.',
+        sammlung: 'Handwerk und Produktion',
+        objekttyp: 'Fotografie',
+        relevanzBegruendung: 'von regionaler Bedeutung',
+        dokumentationsgrad: 'teilweise dokumentiert',
+        erhaltungszustand: 'gut erhalten',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-kultur-3',
+    pfad: 'assests/images/kultur und rituale/kultur_3.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Kultur und Rituale',
+        titel: 'Konvolut historischer Karten und Bilddokumente',
+        kurzbeschreibung: 'Ausgewählte Dokumente formen ein fragmentarisches Geschichtsbild.',
+        kontextbeschreibung: 'Karten, Porträts, Presseerzeugnisse und Illustrationen wurden zu einem Konvolut zusammengeführt. Die Kriterien der Auswahl und Anordnung sind nicht überliefert.',
+        jahr: 1978,
+        herkunft: 'Privates Arbeitszimmer eines historischen Sammlers',
+        provenienz: 'Im Zuge einer Haushaltsauflösung gemeinsam mit weiteren unsortierten Drucksachen übernommen. Hinweise auf die ursprüngliche Ordnung und den Zweck der Zusammenstellung fehlen.',
+        sammlung: 'Materielle und schriftliche Überlieferungen',
+        objekttyp: 'Dokumentenkonvolut',
+        relevanzBegruendung: 'von wissenschaftlicher Bedeutung',
+        dokumentationsgrad: 'spärlich dokumentiert',
+        erhaltungszustand: 'mit leichten Gebrauchsspuren',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-arbeit-7',
+    pfad: 'assests/images/arbeit/arbeit_7.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Arbeit',
+        titel: 'Meteorologische Wetterkarte mit handschriftlicher Auswertung',
+        kurzbeschreibung: 'Messdaten werden zu institutionellem Wissen geordnet.',
+        kontextbeschreibung: 'Die Karte bündelt Wetterbeobachtungen, Druckverläufe und handschriftliche Auswertungen. Beteiligte Personen und genauer Nutzungskontext sind nicht überliefert.',
+        jahr: 1944,
+        herkunft: 'Meteorologische Beobachtungsstelle, Großbritannien',
+        provenienz: 'Aus einem gebundenen Arbeitsbestand eines staatlichen Wetterdienstes übernommen. Begleitende Berichte und Angaben zu den bearbeitenden Personen sind nur teilweise erhalten.',
+        sammlung: 'Wissensarbeit und technische Medien',
+        objekttyp: 'Kartenwerk',
+        relevanzBegruendung: 'von wissenschaftlicher Bedeutung',
+        dokumentationsgrad: 'gut dokumentiert',
+        erhaltungszustand: 'mit leichten Gebrauchsspuren',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-kultur-4',
+    pfad: 'assests/images/kultur und rituale/kultur_4.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Kultur und Rituale',
+        titel: 'Unzugeordnete Aufnahme einer Reiterprozession',
+        kurzbeschreibung: 'Eine gemeinschaftliche Handlung ohne erhaltenen Kontext.',
+        kontextbeschreibung: 'Die Aufnahme zeigt eine Reitergruppe mit Pflanzen oder Zweigen. Ort, Anlass und kulturelle Bedeutung der Zusammenkunft sind nicht überliefert.',
+        jahr: 'undatiert',
+        herkunft: 'nicht überliefert',
+        provenienz: 'Aus einem historischen fotografischen Bestand übernommen. Die ursprüngliche Bildbeschriftung und weitere Informationen zum Entstehungszusammenhang fehlen.',
+        sammlung: 'Feste, Zeremonien und Gedenkkultur',
+        objekttyp: 'Historische Fotografie',
+        relevanzBegruendung: 'von gesellschaftlicher Bedeutung',
+        dokumentationsgrad: 'spärlich dokumentiert',
+        erhaltungszustand: 'mit leichten Gebrauchsspuren',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-migration-1',
+    pfad: 'assests/images/migration/migration_1.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Migration',
+        titel: 'Reisegruppe mit persönlichem Gepäck vor einer Unterkunft',
+        kurzbeschreibung: 'Gepäck wird zur sichtbaren Spur von Mobilität.',
+        kontextbeschreibung: 'Drei Personen warten neben zahlreichen Koffern und Taschen. Ob Reise, längerer Aufenthalt oder Ortswechsel vorliegt, bleibt offen.',
+        jahr: 1971,
+        herkunft: 'Nicht eindeutig überliefert',
+        provenienz: 'Aus einem ungeordneten privaten Fotonachlass übernommen. Weitere Aufnahmen, Beschriftungen und Angaben zum Anlass der Reise fehlen.',
+        sammlung: 'Mobilität und biografische Übergänge',
+        objekttyp: 'Farbdia',
+        relevanzBegruendung: 'von gesellschaftlicher Bedeutung',
+        dokumentationsgrad: 'spärlich dokumentiert',
+        erhaltungszustand: 'mit leichten Gebrauchsspuren',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-oeffentlich-4',
+    pfad: 'assests/images/öffentlicher raum/öffentlich_4.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Öffentlicher Raum',
+        titel: 'Wartebereich einer öffentlichen Gesundheitseinrichtung',
+        kurzbeschreibung: 'Institutionelle Räume ordnen das gemeinsame Warten.',
+        kontextbeschreibung: 'Zahlreiche Menschen warten im Flur einer Gesundheitseinrichtung. Raumordnung und Sitzplätze strukturieren ihren Aufenthalt; persönliche Erfahrungen bleiben unsichtbar.',
+        jahr: 1962,
+        herkunft: 'Öffentliche Gesundheitseinrichtung einer nordamerikanischen Hafenstadt',
+        provenienz: 'Aus einer unvollständigen fotografischen Dokumentation zur öffentlichen Gesundheitsversorgung übernommen. Begleitende Patientenunterlagen und Angaben zum Aufnahmeauftrag sind nicht erhalten.',
+        sammlung: 'Öffentliche Einrichtungen und Versorgung',
+        objekttyp: 'Historische Fotografie',
+        relevanzBegruendung: 'von gesellschaftlicher Bedeutung',
+        dokumentationsgrad: 'teilweise dokumentiert',
+        erhaltungszustand: 'gut erhalten',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-arbeit-8',
+    pfad: 'assests/images/arbeit/arbeit_8.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Arbeit',
+        titel: 'Beschriftetes Zwischendia einer Antarktisexpedition',
+        kurzbeschreibung: 'Eine Beschriftung bleibt, die Bildfolge ist verloren.',
+        kontextbeschreibung: 'Das beschriftete Zwischendia verweist auf eine fotografische Präsentation zur Antarktis. Die zugehörigen Aufnahmen und der Nutzungskontext fehlen.',
+        jahr: 'undatiert, Vermerk 3-8-22',
+        herkunft: 'Naturwissenschaftliche Lehr- oder Vortragssammlung',
+        provenienz: 'Aus einem ungeordneten Bestand historischer Projektionsbilder übernommen. Die ursprüngliche Reihenfolge und ein Teil der zugehörigen Dias fehlen.',
+        sammlung: 'Wissensarbeit und technische Medien',
+        objekttyp: 'Glasdia',
+        relevanzBegruendung: 'von wissenschaftlicher Bedeutung',
+        dokumentationsgrad: 'spärlich dokumentiert',
+        erhaltungszustand: 'mit leichten Gebrauchsspuren',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-arbeit-9',
+    pfad: 'assests/images/arbeit/arbeit_9.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Arbeit',
+        titel: 'Unvollständig dokumentiertes Fossilienobjekt',
+        kurzbeschreibung: 'Die Inventarspur bleibt, der Objektkontext fehlt.',
+        kontextbeschreibung: 'Das Objekt trägt die Vermerke „Munich 1945“ und „1945 C-38“. Fundort, Erwerbung und ursprünglicher Sammlungszusammenhang sind nicht nachvollziehbar.',
+        jahr: 1945,
+        herkunft: 'München – laut handschriftlicher Beschriftung',
+        provenienz: 'Aus einem ungeordneten naturwissenschaftlichen Sammlungsbestand übernommen. Die vorhandene Referenznummer ließ sich keinem vollständig erhaltenen Inventareintrag zuordnen.',
+        sammlung: 'Wissensarbeit und technische Medien',
+        objekttyp: 'Fossilienobjekt',
+        relevanzBegruendung: 'von wissenschaftlicher Bedeutung',
+        dokumentationsgrad: 'spärlich dokumentiert',
+        erhaltungszustand: 'mit leichten Gebrauchsspuren',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-kultur-5',
+    pfad: 'assests/images/kultur und rituale/kultur_5.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Kultur und Rituale',
+        titel: 'Beschriftetes Keramikelement unbekannter Funktion',
+        kurzbeschreibung: 'Ein beschriftetes Objekt ohne gesicherten Zusammenhang.',
+        kontextbeschreibung: 'Das gebogene Keramikelement weist Alterungsspuren und eine handschriftliche Beschriftung auf. Funktion, Herkunft und Bedeutung der Schriftzeichen sind nicht dokumentiert.',
+        jahr: 'undatiert',
+        herkunft: 'nicht überliefert',
+        provenienz: 'Aus einem ungeordneten Bestand historischer Bauteile übernommen. Begleitende Unterlagen zur Herkunft, Nutzung und früheren Einordnung des Objekts fehlen.',
+        sammlung: 'Materielle und schriftliche Überlieferungen',
+        objekttyp: 'Keramikelement',
+        relevanzBegruendung: 'von wissenschaftlicher Bedeutung',
+        dokumentationsgrad: 'spärlich dokumentiert',
+        erhaltungszustand: 'teilweise beschädigt',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-protest-1',
+    pfad: 'assests/images/protest/protest_1.jpg',
     varianten: [
       {
         id: 'variant-a',
         kategorie: 'Protest',
-        titel: '[Platzhalter] Fragment eines Plakatrests',
-        kurzbeschreibung: '[Platzhalter] Kurzbeschreibung der ersten Lesart. Hier später 1–3 Sätze eintragen.',
-      },
-      {
-        id: 'variant-b',
-        kategorie: 'Alltagskultur',
-        titel: '[Platzhalter] Fotosammlung — Alltagsdokumentation',
-        kurzbeschreibung: '[Platzhalter] Zweite Lesart desselben Bildes mit anderem Titel und anderer Kategorie.',
+        titel: 'Demonstration für gesellschaftliche Gleichheit im innerstädtischen Raum',
+        kurzbeschreibung: 'Protest macht Forderungen sichtbar und überlagert sie zugleich.',
+        kontextbeschreibung: 'Die Demonstration vereint zahlreiche politische und gesellschaftliche Forderungen im öffentlichen Raum. Einige Botschaften sind lesbar, andere verschwinden in der Menge.',
+        jahr: 2017,
+        herkunft: 'Innenstadt einer nordamerikanischen Großstadt',
+        provenienz: 'Aus einer kommunalen Fotodokumentation öffentlicher Versammlungen übernommen. Begleitende Angaben zu einzelnen Gruppen, Redebeiträgen und zum Verlauf der Demonstration fehlen.',
+        sammlung: 'Demonstrationen und politische Versammlungen',
+        objekttyp: 'Digitale Fotografie',
+        relevanzBegruendung: 'von gesellschaftlicher Bedeutung',
+        dokumentationsgrad: 'teilweise dokumentiert',
+        erhaltungszustand: 'gut erhalten',
       },
     ],
   },
 
   {
-    id: 'bild-festzug-01',
-    pfad: 'assests/festzug_01.jpg',
+    id: 'bild-oeffentlich-5',
+    pfad: 'assests/images/öffentlicher raum/öffentlich_5.jpg',
     varianten: [
       {
         id: 'variant-a',
         kategorie: 'Öffentlicher Raum',
-        titel: '[Platzhalter] Festzug im öffentlichen Raum',
-        kurzbeschreibung: '[Platzhalter] Kurzbeschreibung der Festzug-Akte. Hier später 1–3 Sätze eintragen.',
+        titel: 'Materielle Spuren nach einer öffentlichen Straßenveranstaltung',
+        kurzbeschreibung: 'Materielle Spuren erzählen vom vergangenen Ereignis.',
+        kontextbeschreibung: 'Nach einer öffentlichen Veranstaltung bleiben Becher, Zeitungen und Verpackungen im Straßenraum zurück. Anlass und Verlauf des Ereignisses sind nur unvollständig dokumentiert.',
+        jahr: 1976,
+        herkunft: 'Innenstadt einer nordamerikanischen Großstadt',
+        provenienz: 'Aus einer fotografischen Dokumentation städtischer Umwelt- und Lebensbedingungen übernommen. Begleitende Informationen zum Anlass der Veranstaltung und zu den dargestellten Personen fehlen.',
+        sammlung: 'Ereignisse, Kommunikation und urbane Spuren',
+        objekttyp: 'Farbfotografie',
+        relevanzBegruendung: 'von gesellschaftlicher Bedeutung',
+        dokumentationsgrad: 'teilweise dokumentiert',
+        erhaltungszustand: 'gut erhalten',
       },
+    ],
+  },
+
+  {
+    id: 'bild-kultur-6',
+    pfad: 'assests/images/kultur und rituale/kultur_6.jpg',
+    varianten: [
       {
-        id: 'variant-b',
+        id: 'variant-a',
         kategorie: 'Kultur und Rituale',
-        titel: 'Traditionelle Prozession im Stadtraum',
-        kurzbeschreibung: 'Dokumentation einer gemeinschaftlichen Festpraxis, bei der musikalische Darbietung, Kleidung und Öffentlichkeit zusammenwirken.',
+        titel: 'Öffentliche Zusammenkunft mit zeremonieller Handlung',
+        kurzbeschreibung: 'Eine öffentliche Zeremonie ohne erhaltene Erklärung.',
+        kontextbeschreibung: 'Festlich gekleidete Personen versammeln sich zu einer offenbar zeremoniellen Handlung. Anlass, Rollen und beteiligte Institutionen sind nicht überliefert.',
+        jahr: 1904,
+        herkunft: 'Öffentliche Grünanlage einer nordamerikanischen Stadt',
+        provenienz: 'Aus einem historischen Bildbestand zu öffentlichen Veranstaltungen übernommen. Die ursprüngliche Beschriftung enthält ein Datum, jedoch keine vollständigen Angaben zum Anlass und zu den dargestellten Personen.',
+        sammlung: 'Feste, Zeremonien und Gedenkkultur',
+        objekttyp: 'Cyanotypie',
+        relevanzBegruendung: 'von regionaler Bedeutung',
+        dokumentationsgrad: 'teilweise dokumentiert',
+        erhaltungszustand: 'mit leichten Gebrauchsspuren',
       },
     ],
   },
 
   {
-    id: 'bild-ohne-beispiel',
-    pfad: null,
+    id: 'bild-protest-2',
+    pfad: 'assests/images/protest/protest_2.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Protest',
+        titel: 'Öffentliche Massenversammlung im innerstädtischen Raum',
+        kurzbeschreibung: 'Die Menge bleibt sichtbar, einzelne Stimmen verschwinden.',
+        kontextbeschreibung: 'Eine dicht gedrängte Menschenmenge nimmt an einer öffentlichen Versammlung teil. Anlass, Organisationen und individuelle Beweggründe sind nicht überliefert.',
+        jahr: 1913,
+        herkunft: 'Innenstadt einer nordamerikanischen Großstadt',
+        provenienz: 'Aus einem unvollständig erschlossenen fotografischen Pressebestand übernommen. Begleitende Angaben zum Anlass, zum Verlauf und zu den beteiligten Gruppen fehlen.',
+        sammlung: 'Demonstrationen und politische Versammlungen',
+        objekttyp: 'Historische Fotografie',
+        relevanzBegruendung: 'von gesellschaftlicher Bedeutung',
+        dokumentationsgrad: 'spärlich dokumentiert',
+        erhaltungszustand: 'mit leichten Gebrauchsspuren',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-kultur-7',
+    pfad: 'assests/images/kultur und rituale/kultur_7.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Kultur und Rituale',
+        titel: 'Geschmücktes Fahrzeug vor einer privaten Feier',
+        kurzbeschreibung: 'Festlicher Schmuck markiert ein privates Übergangsritual.',
+        kontextbeschreibung: 'Ein mit Blumen und Bändern geschmücktes Fahrzeug verweist auf eine private Feier oder ein Übergangsritual. Beteiligte Personen und genauer Anlass fehlen.',
+        jahr: 1978,
+        herkunft: 'Kleinstadt in Westeuropa',
+        provenienz: 'Aus einem privaten Fotoalbum ohne erhaltene Beschriftungen übernommen. Weitere Aufnahmen der Feier und Angaben zu den früheren Besitzer*innen fehlen.',
+        sammlung: 'Feste, Zeremonien und Gedenkkultur',
+        objekttyp: 'Farbdia',
+        relevanzBegruendung: 'von lokaler Bedeutung',
+        dokumentationsgrad: 'spärlich dokumentiert',
+        erhaltungszustand: 'mit leichten Gebrauchsspuren',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-arbeit-10',
+    pfad: 'assests/images/arbeit/arbeit_10.jpg',
     varianten: [
       {
         id: 'variant-a',
         kategorie: 'Arbeit',
-        titel: '[Platzhalter] Notizzettel aus einem Gesprächsfragment',
-        kurzbeschreibung: '[Platzhalter] Beispielakte ohne Bild — pfad kann null sein, bis ein Foto vorliegt.',
+        titel: 'Negativübersicht einer unvollständig erschlossenen Fotoserie',
+        kurzbeschreibung: 'Viele Aufnahmen existieren, nur wenige werden ausgewählt.',
+        kontextbeschreibung: 'Die Negativstreifen zeigen verschiedene Orte, Personen und Alltagssituationen. Anlass, fotografierende Person und spätere Auswahl der Bilder sind nicht dokumentiert.',
+        jahr: 1983,
+        herkunft: 'Fotografischer Arbeitsbestand, genauer Entstehungsort nicht überliefert',
+        provenienz: 'Gemeinsam mit unsortierten Negativen und einzelnen Papierabzügen übernommen. Beschriftungen und Unterlagen zur ursprünglichen Bildauswahl sind nicht erhalten.',
+        sammlung: 'Wissensarbeit und technische Medien',
+        objekttyp: 'Negativstreifen',
+        relevanzBegruendung: 'von sammlungsgeschichtlicher Bedeutung',
+        dokumentationsgrad: 'spärlich dokumentiert',
+        erhaltungszustand: 'mit leichten Gebrauchsspuren',
       },
     ],
   },
+
   {
-    id: 'Briefe und Handschrift',
-    pfad: 'assests/Brief_01.jpg',
-    varianten: [
-      {
-        id: 'variant-a',
-        kategorie: 'Alltagskultur',
-        titel: 'Private Erinnerungsdokumente',
-        kurzbeschreibung: 'Konvolut aus Fotografien und handschriftlichen Aufzeichnungen, das auf einen privaten Erinnerungskontext verweist.',
-      },
-      {
-        id: 'variant-b',
-        kategorie: 'Alltagskultur',
-        titel: 'Fragmente persönlicher Korrespondenz',
-        kurzbeschreibung: '[Sammlung analoger Dokumente, die als Spuren alltäglicher Beziehungen und individueller Erinnerung überliefert wurden.',
-      },
-    ],
-  },
-  {
-    id: 'Hafenbild 1',
-    pfad: 'assests/Hafen_01.jpg',
+    id: 'bild-arbeit-11',
+    pfad: 'assests/images/arbeit/arbeit_11.jpg',
     varianten: [
       {
         id: 'variant-a',
         kategorie: 'Arbeit',
-        titel: 'Verladung im innerstädtischen Hafen',
-        kurzbeschreibung: 'Dokumentation eines Hafenbereichs mit Schiffen, Ladeeinrichtungen und mechanischer Hebevorrichtung. Die Aufnahme verweist auf frühere Arbeitsabläufe, deren genauer betrieblicher Zusammenhang nicht überliefert ist.',
+        titel: 'Botanische Proben auf einem cyanotypischen Bildträger',
+        kurzbeschreibung: 'Natürliche Formen werden ausgewählt und geordnet.',
+        kontextbeschreibung: 'Mehrere Pflanzen- oder Algenproben wurden systematisch auf einem cyanotypischen Bildträger angeordnet. Angaben zu Art, Fundort und sammelnder Person fehlen.',
+        jahr: 'undatiert',
+        herkunft: 'Botanische Lehr- oder Forschungssammlung',
+        provenienz: 'Aus einem nicht vollständig erschlossenen Bestand naturwissenschaftlicher Bildtafeln übernommen. Zugehörige Verzeichnisse und Angaben zu den dargestellten Proben sind nicht erhalten.',
+        sammlung: 'Wissensarbeit und technische Medien',
+        objekttyp: 'Cyanotypie',
+        relevanzBegruendung: 'von wissenschaftlicher Bedeutung',
+        dokumentationsgrad: 'teilweise dokumentiert',
+        erhaltungszustand: 'gut erhalten',
       },
+    ],
+  },
+
+  {
+    id: 'bild-kultur-8',
+    pfad: 'assests/images/kultur und rituale/kultur_8.jpg',
+    varianten: [
       {
-        id: 'variant-b',
-        kategorie: 'Öffentlicher Raum',
-        titel: 'Hafenbecken zwischen Nutzung und Wandel',
-        kurzbeschrebung: 'Aufnahme eines städtischen Hafenraums, in dem Verkehrswege, technische Infrastruktur und maritime Nutzung zusammentreffen. Die ursprüngliche Funktion einzelner Bereiche konnte nicht vollständig rekonstruiert werden.',
+        id: 'variant-a',
+        kategorie: 'Kultur und Rituale',
+        titel: 'Figürliche Darstellung an einem sakralen Bauwerk',
+        kurzbeschreibung: 'Architektur bewahrt kulturelle Zeichen ohne Erklärung.',
+        kontextbeschreibung: 'Eine farbig gestaltete Figur steht vor einer reich verzierten sakralen Fassade. Bedeutung, Funktion und ursprünglicher Aufnahmekontext sind nicht überliefert.',
+        jahr: 1977,
+        herkunft: 'Historisches Stadtviertel, genauer Ort nicht überliefert',
+        provenienz: 'Aus einer unvollständig beschrifteten fotografischen Dokumentation religiöser und kulturhistorischer Architektur übernommen. Angaben zum Gebäude und zur dargestellten Figur fehlen.',
+        sammlung: 'Religion und Glaubenspraxis',
+        objekttyp: 'Farbdia',
+        relevanzBegruendung: 'von überregionaler Bedeutung',
+        dokumentationsgrad: 'teilweise dokumentiert',
+        erhaltungszustand: 'mit leichten Gebrauchsspuren',
       },
+    ],
+  },
+
+  {
+    id: 'bild-migration-2',
+    pfad: 'assests/images/migration/migration_2.jpg',
+    varianten: [
       {
-        id: 'variant-c',
+        id: 'variant-a',
         kategorie: 'Migration',
-        titel: 'Hafen als Ort von Ankunft und Abreise',
-        kurzbeschrebung: 'Fotografische Dokumentation eines Hafenbereichs, der mit unterschiedlichen Formen von Mobilität und grenzüberschreitender Bewegung in Verbindung gebracht wird. Konkrete Angaben zu Personen und Reisewegen liegen nicht vor.',
+        titel: 'Personenkarte einer institutionellen Registratur',
+        kurzbeschreibung: 'Institutionelle Kategorien machen Menschen sichtbar und stigmatisieren.',
+        kontextbeschreibung: 'Die Karte erfasst eine Person durch standardisierte Fotografien und vorgegebene Kategorien. Die Einträge spiegeln die diskriminierende Perspektive der Institution wider.',
+        jahr: 'undatiert; sichtbarer Datumsvermerk vorhanden',
+        herkunft: 'Institutionelle Personenregistratur, genauer Bestand nicht verifiziert',
+        provenienz: 'Historisches Registraturdokument, heute innerhalb einer musealen Präsentation überliefert. Der ursprüngliche Aktenzusammenhang muss vor der Verwendung überprüft werden.',
+        sammlung: 'Institutionelle Erfassung und Zugehörigkeit',
+        objekttyp: 'Personenkarte',
+        relevanzBegruendung: 'von gesellschaftlicher Bedeutung',
+        dokumentationsgrad: 'teilweise dokumentiert',
+        erhaltungszustand: 'mit leichten Gebrauchsspuren',
       },
     ],
   },
+
+  {
+    id: 'bild-kultur-9',
+    pfad: 'assests/images/kultur und rituale/kultur_9.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Kultur und Rituale',
+        titel: 'Mitgliedskarte einer gesellschaftlichen Vereinigung',
+        kurzbeschreibung: 'Mitgliedschaft regelt Zugehörigkeit und Zugang.',
+        kontextbeschreibung: 'Porträt, Unterschrift und Mitgliedsnummer dokumentieren die Zugehörigkeit zu einer gesellschaftlichen Vereinigung. Nutzung und persönliche Bedeutung der Mitgliedschaft sind unvollständig überliefert.',
+        jahr: 1960,
+        herkunft: 'Geschäftsstelle einer gesellschaftlichen Vereinigung',
+        provenienz: 'Gemeinsam mit Briefumschlägen und weiteren persönlichen Unterlagen aus einem privaten Dokumentenbestand übernommen. Der ursprüngliche Ablagezusammenhang ist nur teilweise erhalten.',
+        sammlung: 'Materielle und schriftliche Überlieferungen',
+        objekttyp: 'Mitgliedsausweis',
+        relevanzBegruendung: 'von gesellschaftlicher Bedeutung',
+        dokumentationsgrad: 'teilweise dokumentiert',
+        erhaltungszustand: 'mit leichten Gebrauchsspuren',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-oeffentlich-6',
+    pfad: 'assests/images/öffentlicher raum/öffentlich_6.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Öffentlicher Raum',
+        titel: 'Telegramm zur Lage nach dem Erdbeben von San Francisco',
+        kurzbeschreibung: 'Ein Ereignis wird durch institutionelle Kommunikation erfasst.',
+        kontextbeschreibung: 'Das Telegramm vom 18. April 1906 reagiert auf erste Meldungen über das Erdbeben von San Francisco. Es dokumentiert einen Moment politischer Unsicherheit und angebotener Unterstützung.',
+        jahr: 1906,
+        herkunft: 'Washington, D.C.',
+        provenienz: 'Aus einem Bestand historischer Telegramme zur politischen und administrativen Kommunikation übernommen. Der weitere Schriftwechsel und die ursprüngliche Ablageordnung sind nur teilweise erhalten.',
+        sammlung: 'Ereignisse, Kommunikation und urbane Spuren',
+        objekttyp: 'Telegramm',
+        relevanzBegruendung: 'von überregionaler Bedeutung',
+        dokumentationsgrad: 'gut dokumentiert',
+        erhaltungszustand: 'mit leichten Gebrauchsspuren',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-arbeit-12',
+    pfad: 'assests/images/arbeit/arbeit_12.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Arbeit',
+        titel: 'Unbeschriftete Diskette aus einem digitalen Arbeitsbestand',
+        kurzbeschreibung: 'Der Datenträger bleibt, sein Inhalt ist unsichtbar.',
+        kontextbeschreibung: 'Die unbeschriftete Diskette stammt aus einem aufgelösten Arbeitsbestand. Inhalt, Dateiformat und technische Lesbarkeit sind ungeklärt.',
+        jahr: 1993,
+        herkunft: 'Aufgelöster Büro- und Computerbestand',
+        provenienz: 'Gemeinsam mit älteren Computerunterlagen und weiteren unbeschrifteten Speichermedien übernommen. Ein zugehöriges Verzeichnis oder ein funktionsfähiges Lesegerät ist nicht erhalten.',
+        sammlung: 'Wissensarbeit und technische Medien',
+        objekttyp: 'Diskette',
+        relevanzBegruendung: 'von medienhistorischer Bedeutung',
+        dokumentationsgrad: 'spärlich dokumentiert',
+        erhaltungszustand: 'gut erhalten',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-kultur-10',
+    pfad: 'assests/images/kultur und rituale/kultur_10.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Kultur und Rituale',
+        titel: 'Religiöses Fragebuch für den Unterricht von Kindern',
+        kurzbeschreibung: 'Religiöses Wissen wird generationenübergreifend weitergegeben.',
+        kontextbeschreibung: 'Das stark abgenutzte Fragebuch vermittelte biblische Inhalte an Kinder. Frühere Besitzer*innen, Unterrichtsort und konkrete Nutzung sind nicht überliefert.',
+        jahr: 'undatiert',
+        herkunft: 'Privater oder institutioneller Bildungsbestand, genauer Ort nicht überliefert',
+        provenienz: 'Gemeinsam mit weiteren religiösen Druckschriften aus einem ungeordneten Nachlass übernommen. Persönliche Eintragungen und Hinweise auf die ursprünglichen Nutzer*innen fehlen.',
+        sammlung: 'Religion und Glaubenspraxis',
+        objekttyp: 'Buch',
+        relevanzBegruendung: 'von gesellschaftlicher Bedeutung',
+        dokumentationsgrad: 'teilweise dokumentiert',
+        erhaltungszustand: 'an mehreren Stellen beschädigt',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-protest-3',
+    pfad: 'assests/images/protest/protest_3.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Protest',
+        titel: 'Bestellblatt für politische Wahlplakate',
+        kurzbeschreibung: 'Politische Sichtbarkeit wird geplant und produziert.',
+        kontextbeschreibung: 'Das Bestellblatt erläutert die Herstellung großformatiger Wahlplakate aus einzelnen Buchstaben und Textbausteinen. Maße und Preise zeigen die planbare Vervielfältigung politischer Botschaften.',
+        jahr: 'undatiert',
+        herkunft: 'London, Großbritannien',
+        provenienz: 'Digitale Reproduktion aus einem institutionellen Bestand zur politischen Öffentlichkeitsarbeit; zugehörige Bestellformulare und Nachweise der späteren Verwendung sind nicht vollständig erhalten.',
+        sammlung: 'Politische Kommunikation und Protestmedien',
+        objekttyp: 'Bestellblatt',
+        relevanzBegruendung: 'von gesellschaftlicher Bedeutung',
+        dokumentationsgrad: 'gut dokumentiert',
+        erhaltungszustand: 'mit leichten Gebrauchsspuren',
+      },
+    ],
+  },
+
+  {
+    id: 'bild-arbeit-13',
+    pfad: 'assests/images/arbeit/arbeit_13.jpg',
+    varianten: [
+      {
+        id: 'variant-a',
+        kategorie: 'Arbeit',
+        titel: 'Versandhülle einer institutionellen Objektübertragung',
+        kurzbeschreibung: 'Der Transportweg bleibt, das versandte Objekt fehlt.',
+        kontextbeschreibung: 'Die registrierte, als zerbrechlich markierte Sendung wurde 1958 an die Smithsonian Institution geschickt. Der Inhalt ist nicht mehr eindeutig zugeordnet.',
+        jahr: 1958,
+        herkunft: 'New York, USA',
+        provenienz: 'Als Versandverpackung gemeinsam mit weiteren Unterlagen aus einem institutionellen Verwaltungsbestand übernommen; die Verbindung zum ursprünglich enthaltenen Objekt ist verloren gegangen.',
+        sammlung: 'Verwaltung und Infrastruktur',
+        objekttyp: 'Versandhülle',
+        relevanzBegruendung: 'von sammlungsgeschichtlicher Bedeutung',
+        dokumentationsgrad: 'teilweise dokumentiert',
+        erhaltungszustand: 'mit leichten Gebrauchsspuren',
+      },
+    ],
+  },
+
 ];

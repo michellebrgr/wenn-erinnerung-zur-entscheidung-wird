@@ -60,6 +60,37 @@
   }
 
   /**
+   * Setzt die Portrait-Klasse anhand der natürlichen Bildmaße.
+   * @param {HTMLImageElement} img
+   * @param {string} portraitClass
+   */
+  function applyImageOrientation(img, portraitClass) {
+    function set() {
+      img.classList.toggle(portraitClass, img.naturalHeight > img.naturalWidth);
+    }
+    if (img.complete && img.naturalWidth) {
+      set();
+    } else {
+      img.addEventListener('load', set);
+    }
+  }
+
+  /**
+   * Wendet Orientierungs-Klassen auf alle Bilder in einem Container an.
+   * @param {Element} root
+   * @param {string} selector
+   * @param {string} portraitClass
+   */
+  function applyImageOrientationsIn(root, selector, portraitClass) {
+    if (!root) {
+      return;
+    }
+    root.querySelectorAll(selector).forEach(function (img) {
+      applyImageOrientation(img, portraitClass);
+    });
+  }
+
+  /**
    * Bildpfad pro Akte in data.js im Feld `bild` eintragen.
    * Ohne Bild: Archivfragment aus aktenart.
    * @param {Object} akte
@@ -261,6 +292,7 @@
     );
 
     memoryReviewGrid.innerHTML = pageAkten.map(renderDisplacementColumn).join('');
+    applyImageOrientationsIn(memoryReviewGrid, '.akte-card__image', 'akte-card__image--portrait');
 
     memoryReviewGrid.querySelectorAll('.btn-memory-delete').forEach(function (button) {
       button.addEventListener('click', function () {
@@ -278,6 +310,7 @@
    */
   function renderOfferSet(offer) {
     offerContainer.innerHTML = offer.map(renderOfferColumn).join('');
+    applyImageOrientationsIn(offerContainer, '.akte-card__image', 'akte-card__image--portrait');
 
     offerContainer.querySelectorAll('.btn-archive-select').forEach(function (button) {
       button.addEventListener('click', function () {

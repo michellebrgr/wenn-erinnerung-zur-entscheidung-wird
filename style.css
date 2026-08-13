@@ -1039,11 +1039,21 @@ body.archive-view {
 }
 
 .start-screen__text {
-  margin: 0 0 2rem;
+  margin: 0 0 0.75rem;
   font-family: var(--font-sans);
   font-size: 1rem;
   line-height: 1.5;
   color: var(--color-ink);
+}
+
+.start-screen__disclaimer {
+  margin: 0 0 2rem;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--color-ink);
+  opacity: 0.55;
 }
 
 .btn-start {

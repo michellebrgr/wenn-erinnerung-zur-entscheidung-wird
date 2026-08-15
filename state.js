@@ -44,9 +44,36 @@ function collectBildIds(akten) {
 }
 
 /**
+ * Sammelt Katalog-Kombinationen bildloser Akten.
+ * @param {Array} akten
+ * @returns {Array<string>}
+ */
+function collectOhneBildKeys(akten) {
+  return (akten || [])
+    .map(ohneBildKombinationKey)
+    .filter(function (key) {
+      return Boolean(key);
+    });
+}
+
+/**
+ * Entfernt Duplikate aus einer Liste von Strings.
+ * @param {Array<string>} values
+ * @returns {Array<string>}
+ */
+function uniqueStrings(values) {
+  const unique = {};
+  (values || []).forEach(function (value) {
+    if (value) {
+      unique[value] = true;
+    }
+  });
+  return Object.keys(unique);
+}
+
+/**
  * Sammelt Bild-IDs, die in diesem Durchlauf nicht mehr angeboten werden dürfen:
- * Bilder im Erinnerungsraum sowie nicht gewählte und verdrängte Akten.
- * Bildlose Akten werden nicht ausgeschlossen und dürfen mehrfach angeboten werden.
+ * Bilder im Erinnerungsraum sowie nicht gewählte und verdrängte Bildakten.
  * @param {Object} state
  * @returns {Array<string>}
  */
@@ -54,37 +81,34 @@ function getExcludedBildIds(state) {
   state = state || {};
   const fromRoom = collectBildIds(state.memoryRoom);
   const used = Array.isArray(state.usedBildIds) ? state.usedBildIds : [];
-  const unique = {};
-
-  fromRoom.concat(used).forEach(function (id) {
-    if (id) {
-      unique[id] = true;
-    }
-  });
-
-  return Object.keys(unique);
+  return uniqueStrings(fromRoom.concat(used));
 }
 
 /**
- * Hängt Bild-IDs der gegebenen Akten eindeutig an usedBildIds an.
+ * Sammelt Katalog-Kombinationen bildloser Akten, die in diesem Durchlauf nicht mehr angeboten werden dürfen.
+ * @param {Object} state
+ * @returns {Array<string>}
+ */
+function getExcludedOhneBildKeys(state) {
+  state = state || {};
+  const fromRoom = collectOhneBildKeys(state.memoryRoom);
+  const used = Array.isArray(state.usedOhneBildKeys) ? state.usedOhneBildKeys : [];
+  return uniqueStrings(fromRoom.concat(used));
+}
+
+/**
+ * Hängt verwendete Bild-IDs und bildlose Katalog-Kombinationen an den State an.
  * @param {Object} state
  * @param {Array} akten
  * @returns {Object} Aktualisierter State
  */
 function markAktenAsUsed(state, akten) {
-  const existing = {};
-
-  (Array.isArray(state.usedBildIds) ? state.usedBildIds : []).forEach(function (id) {
-    if (id) {
-      existing[id] = true;
-    }
-  });
-
-  collectBildIds(akten).forEach(function (id) {
-    existing[id] = true;
-  });
-
-  state.usedBildIds = Object.keys(existing);
+  state.usedBildIds = uniqueStrings(
+    (Array.isArray(state.usedBildIds) ? state.usedBildIds : []).concat(collectBildIds(akten))
+  );
+  state.usedOhneBildKeys = uniqueStrings(
+    (Array.isArray(state.usedOhneBildKeys) ? state.usedOhneBildKeys : []).concat(collectOhneBildKeys(akten))
+  );
   return state;
 }
 
@@ -109,8 +133,9 @@ function createDefaultState() {
   return {
     version: 1,
     memoryRoom: [],
-    currentOffer: generateOfferSet(OFFER_COUNT, []),
+    currentOffer: generateOfferSet(OFFER_COUNT, [], []),
     usedBildIds: [],
+    usedOhneBildKeys: [],
     updatedAt: Date.now(),
   };
 }
@@ -125,7 +150,12 @@ function normalizeStateAkten(state) {
   state.memoryRoom = (state.memoryRoom || []).slice(0, MAX_MEMORY_SLOTS).map(normalizeAkte);
   state.usedBildIds = Array.isArray(state.usedBildIds)
     ? state.usedBildIds.filter(function (id) {
-      return Boolean(id);
+      return Boolean(id) && String(id).indexOf('ohne-bild-') !== 0;
+    })
+    : [];
+  state.usedOhneBildKeys = Array.isArray(state.usedOhneBildKeys)
+    ? state.usedOhneBildKeys.filter(function (key) {
+      return Boolean(key);
     })
     : [];
   return state;
@@ -275,7 +305,11 @@ function ensureOfferSet(state) {
   state = normalizeStateAkten(state);
 
   if (!state.currentOffer || state.currentOffer.length < OFFER_COUNT) {
-    state.currentOffer = generateOfferSet(OFFER_COUNT, getExcludedBildIds(state));
+    state.currentOffer = generateOfferSet(
+      OFFER_COUNT,
+      getExcludedBildIds(state),
+      getExcludedOhneBildKeys(state)
+    );
   }
 
   return state;
@@ -287,7 +321,11 @@ function ensureOfferSet(state) {
  * @returns {Object} Aktualisierter State
  */
 function refreshOfferSet(state) {
-  state.currentOffer = generateOfferSet(OFFER_COUNT, getExcludedBildIds(state));
+  state.currentOffer = generateOfferSet(
+    OFFER_COUNT,
+    getExcludedBildIds(state),
+    getExcludedOhneBildKeys(state)
+  );
   return state;
 }
 

@@ -585,7 +585,7 @@ function generateInstitutionelleBewertung(source) {
 
   return {
     stufe: stufe,
-    aufnahmehinweis: hinweise[stufe],
+    aufnahmeempfehlung: hinweise[stufe],
   };
 }
 
@@ -594,7 +594,7 @@ function generateBewertungskriterien(options) {
   const bewertung = generateInstitutionelleBewertung(options);
   return [
     { label: 'Institutionelle Relevanz', text: bewertung.stufe },
-    { label: 'Aufnahmehinweis', text: bewertung.aufnahmehinweis },
+    { label: 'Aufnahmeempfehlung', text: bewertung.aufnahmeempfehlung },
   ];
 }
 
@@ -939,6 +939,7 @@ function buildAkte(bild, variante, options) {
     kurzbeschreibung: kurzbeschreibung,
     kontextbeschreibung: kontextbeschreibung,
     objekttyp: meta.objekttyp,
+    motiv: meta.motiv,
     herkunft: meta.herkunft,
     provenienz: meta.provenienz,
     sammlung: meta.sammlung,
@@ -947,7 +948,7 @@ function buildAkte(bild, variante, options) {
     dokumentationsgrad: meta.dokumentationsgrad,
     fehlendeInformation: meta.fehlendeInformation,
     institutionelleRelevanz: bewertung.stufe,
-    aufnahmehinweis: bewertung.aufnahmehinweis,
+    aufnahmeempfehlung: bewertung.aufnahmeempfehlung,
     relevanzBegruendung: meta.relevanzBegruendung,
     bewertungskriterien: generateBewertungskriterien({
       provenienz: meta.provenienz,
@@ -1118,6 +1119,7 @@ function normalizeAkte(akte) {
     kurzbeschreibung: kurzbeschreibung,
     kontextbeschreibung: kontextbeschreibung,
     objekttyp: objekttyp,
+    motiv: 'motiv' in akte ? akte.motiv : (src.motiv || fallbackMeta.motiv || null),
     herkunft: herkunft,
     provenienz: provenienz,
     kurzbeschreibung: src.kurzbeschreibung || akte.kurzbeschreibung || akte.shortText || akte.fragment || null,
@@ -1131,7 +1133,7 @@ function normalizeAkte(akte) {
     dokumentationsgrad: dokumentationsgrad,
     fehlendeInformation: zusatz.fehlendeInformation,
     institutionelleRelevanz: bewertung.stufe,
-    aufnahmehinweis: bewertung.aufnahmehinweis,
+    aufnahmeempfehlung: bewertung.aufnahmeempfehlung,
     relevanzBegruendung: relevanzBegruendung,
     bewertungskriterien: generateBewertungskriterien(bewertungSource),
   };
@@ -1160,10 +1162,51 @@ function pickRandomOne(arr) {
 }
 
 /**
+ * Bild-ID für eine bildlose Akte einer Kategorie (interne Referenz, kein Ausschluss).
+ * @param {string} kategorie
+ * @returns {string}
+ */
+function ohneBildIdForKategorie(kategorie) {
+  return 'ohne-bild-' + String(kategorie || '').toLowerCase().replace(/\s+/g, '-');
+}
+
+const OHNE_BILD_KOMBINATION_FELDER = [
+  'kategorie',
+  'objekttyp',
+  'motiv',
+  'herkunft',
+  'sammlung',
+  'materialhinweis',
+  'erhaltungszustand',
+  'fehlendeInformation',
+  'provenienz',
+  'dokumentationsgrad',
+  'aktenart',
+];
+
+const OHNE_BILD_RETRY_LIMIT = 40;
+
+/**
+ * Stabiler Schlüssel der Katalog-Kombination einer bildlosen Akte.
+ * @param {Object} akte
+ * @returns {string|null}
+ */
+function ohneBildKombinationKey(akte) {
+  if (!akte || akte.bild) {
+    return null;
+  }
+
+  return OHNE_BILD_KOMBINATION_FELDER.map(function (field) {
+    const value = akte[field];
+    return value == null ? '' : String(value);
+  }).join('\u001f');
+}
+
+/**
  * Erzeugt eine bildlose Akte vollständig aus Kategoriekatalogen und Textbausteinen.
  * @returns {Object|null}
  */
-function pickRandomOhneBildAkte() {
+function buildRandomOhneBildAkte() {
   const kategorie = resolveKategorie({});
   if (!kategorie) {
     return null;
@@ -1174,7 +1217,7 @@ function pickRandomOhneBildAkte() {
     kategorie: kategorie,
   };
   const bild = {
-    id: 'ohne-bild-' + kategorie.toLowerCase().replace(/\s+/g, '-'),
+    id: ohneBildIdForKategorie(kategorie),
     pfad: null,
   };
 
@@ -1182,15 +1225,41 @@ function pickRandomOhneBildAkte() {
 }
 
 /**
+ * Erzeugt eine bildlose Akte mit einer noch nicht verwendeten Katalog-Kombination.
+ * @param {Array<string>|Set<string>} [excludedKeys]
+ * @returns {Object|null}
+ */
+function pickRandomOhneBildAkte(excludedKeys) {
+  const excluded = excludedKeys instanceof Set
+    ? excludedKeys
+    : new Set(excludedKeys || []);
+
+  for (let i = 0; i < OHNE_BILD_RETRY_LIMIT; i++) {
+    const akte = buildRandomOhneBildAkte();
+    if (!akte) {
+      return null;
+    }
+
+    const normalized = normalizeAkte(akte);
+    const key = ohneBildKombinationKey(normalized);
+    if (!key || !excluded.has(key)) {
+      return normalized;
+    }
+  }
+
+  return null;
+}
+
+/**
  * Wählt zufällig mehrere Archivakten aus ARCHIV_BILDER.
  * Pro Angebot zufällig 0–2 bildlose Akten, Rest mit Bild; Reihenfolge gemischt.
- * Bereits verwendete Bilder (Erinnerungsraum, nicht gewählt, verdrängt) werden ausgeschlossen;
- * bildlose Akten dürfen mehrfach vorkommen.
+ * Bereits verwendete Bild-IDs und bildlose Katalog-Kombinationen werden ausgeschlossen.
  * @param {number} count - Anzahl der Akten
- * @param {Array<string>} [excludedBildIds] - Bild-IDs mit Pfad, die in diesem Durchlauf nicht mehr angeboten werden dürfen
+ * @param {Array<string>} [excludedBildIds] - Bild-IDs, die in diesem Durchlauf nicht mehr angeboten werden dürfen
+ * @param {Array<string>} [excludedKombinationen] - Katalog-Kombinationen bildloser Akten in diesem Durchlauf
  * @returns {Array} Array von vorbereiteten Akten-Objekten
  */
-function pickArchiveAkten(count, excludedBildIds) {
+function pickArchiveAkten(count, excludedBildIds, excludedKombinationen) {
   if (!Array.isArray(ARCHIV_BILDER)) {
     console.warn('ARCHIV_BILDER ist nicht definiert.');
     return [];
@@ -1202,6 +1271,7 @@ function pickArchiveAkten(count, excludedBildIds) {
   }
 
   const excluded = new Set(excludedBildIds || []);
+  const excludedKeys = new Set(excludedKombinationen || []);
   const mitBild = ARCHIV_BILDER.filter(function (b) {
     return b.pfad && !excluded.has(b.id);
   });
@@ -1215,25 +1285,56 @@ function pickArchiveAkten(count, excludedBildIds) {
     mitBildCount = mitBild.length;
   }
 
-  const akten = pickArchiveBilder(mitBild, mitBildCount).map(function (bild) {
+  const pickedBilder = pickArchiveBilder(mitBild, mitBildCount);
+  pickedBilder.forEach(function (bild) {
+    if (bild && bild.id) {
+      excluded.add(bild.id);
+    }
+  });
+
+  const akten = pickedBilder.map(function (bild) {
     const variante = pickRandom(bild.varianten, 1)[0];
     return buildAkte(bild, variante);
   });
 
-  for (let i = 0; i < ohneBildCount; i++) {
-    const akte = pickRandomOhneBildAkte();
+  function tryAddOhneBildAkte() {
+    const akte = pickRandomOhneBildAkte(excludedKeys);
     if (!akte) {
-      break;
+      return false;
+    }
+    const key = ohneBildKombinationKey(akte);
+    if (key) {
+      excludedKeys.add(key);
     }
     akten.push(akte);
+    return true;
+  }
+
+  function tryAddBildAkte() {
+    const remaining = ARCHIV_BILDER.filter(function (b) {
+      return b.pfad && !excluded.has(b.id);
+    });
+    const bild = pickArchiveBilder(remaining, 1)[0];
+    if (!bild) {
+      return false;
+    }
+    excluded.add(bild.id);
+    const variante = pickRandom(bild.varianten, 1)[0];
+    akten.push(buildAkte(bild, variante));
+    return true;
+  }
+
+  for (let i = 0; i < ohneBildCount; i++) {
+    if (!tryAddOhneBildAkte()) {
+      break;
+    }
   }
 
   while (akten.length < count) {
-    const akte = pickRandomOhneBildAkte();
-    if (!akte) {
-      break;
+    if (tryAddOhneBildAkte() || tryAddBildAkte()) {
+      continue;
     }
-    akten.push(akte);
+    break;
   }
 
   for (let i = akten.length - 1; i > 0; i--) {
@@ -1251,9 +1352,10 @@ function pickArchiveAkten(count, excludedBildIds) {
  * Öffentliche API — wird von state.js aufgerufen.
  * @param {number} count - Anzahl der Akten (Standard: 3)
  * @param {Array<string>} [excludedBildIds] - Bild-IDs, die in diesem Durchlauf nicht mehr angeboten werden dürfen
+ * @param {Array<string>} [excludedKombinationen] - Katalog-Kombinationen bildloser Akten in diesem Durchlauf
  * @returns {Array} Array von Akten-Objekten
  */
-function generateOfferSet(count, excludedBildIds) {
+function generateOfferSet(count, excludedBildIds, excludedKombinationen) {
   count = count || 3;
-  return pickArchiveAkten(count, excludedBildIds);
+  return pickArchiveAkten(count, excludedBildIds, excludedKombinationen);
 }

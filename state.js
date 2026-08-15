@@ -28,22 +28,77 @@ try {
 }
 
 /**
- * Sammelt Bild-IDs mit Pfad aus dem Erinnerungsraum für die Angebots-Auswahl.
- * Bildlose Akten werden nicht ausgeschlossen und dürfen mehrfach angeboten werden.
- * @param {Array} memoryRoom
+ * Sammelt Bild-IDs mit Pfad aus einer Aktenliste.
+ * Bildlose Akten werden ignoriert.
+ * @param {Array} akten
  * @returns {Array<string>}
  */
-function getExcludedBildIds(memoryRoom) {
-  return (memoryRoom || [])
+function collectBildIds(akten) {
+  return (akten || [])
     .filter(function (akte) {
-      return akte.bild;
+      return akte && akte.bild && akte.bildId;
     })
     .map(function (akte) {
       return akte.bildId;
-    })
-    .filter(function (id) {
-      return Boolean(id);
     });
+}
+
+/**
+ * Sammelt Bild-IDs, die in diesem Durchlauf nicht mehr angeboten werden dürfen:
+ * Bilder im Erinnerungsraum sowie nicht gewählte und verdrängte Akten.
+ * Bildlose Akten werden nicht ausgeschlossen und dürfen mehrfach angeboten werden.
+ * @param {Object} state
+ * @returns {Array<string>}
+ */
+function getExcludedBildIds(state) {
+  state = state || {};
+  const fromRoom = collectBildIds(state.memoryRoom);
+  const used = Array.isArray(state.usedBildIds) ? state.usedBildIds : [];
+  const unique = {};
+
+  fromRoom.concat(used).forEach(function (id) {
+    if (id) {
+      unique[id] = true;
+    }
+  });
+
+  return Object.keys(unique);
+}
+
+/**
+ * Hängt Bild-IDs der gegebenen Akten eindeutig an usedBildIds an.
+ * @param {Object} state
+ * @param {Array} akten
+ * @returns {Object} Aktualisierter State
+ */
+function markAktenAsUsed(state, akten) {
+  const existing = {};
+
+  (Array.isArray(state.usedBildIds) ? state.usedBildIds : []).forEach(function (id) {
+    if (id) {
+      existing[id] = true;
+    }
+  });
+
+  collectBildIds(akten).forEach(function (id) {
+    existing[id] = true;
+  });
+
+  state.usedBildIds = Object.keys(existing);
+  return state;
+}
+
+/**
+ * Markiert alle Angebotsakten außer der gewählten als verwendet.
+ * @param {Object} state
+ * @param {string} keptAkteId
+ * @returns {Object} Aktualisierter State
+ */
+function markUnchosenOfferAkten(state, keptAkteId) {
+  const discarded = (state.currentOffer || []).filter(function (akte) {
+    return akte && akte.id !== keptAkteId;
+  });
+  return markAktenAsUsed(state, discarded);
 }
 
 /**
@@ -55,6 +110,7 @@ function createDefaultState() {
     version: 1,
     memoryRoom: [],
     currentOffer: generateOfferSet(OFFER_COUNT, []),
+    usedBildIds: [],
     updatedAt: Date.now(),
   };
 }
@@ -67,6 +123,11 @@ function createDefaultState() {
 function normalizeStateAkten(state) {
   state.currentOffer = (state.currentOffer || []).map(normalizeAkte);
   state.memoryRoom = (state.memoryRoom || []).slice(0, MAX_MEMORY_SLOTS).map(normalizeAkte);
+  state.usedBildIds = Array.isArray(state.usedBildIds)
+    ? state.usedBildIds.filter(function (id) {
+      return Boolean(id);
+    })
+    : [];
   return state;
 }
 
@@ -214,7 +275,7 @@ function ensureOfferSet(state) {
   state = normalizeStateAkten(state);
 
   if (!state.currentOffer || state.currentOffer.length < OFFER_COUNT) {
-    state.currentOffer = generateOfferSet(OFFER_COUNT, getExcludedBildIds(state.memoryRoom));
+    state.currentOffer = generateOfferSet(OFFER_COUNT, getExcludedBildIds(state));
   }
 
   return state;
@@ -226,12 +287,13 @@ function ensureOfferSet(state) {
  * @returns {Object} Aktualisierter State
  */
 function refreshOfferSet(state) {
-  state.currentOffer = generateOfferSet(OFFER_COUNT, getExcludedBildIds(state.memoryRoom));
+  state.currentOffer = generateOfferSet(OFFER_COUNT, getExcludedBildIds(state));
   return state;
 }
 
 /**
  * Fügt eine Akte dem Erinnerungsraum hinzu (nur wenn Platz vorhanden).
+ * Nicht gewählte Angebotsakten werden bis zum Reset nicht mehr angeboten.
  * @param {Object} state
  * @param {Object} akte
  * @returns {Object} Aktualisierter State
@@ -241,21 +303,31 @@ function addToMemoryRoom(state, akte) {
     return state;
   }
   state.memoryRoom = state.memoryRoom.concat([akte]);
-  return state;
+  return markUnchosenOfferAkten(state, akte.id);
 }
 
 /**
  * Ersetzt eine bestehende Akte im Erinnerungsraum (Verdrängung).
+ * Die verdrängte Akte und die nicht gewählten Angebotsakten werden bis zum Reset nicht mehr angeboten.
  * @param {Object} state
  * @param {Object} newAkte
  * @param {string} oldAkteId
  * @returns {Object} Aktualisierter State
  */
 function replaceInMemoryRoom(state, newAkte, oldAkteId) {
+  const displaced = (state.memoryRoom || []).find(function (item) {
+    return item.id === oldAkteId;
+  });
+
   state.memoryRoom = state.memoryRoom.map(function (item) {
     return item.id === oldAkteId ? newAkte : item;
   });
-  return state;
+
+  if (displaced) {
+    state = markAktenAsUsed(state, [displaced]);
+  }
+
+  return markUnchosenOfferAkten(state, newAkte.id);
 }
 
 /**

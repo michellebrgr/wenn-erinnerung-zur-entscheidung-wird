@@ -1184,9 +1184,10 @@ function pickRandomOhneBildAkte() {
 /**
  * Wählt zufällig mehrere Archivakten aus ARCHIV_BILDER.
  * Pro Angebot zufällig 0–2 bildlose Akten, Rest mit Bild; Reihenfolge gemischt.
- * Bilder im Erinnerungsraum werden ausgeschlossen; bildlose Akten dürfen mehrfach vorkommen.
+ * Bereits verwendete Bilder (Erinnerungsraum, nicht gewählt, verdrängt) werden ausgeschlossen;
+ * bildlose Akten dürfen mehrfach vorkommen.
  * @param {number} count - Anzahl der Akten
- * @param {Array<string>} [excludedBildIds] - Bild-IDs mit Pfad, die bereits im Erinnerungsraum sind
+ * @param {Array<string>} [excludedBildIds] - Bild-IDs mit Pfad, die in diesem Durchlauf nicht mehr angeboten werden dürfen
  * @returns {Array} Array von vorbereiteten Akten-Objekten
  */
 function pickArchiveAkten(count, excludedBildIds) {
@@ -1249,7 +1250,7 @@ function pickArchiveAkten(count, excludedBildIds) {
  * Erzeugt ein Set aus mehreren unterschiedlichen Akten.
  * Öffentliche API — wird von state.js aufgerufen.
  * @param {number} count - Anzahl der Akten (Standard: 3)
- * @param {Array<string>} [excludedBildIds] - Bild-IDs, die bereits im Erinnerungsraum sind
+ * @param {Array<string>} [excludedBildIds] - Bild-IDs, die in diesem Durchlauf nicht mehr angeboten werden dürfen
  * @returns {Array} Array von Akten-Objekten
  */
 function generateOfferSet(count, excludedBildIds) {

@@ -128,9 +128,9 @@ Die Bewertung stellt keine objektive Aussage über den kulturellen oder gesellsc
 
 Das System unterscheidet zwischen den Stufen hoch, mittel und gering.
 
-## Aufnahmehinweis
+## Aufnahmeempfehlung
 
-Aus der ermittelten Bewertungsstufe wird ein Aufnahmehinweis abgeleitet:
+Aus der ermittelten Bewertungsstufe wird ein Aufnahmeempfehlung abgeleitet:
 
 - hoch = Aufnahme empfohlen
 - mittel = Aufnahme prüfenswert
@@ -146,7 +146,7 @@ Die institutionelle Relevanz wird aus mehreren Merkmalen der Akte abgeleitet. Da
 - Dokumentationsgrad
 - Erhaltungs- / Bewahrungsbedarf
 
-Die einzelnen Merkmale werden intern gewichtet und zu einer Gesamtbewertung zusammengeführt. Der daraus entstehende Zahlenwert wird im Interface nicht angezeigt. Sichtbar sind ausschließlich die daraus abgeleitete institutionelle Relevanz sowie der Aufnahmehinweis.
+Die einzelnen Merkmale werden intern gewichtet und zu einer Gesamtbewertung zusammengeführt. Der daraus entstehende Zahlenwert wird im Interface nicht angezeigt. Sichtbar sind ausschließlich die daraus abgeleitete institutionelle Relevanz sowie der Aufnahmeempfehlung.
 
 # Allgemeine Kataloge
 

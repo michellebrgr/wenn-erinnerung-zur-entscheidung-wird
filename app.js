@@ -113,7 +113,7 @@
   }
 
   /**
-   * Bereich 5: Institutionelle Relevanz und Aufnahmehinweis.
+   * Bereich 5: Institutionelle Relevanz und Aufnahmeempfehlung.
    * @param {Object} akte
    * @returns {string}
    */
@@ -122,7 +122,7 @@
       ? akte.bewertungskriterien
       : [
           { label: 'Institutionelle Relevanz', text: akte.institutionelleRelevanz },
-          { label: 'Aufnahmehinweis', text: akte.aufnahmehinweis },
+          { label: 'Aufnahmeempfehlung', text: akte.aufnahmeempfehlung },
         ].filter(function (item) { return item.text; });
 
     if (kriterien.length === 0) {

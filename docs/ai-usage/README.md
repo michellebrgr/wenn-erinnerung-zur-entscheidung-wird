@@ -4,39 +4,10 @@ Dieser Ordner dokumentiert die Verwendung von KI-Tools im Rahmen der Masterarbei
 
 ## Zweck
 
-Im Rahmen der Thesis ist ein KI-Verzeichnis gefordert, das nachvollziehbar macht, wo und wie KI eingesetzt wurde. Dieser Ordner sammelt Chat-Verläufe, Prompts und Ergebnisse.
+Im Rahmen der Thesis ist ein KI-Verzeichnis gefordert, das nachvollziehbar macht, wo und wie KI eingesetzt wurde. Dieser Ordner sammelt Chat-Verläufe, Prompts und Ergebnisse aus Cursor für die technische Erstellung der Medieninstallation und auch eine Übersicht mit KI erstellten Inhalte für die Akten.
 
-## Einträge
+Die Chat-Verläufe von Cursor wurden in Markdown-Dateien exportiert. Eine Datei steht jeweils für einen neu eröffneten Chat. Da in Cursor keine angaben gemahct werden, wann dieser chat zume rsten Mal erstellt wurde, gebe ich als Dateiname die Hauptnutzungen für die technische Umsetzung an. Beispiel Cursor wurde einegsetzt, um die Größe der Akten anzupassen, wird dies dementsprechend im Dateiname genannt. 
 
-### 2026-07-03 — Planung und Implementierung der Browser-Installation
+Da für die Erstellung der Inhalte jeweils nur ein prompt erstellt wurde. Befindet sich dieser Zu Beginnd der Markdown datei. Änderungen die eigenständig vorgenommen wurden und die Text, die als Grundlage zur KI-Erstellung der KI zur Verfügung gestellt wurden, wurden makiert. 
 
-| Feld | Inhalt |
-|------|--------|
-| **Tool** | Cursor (Claude Agent) |
-| **Aufgabe** | Konzeption und vollständige Implementierung der lokalen Browser-Installation |
-| **Prompt (Kurzfassung)** | Aufbau eines rein clientseitigen Zwei-Fenster-Programms (Archiv-Laptop + Beamer-Projektion) mit localStorage-Sync, modularer Dateistruktur (data.js, generator.js, state.js, app.js, projection.js), Verdrängungslogik bei 6 Speicherplätzen |
-| **Ergebnis** | Vollständige Projektstruktur mit index.html, projection.html, style.css, JS-Modulen und README-Dokumentation |
-| **Dateien** | Alle Dateien im Projektroot und `docs/ai-usage/` |
-
----
-
-## Vorlage für künftige Einträge
-
-```markdown
-### JJJJ-MM-TT — Kurztitel der Aufgabe
-
-| Feld | Inhalt |
-|------|--------|
-| **Tool** | z. B. Cursor, ChatGPT, Claude |
-| **Aufgabe** | Was sollte erreicht werden? |
-| **Prompt (Kurzfassung)** | Wesentliche Anweisungen |
-| **Ergebnis** | Was wurde umgesetzt oder entschieden? |
-| **Dateien** | Betroffene Dateien/Pfade |
-| **Anpassungen** | Was wurde manuell geändert oder verworfen? |
-```
-
-## Hinweise
-
-- Prompts und Antworten sollten so dokumentiert werden, dass die Rolle der KI in der Arbeit nachvollziehbar bleibt
-- Manuelle Überarbeitungen nach KI-generiertem Code sollten vermerkt werden
-- Bei substantieller KI-Nutzung an Texten oder Konzepten ebenfalls einen Eintrag anlegen
+Unterordner für die jeweilige KI wurden angelegt. 

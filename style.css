@@ -62,6 +62,7 @@ a:hover {
 html:has(body.archive-view) {
   height: 100%;
   overflow: hidden;
+  font-size: min(16px, calc(100vw * 16 / 1680), calc(100vh * 16 / 1050));
 }
 
 body.archive-view {
@@ -389,7 +390,7 @@ body.archive-view {
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: clamp(200px, 24vh, 280px);
+  height: clamp(12.5rem, 24vh, 17.5rem);
 }
 
 .akte-card__image {

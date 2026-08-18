@@ -22,7 +22,7 @@ Die Anwendung läuft vollständig lokal im Browser und benötigt kein Framework,
 4. Das Fenster mit `projection.html` auf den Beamer beziehungsweise den zweiten Bildschirm verschieben.
 5. Beide Ansichten für die Nutzung während der Installation in den Vollbildmodus versetzen. Dies kann man mit der Tastenkombination von Google Chrome auf dem MacBook (Shift+Command+F) und auf Windows (F11) oder (fn+F11). Da die Installation für den Volllbildmodus konzipiert wurde.
 
-*Hinweis:* Die Installation wurde für den Browser Google Chrome und den Vollbildmodus konzipiert. Abweichungen davon können die Darstellung beeinflussen. 
+*Hinweis:* Die Installation wurde für den Browser Google Chrome und den Vollbildmodus konzipiert. Abweichungen davon können die Darstellung beeinflussen. Zudem wurde das Archivinterface für eine Bildschirm mit der Mindestauflösung von  1680x1050. Die Installation passt sich zwar auf kleinere Bildschirme an, dies kann aber zu Verzerrungen kommen.
 
 ## Ablauf der Installation
 

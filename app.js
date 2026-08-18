@@ -36,6 +36,24 @@
   /** 'start' | 'offer' | 'displacement' | 'confirmation' */
   let viewMode = 'start';
 
+  function tArchive(key) {
+    return typeof t === 'function' ? t(key) : key;
+  }
+
+  function isArchiveEnglish() {
+    return typeof getArchiveLang === 'function' && getArchiveLang() === 'en';
+  }
+
+  function displayAkte(akte) {
+    if (!akte) {
+      return akte;
+    }
+    if (isArchiveEnglish() && akte.translations && akte.translations.en) {
+      return Object.assign({}, akte, akte.translations.en);
+    }
+    return akte;
+  }
+
   /**
    * Escaped HTML-Sonderzeichen.
    * @param {string} str
@@ -53,7 +71,7 @@
    * @returns {string}
    */
   function formatValue(value) {
-    if (value === null || value === undefined || value === '') {
+    if (value === null || value === undefined || value === '' || value === 'nicht angegeben' || value === 'not specified') {
       return '—';
     }
     return String(value);
@@ -121,8 +139,8 @@
     const kriterien = Array.isArray(akte.bewertungskriterien) && akte.bewertungskriterien.length
       ? akte.bewertungskriterien
       : [
-          { label: 'Institutionelle Relevanz', text: akte.institutionelleRelevanz },
-          { label: 'Aufnahmeempfehlung', text: akte.aufnahmeempfehlung },
+          { label: tArchive('criterionRelevanz'), text: akte.institutionelleRelevanz },
+          { label: tArchive('criterionAufnahme'), text: akte.aufnahmeempfehlung },
         ].filter(function (item) { return item.text; });
 
     if (kriterien.length === 0) {
@@ -152,31 +170,35 @@
   function renderMetaList(akte, compact) {
     const fields = compact
       ? [
-          ['Objekttyp', akte.objekttyp],
-          ['Herkunft', akte.herkunft],
-          ['Dokumentationsgrad', akte.dokumentationsgrad],
-          ['Erhaltungszustand', akte.erhaltungszustand],
+          [tArchive('fieldObjekttyp'), akte.objekttyp],
+          [tArchive('fieldHerkunft'), akte.herkunft],
+          [tArchive('fieldDokumentationsgrad'), akte.dokumentationsgrad],
+          [tArchive('fieldErhaltungszustand'), akte.erhaltungszustand],
         ]
       : [
-          ['Objekttyp', akte.objekttyp],
-          ['Aktenart', akte.aktenartLabel || null],
-          ['Herkunft', akte.herkunft],
-          ['Provenienz', akte.provenienz],
-          ['Sammlung', akte.sammlung],
-          ['Dokumentationsgrad', akte.dokumentationsgrad],
-          ['Erhaltungszustand', akte.erhaltungszustand],
-          ['Materialhinweis', akte.materialhinweis],
-          ['Fehlende Informationen', akte.fehlendeInformation],
+          [tArchive('fieldObjekttyp'), akte.objekttyp],
+          [tArchive('fieldAktenart'), akte.aktenartLabel || null],
+          [tArchive('fieldHerkunft'), akte.herkunft],
+          [tArchive('fieldProvenienz'), akte.provenienz],
+          [tArchive('fieldSammlung'), akte.sammlung],
+          [tArchive('fieldDokumentationsgrad'), akte.dokumentationsgrad],
+          [tArchive('fieldErhaltungszustand'), akte.erhaltungszustand],
+          [tArchive('fieldMaterialhinweis'), akte.materialhinweis],
+          [tArchive('fieldFehlendeInformationen'), akte.fehlendeInformation],
         ];
+
+    const aktenartLabel = tArchive('fieldAktenart');
+    const materialLabel = tArchive('fieldMaterialhinweis');
+    const missingLabel = tArchive('fieldFehlendeInformationen');
 
     const items = fields
       .filter(function (field) {
-        if (field[0] === 'Aktenart' && !akte.aktenart) {
+        if (field[0] === aktenartLabel && !akte.aktenart) {
           return false;
         }
         if (
-          (field[0] === 'Materialhinweis' || field[0] === 'Fehlende Informationen') &&
-          (field[1] == null || field[1] === '' || field[1] === 'nicht angegeben') &&
+          (field[0] === materialLabel || field[0] === missingLabel) &&
+          (field[1] == null || field[1] === '' || field[1] === 'nicht angegeben' || field[1] === 'not specified') &&
           akte.bild
         ) {
           return false;
@@ -187,7 +209,7 @@
         return '<li><strong>' + escapeHtml(field[0]) + '</strong>: ' + escapeHtml(formatValue(field[1])) + '</li>';
       });
 
-    return '<ul class="akte-card__meta" aria-label="Archivdaten">' + items.join('') + '</ul>';
+    return '<ul class="akte-card__meta" aria-label="' + escapeHtml(tArchive('metaAria')) + '">' + items.join('') + '</ul>';
   }
 
   /**
@@ -206,7 +228,13 @@
       const art = getArchivAktenarten().find(function (entry) {
         return entry.key === key;
       });
-      return art ? art.label : akte.aktenart;
+      if (!art) {
+        return akte.aktenart;
+      }
+      if (isArchiveEnglish()) {
+        return typeof textEn === 'function' ? textEn(art.label) : art.label;
+      }
+      return typeof textDe === 'function' ? textDe(art.label) : art.label;
     }
     return akte.aktenart;
   }
@@ -220,6 +248,7 @@
    * @returns {string}
    */
   function renderAkteCard(akte, options) {
+    akte = displayAkte(akte);
     const variant = options.variant;
     const compact = options.compact || false;
     const cardClass =
@@ -236,28 +265,28 @@
       '<span class="akte-card__binder-hole"></span>' +
       '<span class="akte-card__binder-hole"></span>' +
       '</div>';
-    const displayAkte = Object.assign({}, akte, {
-      aktenartLabel: resolveAktenartLabel(akte),
+    const display = Object.assign({}, akte, {
+      aktenartLabel: akte.aktenartLabel || resolveAktenartLabel(akte),
     });
     const beschreibung = compact
-      ? (akte.kurzbeschreibung || akte.kontextbeschreibung)
-      : (akte.kontextbeschreibung || akte.kurzbeschreibung);
+      ? (display.kurzbeschreibung || display.kontextbeschreibung)
+      : (display.kontextbeschreibung || display.kurzbeschreibung);
 
     return (
       '<article class="akte-card ' + cardClass + '">' +
       binderHoles +
       '<div class="akte-card__heading">' +
       '<header class="akte-card__header">' +
-      '<span class="akte-card__reference">' + escapeHtml(formatValue(akte.archivsignatur)) + '</span>' +
-      '<span class="akte-card__category">' + escapeHtml(formatValue(akte.kategorie)) + '</span>' +
+      '<span class="akte-card__reference">' + escapeHtml(formatValue(display.archivsignatur)) + '</span>' +
+      '<span class="akte-card__category">' + escapeHtml(formatValue(display.kategorie)) + '</span>' +
       '</header>' +
-      '<h3 class="akte-card__title">' + escapeHtml(formatValue(akte.titel)) + '</h3>' +
-      '<p class="akte-card__year">' + escapeHtml(formatValue(akte.jahr)) + '</p>' +
+      '<h3 class="akte-card__title">' + escapeHtml(formatValue(display.titel)) + '</h3>' +
+      '<p class="akte-card__year">' + escapeHtml(formatValue(display.jahr)) + '</p>' +
       '</div>' +
-      renderAkteImage(akte) +
+      renderAkteImage(display) +
       '<p class="akte-card__fragment">' + escapeHtml(formatValue(beschreibung)) + '</p>' +
-      renderMetaList(displayAkte, compact) +
-      '<ul class="akte-card__criteria" aria-label="Institutionelle Bewertung">' + renderCriteria(akte) + '</ul>' +
+      renderMetaList(display, compact) +
+      '<ul class="akte-card__criteria" aria-label="' + escapeHtml(tArchive('criteriaAria')) + '">' + renderCriteria(display) + '</ul>' +
       '</article>'
     );
   }
@@ -272,7 +301,7 @@
       '<div class="archive-offer-column" role="listitem">' +
       renderAkteCard(akte, { variant: 'selectable' }) +
       '<button type="button" class="btn-archive-select" data-id="' + escapeHtml(akte.id) + '">' +
-      'In den Erinnerungsraum aufnehmen' +
+      tArchive('selectAkte') +
       '</button>' +
       '</div>'
     );
@@ -307,7 +336,7 @@
       '<div class="archive-offer-column" role="listitem">' +
       renderAkteCard(akte, { variant: 'selectable' }) +
       '<button type="button" class="btn-memory-delete" data-id="' + escapeHtml(akte.id) + '">' +
-      'Diese Akte verdrängen' +
+      tArchive('displaceAkte') +
       '</button>' +
       '</div>'
     );
@@ -572,7 +601,7 @@
    */
   function handleResetInstallation() {
     const confirmed = window.confirm(
-      'Installation wirklich zurücksetzen? Der Erinnerungsraum und alle bisherigen Entscheidungen werden gelöscht.'
+      tArchive('resetConfirm')
     );
 
     if (!confirmed) {
@@ -591,6 +620,16 @@
    * Initialisierung.
    */
   function init() {
+    if (typeof initArchiveI18n === 'function') {
+      initArchiveI18n();
+    }
+    if (typeof onArchiveLangChange === 'function') {
+      onArchiveLangChange(function () {
+        if (currentState) {
+          render(currentState);
+        }
+      });
+    }
     setViewMode('start');
     clearMemoryReview();
     openArchiveBtn.addEventListener('click', openArchive);

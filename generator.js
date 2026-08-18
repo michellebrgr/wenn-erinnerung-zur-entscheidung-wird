@@ -49,7 +49,7 @@ function jahrToSignaturSegment(jahr) {
     return s;
   }
 
-  if (/^(undatiert|nicht\s+datiert|n\.?\s*d\.?)$/i.test(s)) {
+  if (/^(undatiert|nicht\s+datiert|n\.?\s*d\.?|undated)$/i.test(s)) {
     return 'UND';
   }
 
@@ -117,6 +117,220 @@ function getKontrollierteWerte() {
   return typeof KONTROLLIERTE_WERTE !== 'undefined' ? KONTROLLIERTE_WERTE : {};
 }
 
+function splitLoc(item) {
+  if (item == null || item === '') {
+    return { de: item == null ? null : item, en: item == null ? null : item };
+  }
+  if (typeof isLocalizedEntry === 'function' && isLocalizedEntry(item)) {
+    return { de: item.de, en: item.en || item.de };
+  }
+  return { de: item, en: lookupEn(item) };
+}
+
+function localizeFromValue(list, value) {
+  if (value == null || value === '') {
+    return splitLoc(value);
+  }
+  if (typeof isLocalizedEntry === 'function' && isLocalizedEntry(value)) {
+    return { de: value.de, en: value.en || value.de };
+  }
+  const str = String(value);
+  const entries = list || [];
+  for (let i = 0; i < entries.length; i++) {
+    if (textDe(entries[i]) === str) {
+      return splitLoc(entries[i]);
+    }
+  }
+  return { de: str, en: lookupEn(str) };
+}
+
+var EN_LOOKUP_CACHE = null;
+
+function addLookupEntry(map, item) {
+  if (typeof isLocalizedEntry === 'function' && isLocalizedEntry(item) && item.de) {
+    map[item.de] = item.en || item.de;
+  }
+}
+
+function walkLookupList(map, list) {
+  (list || []).forEach(function (item) {
+    addLookupEntry(map, item);
+  });
+}
+
+function getEnLookup() {
+  if (EN_LOOKUP_CACHE) {
+    return EN_LOOKUP_CACHE;
+  }
+
+  const map = {
+    'nicht angegeben': 'not specified',
+    'Unbekannt': 'Unknown',
+    'unbekannt': 'unknown',
+    'undatiert': 'undated',
+    'nicht datiert': 'undated',
+    'nicht überliefert': 'not transmitted',
+    'Nicht eindeutig überliefert': 'Not clearly transmitted',
+    'hoch': 'high',
+    'mittel': 'medium',
+    'gering': 'low',
+    'Aufnahme empfohlen': 'Admission recommended',
+    'Aufnahme prüfenswert': 'Admission worth considering',
+    'Aufnahme nicht priorisiert': 'Admission not prioritised',
+    'gut erhalten': 'well preserved',
+    'Fotografie': 'Photograph',
+    'von regionaler Bedeutung': 'of regional significance',
+    'von lokaler Bedeutung': 'of local significance',
+    'von wissenschaftlicher Bedeutung': 'of scholarly significance',
+    'von gesellschaftlicher Bedeutung': 'of societal significance',
+    'von überregionaler Bedeutung': 'of supra-regional significance',
+    'von medienhistorischer Bedeutung': 'of media-historical significance',
+    'von sammlungsgeschichtlicher Bedeutung': 'of collection-historical significance',
+  };
+
+  const listen = getKontrollierteWerte();
+  walkLookupList(map, listen.kategorien);
+  walkLookupList(map, listen.provenienz);
+  walkLookupList(map, listen.dokumentationsgrad);
+  walkLookupList(map, listen.titelstrukturen);
+  walkLookupList(map, listen.kontextSatzanfaenge);
+  walkLookupList(map, listen.kurzbeschreibungStrukturen);
+
+  const kataloge = listen.kategorienKataloge || {};
+  Object.keys(kataloge).forEach(function (key) {
+    const kat = kataloge[key] || {};
+    walkLookupList(map, kat.sammlungen);
+    walkLookupList(map, kat.objekttypen);
+    walkLookupList(map, kat.motive);
+    walkLookupList(map, kat.orte);
+    walkLookupList(map, kat.erhaltungszustaende);
+    walkLookupList(map, kat.fehlendeInformationen);
+    walkLookupList(map, kat.materialhinweise);
+    walkLookupList(map, kat.dokumentationsfragmente);
+  });
+
+  getArchivAktenarten().forEach(function (art) {
+    addLookupEntry(map, art.label);
+    walkLookupList(map, art.vermerke);
+  });
+
+  EN_LOOKUP_CACHE = map;
+  return map;
+}
+
+function lookupEn(value) {
+  if (value == null || value === '') {
+    return value;
+  }
+  if (typeof isLocalizedEntry === 'function' && isLocalizedEntry(value)) {
+    return value.en || value.de;
+  }
+  const str = String(value);
+  const mapped = getEnLookup()[str];
+  if (mapped != null) {
+    return mapped;
+  }
+  return str;
+}
+
+function translateJahr(jahr) {
+  if (jahr == null || jahr === '') {
+    return jahr;
+  }
+  if (typeof jahr === 'number' && !isNaN(jahr)) {
+    return jahr;
+  }
+  const s = String(jahr).trim();
+  const mapped = getEnLookup()[s];
+  if (mapped != null) {
+    return mapped;
+  }
+  if (/^(undatiert|nicht\s+datiert)$/i.test(s)) {
+    return 'undated';
+  }
+  const ca = s.match(/^ca\.\s*(.+)$/i);
+  if (ca) {
+    return 'c. ' + ca[1];
+  }
+  const decade = s.match(/^(\d{3,4})er Jahre$/i);
+  if (decade) {
+    return decade[1] + 's';
+  }
+  const undatedNote = s.match(/^undatiert,\s*(.+)$/i);
+  if (undatedNote) {
+    return 'undated, ' + undatedNote[1];
+  }
+  const undatedSemi = s.match(/^undatiert;\s*(.+)$/i);
+  if (undatedSemi) {
+    return 'undated; ' + undatedSemi[1];
+  }
+  return lookupEn(s);
+}
+
+function englishBewertung(bewertung) {
+  bewertung = bewertung || {};
+  const stufeEn = lookupEn(bewertung.stufe);
+  const hinweisEn = lookupEn(bewertung.aufnahmeempfehlung);
+  return {
+    stufe: stufeEn,
+    aufnahmeempfehlung: hinweisEn,
+    bewertungskriterien: [
+      { label: 'Institutional relevance', text: stufeEn },
+      { label: 'Admission recommendation', text: hinweisEn },
+    ],
+  };
+}
+
+function buildTranslationsEn(akte, extras) {
+  extras = extras || {};
+  const curated = extras.curatedEn || {};
+  const generated = extras.generatedEn || {};
+  const bewertungEn = englishBewertung({
+    stufe: akte.institutionelleRelevanz,
+    aufnahmeempfehlung: akte.aufnahmeempfehlung,
+  });
+
+  function pick(key) {
+    if (curated[key] != null) {
+      return curated[key];
+    }
+    if (generated[key] != null) {
+      return generated[key];
+    }
+    if (key === 'jahr') {
+      return translateJahr(akte.jahr);
+    }
+    if (akte[key] == null || akte[key] === '') {
+      return akte[key];
+    }
+    return lookupEn(akte[key]);
+  }
+
+  return {
+    kategorie: pick('kategorie'),
+    titel: pick('titel'),
+    jahr: pick('jahr'),
+    kurzbeschreibung: pick('kurzbeschreibung'),
+    kontextbeschreibung: pick('kontextbeschreibung'),
+    objekttyp: pick('objekttyp'),
+    motiv: pick('motiv'),
+    herkunft: pick('herkunft'),
+    provenienz: pick('provenienz'),
+    sammlung: pick('sammlung'),
+    materialhinweis: pick('materialhinweis'),
+    erhaltungszustand: pick('erhaltungszustand'),
+    dokumentationsgrad: pick('dokumentationsgrad'),
+    fehlendeInformation: pick('fehlendeInformation'),
+    aktenartLabel: pick('aktenartLabel'),
+    aktenvermerk: pick('aktenvermerk'),
+    fragmentText: pick('fragmentText'),
+    relevanzBegruendung: pick('relevanzBegruendung'),
+    institutionelleRelevanz: bewertungEn.stufe,
+    aufnahmeempfehlung: bewertungEn.aufnahmeempfehlung,
+    bewertungskriterien: bewertungEn.bewertungskriterien,
+  };
+}
+
 /**
  * Wählt zufällig einen Eintrag aus einer Liste in KONTROLLIERTE_WERTE.
  * @param {string} listeKey - Schlüssel in KONTROLLIERTE_WERTE (z. B. „provenienz“)
@@ -124,7 +338,7 @@ function getKontrollierteWerte() {
  */
 function pickFromListe(listeKey) {
   const listen = getKontrollierteWerte();
-  return pickRandomOne(listen[listeKey] || []);
+  return textDe(pickRandomOne(listen[listeKey] || []));
 }
 
 /**
@@ -141,7 +355,7 @@ function resolveKategorie(variante) {
     return variante.kategorie;
   }
 
-  return pickRandomOne(listen.kategorien || Object.keys(kataloge));
+  return textDe(pickRandomOne(listen.kategorien || Object.keys(kataloge)));
 }
 
 /**
@@ -242,11 +456,11 @@ function normalizeSammlung(value) {
 }
 
 function looksDigital(text) {
-  return /digital|scan|datei|datensatz|bildschirm|elektron|pixel|online|pdf|diskette|speicher/i.test(String(text || ''));
+  return /digital|scan|datei|datensatz|bildschirm|elektron|pixel|online|pdf|diskette|speicher/i.test(String(textDe(text) || ''));
 }
 
 function looksPhoto(text) {
-  return /fotografie|fotopapier|fotoabzug|farbdia|glasdia|\bdias?\b|album|negativ|cyanotyp|bilddokumentation/i.test(String(text || ''));
+  return /fotografie|fotopapier|fotoabzug|farbdia|glasdia|\bdias?\b|album|negativ|cyanotyp|bilddokumentation/i.test(String(textDe(text) || ''));
 }
 
 function looksAnalogOnlyProvenienz(text) {
@@ -268,22 +482,23 @@ function filterOrAll(list, predicate) {
 function filterMaterialhinweise(list, objekttyp) {
   if (looksPhoto(objekttyp)) {
     return filterOrAll(list, function (item) {
-      return looksPhoto(item) || looksDigital(item) || /papier|karton|abzug/i.test(item);
+      const value = textDe(item);
+      return looksPhoto(value) || looksDigital(value) || /papier|karton|abzug/i.test(value);
     });
   }
   if (looksDigital(objekttyp)) {
     return filterOrAll(list, function (item) {
-      return looksDigital(item);
+      return looksDigital(textDe(item));
     });
   }
-  if (/transparent/i.test(objekttyp || '')) {
+  if (/transparent/i.test(textDe(objekttyp) || '')) {
     return filterOrAll(list, function (item) {
-      return /stoff|textil|karton|papier/i.test(item);
+      return /stoff|textil|karton|papier/i.test(textDe(item));
     });
   }
-  if (/hinweisschild/i.test(objekttyp || '')) {
+  if (/hinweisschild/i.test(textDe(objekttyp) || '')) {
     return filterOrAll(list, function (item) {
-      return /schild|kunststoff|karton|papier/i.test(item);
+      return /schild|kunststoff|karton|papier/i.test(textDe(item));
     });
   }
   return list || [];
@@ -294,7 +509,7 @@ function filterErhaltungszustaende(list, objekttyp, materialhinweis) {
   const photo = looksPhoto(objekttyp) || looksPhoto(materialhinweis);
 
   return filterOrAll(list, function (item) {
-    const state = String(item || '').toLowerCase();
+    const state = String(textDe(item) || '').toLowerCase();
     if (digital) {
       return /digital|kopie|rekonstruiert|archiviert|konserviert|digitalisiert/.test(state);
     }
@@ -311,7 +526,7 @@ function filterErhaltungszustaende(list, objekttyp, materialhinweis) {
 function filterFehlendeInformationen(list, objekttyp) {
   const photo = looksPhoto(objekttyp);
   return filterOrAll(list, function (item) {
-    const info = String(item || '').toLowerCase();
+    const info = String(textDe(item) || '').toLowerCase();
     const photoOnly = /abgebildet|aufnahmeort|aufnahmezeitpunkt|urheber\*in der aufnahme/.test(info);
     if (photoOnly && !photo) {
       return false;
@@ -326,7 +541,7 @@ function filterProvenienz(list, objekttyp, materialhinweis) {
     return list || [];
   }
   return filterOrAll(list, function (item) {
-    return !looksAnalogOnlyProvenienz(item);
+    return !looksAnalogOnlyProvenienz(textDe(item));
   });
 }
 
@@ -340,32 +555,47 @@ function filterProvenienz(list, objekttyp, materialhinweis) {
 function pickKategorieBausteine(kategorie, options) {
   options = options || {};
   const katalog = getKategorieKatalog(kategorie);
-  const objekttyp = options.objekttyp !== undefined
-    ? options.objekttyp
-    : pickRandomOne(katalog.objekttypen || []);
-  const materialhinweis = options.materialhinweis !== undefined
-    ? options.materialhinweis
-    : pickRandomOne(filterMaterialhinweise(katalog.materialhinweise || [], objekttyp));
+  const objekttypLoc = options.objekttyp !== undefined
+    ? localizeFromValue(katalog.objekttypen, options.objekttyp)
+    : splitLoc(pickRandomOne(katalog.objekttypen || []));
+  const materialLoc = options.materialhinweis !== undefined
+    ? localizeFromValue(katalog.materialhinweise, options.materialhinweis)
+    : splitLoc(pickRandomOne(filterMaterialhinweise(katalog.materialhinweise || [], objekttypLoc.de)));
+  const motivLoc = options.motiv !== undefined
+    ? localizeFromValue(katalog.motive, options.motiv)
+    : splitLoc(pickRandomOne(katalog.motive || []));
+  const ortLoc = options.ort !== undefined
+    ? localizeFromValue(katalog.orte, options.ort)
+    : splitLoc(pickRandomOne(katalog.orte || []));
+  const zustandLoc = options.erhaltungszustand !== undefined
+    ? localizeFromValue(katalog.erhaltungszustaende, normalizeErhaltungszustand(options.erhaltungszustand))
+    : splitLoc(pickRandomOne(filterErhaltungszustaende(katalog.erhaltungszustaende || [], objekttypLoc.de, materialLoc.de)));
+  const fehlendLoc = options.fehlendeInformation !== undefined
+    ? localizeFromValue(katalog.fehlendeInformationen, options.fehlendeInformation)
+    : splitLoc(pickRandomOne(filterFehlendeInformationen(katalog.fehlendeInformationen || [], objekttypLoc.de)));
+  const sammlungLoc = options.sammlung !== undefined
+    ? localizeFromValue(katalog.sammlungen, normalizeSammlung(options.sammlung))
+    : splitLoc(pickRandomOne(katalog.sammlungen || []));
 
   return {
     kategorie: kategorie,
-    objekttyp: objekttyp,
-    motiv: options.motiv !== undefined
-      ? options.motiv
-      : pickRandomOne(katalog.motive || []),
-    ort: options.ort !== undefined
-      ? options.ort
-      : pickRandomOne(katalog.orte || []),
-    erhaltungszustand: options.erhaltungszustand !== undefined
-      ? normalizeErhaltungszustand(options.erhaltungszustand)
-      : pickRandomOne(filterErhaltungszustaende(katalog.erhaltungszustaende || [], objekttyp, materialhinweis)),
-    fehlendeInformation: options.fehlendeInformation !== undefined
-      ? options.fehlendeInformation
-      : pickRandomOne(filterFehlendeInformationen(katalog.fehlendeInformationen || [], objekttyp)),
-    materialhinweis: materialhinweis,
-    sammlung: options.sammlung !== undefined
-      ? normalizeSammlung(options.sammlung)
-      : pickRandomOne(katalog.sammlungen || []),
+    objekttyp: objekttypLoc.de,
+    motiv: motivLoc.de,
+    ort: ortLoc.de,
+    erhaltungszustand: zustandLoc.de,
+    fehlendeInformation: fehlendLoc.de,
+    materialhinweis: materialLoc.de,
+    sammlung: sammlungLoc.de,
+    en: {
+      kategorie: lookupEn(kategorie),
+      objekttyp: objekttypLoc.en,
+      motiv: motivLoc.en,
+      ort: ortLoc.en,
+      erhaltungszustand: zustandLoc.en,
+      fehlendeInformation: fehlendLoc.en,
+      materialhinweis: materialLoc.en,
+      sammlung: sammlungLoc.en,
+    },
   };
 }
 
@@ -374,13 +604,16 @@ function pickKategorieBausteine(kategorie, options) {
  * @param {Object} bausteine
  * @returns {string|null}
  */
-function generateAktenTitel(bausteine) {
+function generateAktenTitel(bausteine, bausteineEn) {
   const listen = getKontrollierteWerte();
   const struktur = pickRandomOne(listen.titelstrukturen || []);
   if (!struktur || !bausteine.objekttyp) {
-    return null;
+    return { de: null, en: null };
   }
-  return capitalizeFirst(fillTemplate(struktur, bausteine));
+  return {
+    de: capitalizeFirst(fillTemplate(textDe(struktur), bausteine)),
+    en: capitalizeFirst(fillTemplate(textEn(struktur), bausteineEn || {})),
+  };
 }
 
 /**
@@ -389,22 +622,25 @@ function generateAktenTitel(bausteine) {
  * @param {Object} bausteine
  * @returns {string|null}
  */
-function generateKontextbeschreibung(bausteine) {
+function generateKontextbeschreibung(bausteine, bausteineEn) {
   const listen = getKontrollierteWerte();
   const anfang = pickRandomOne(listen.kontextSatzanfaenge || []);
   const motiv = bausteine.motiv;
+  const en = bausteineEn || {};
 
   if (!anfang || !motiv) {
-    return null;
+    return { de: null, en: null };
   }
 
-  let text = anfang + ' ' + motiv + '.';
+  let deText = textDe(anfang) + ' ' + motiv + '.';
+  let enText = textEn(anfang) + ' ' + (en.motiv || lookupEn(motiv)) + '.';
 
   if (bausteine.fehlendeInformation && Math.random() < 0.7) {
-    text += ' ' + capitalizeFirst(bausteine.fehlendeInformation) + '.';
+    deText += ' ' + capitalizeFirst(bausteine.fehlendeInformation) + '.';
+    enText += ' ' + capitalizeFirst(en.fehlendeInformation || lookupEn(bausteine.fehlendeInformation)) + '.';
   }
 
-  return text;
+  return { de: deText, en: enText };
 }
 
 /**
@@ -412,13 +648,16 @@ function generateKontextbeschreibung(bausteine) {
  * @param {Object} bausteine
  * @returns {string|null}
  */
-function generateKurzbeschreibung(bausteine) {
+function generateKurzbeschreibung(bausteine, bausteineEn) {
   const listen = getKontrollierteWerte();
   const struktur = pickRandomOne(listen.kurzbeschreibungStrukturen || []);
   if (!struktur || !bausteine.motiv) {
-    return null;
+    return { de: null, en: null };
   }
-  return fillTemplate(struktur, bausteine);
+  return {
+    de: fillTemplate(textDe(struktur), bausteine),
+    en: fillTemplate(textEn(struktur), bausteineEn || {}),
+  };
 }
 
 /**
@@ -427,10 +666,19 @@ function generateKurzbeschreibung(bausteine) {
  * @returns {{ titel: string|null, kontextbeschreibung: string|null, kurzbeschreibung: string|null }}
  */
 function generateAktenTexte(bausteine) {
+  const en = bausteine.en || {};
+  const titel = generateAktenTitel(bausteine, en);
+  const kontext = generateKontextbeschreibung(bausteine, en);
+  const kurz = generateKurzbeschreibung(bausteine, en);
   return {
-    titel: generateAktenTitel(bausteine),
-    kontextbeschreibung: generateKontextbeschreibung(bausteine),
-    kurzbeschreibung: generateKurzbeschreibung(bausteine),
+    titel: titel.de,
+    kontextbeschreibung: kontext.de,
+    kurzbeschreibung: kurz.de,
+    en: {
+      titel: titel.en,
+      kontextbeschreibung: kontext.en,
+      kurzbeschreibung: kurz.en,
+    },
   };
 }
 
@@ -486,35 +734,55 @@ function generateAktenMetadaten(variante, options) {
   });
 
   const provenienzListen = getKontrollierteWerte().provenienz || [];
-  const provenienz = pickCuratedOrFallback(options, variante, 'provenienz', function () {
-    return pickRandomOne(filterProvenienz(provenienzListen, bausteine.objekttyp, bausteine.materialhinweis));
-  });
-  const herkunft = pickCuratedOrFallback(options, variante, 'herkunft', function () {
-    return bausteine.ort ? capitalizeFirst(bausteine.ort) : null;
-  });
-  const dokumentationsgrad = normalizeDokumentationsgrad(
-    pickCuratedOrFallback(options, variante, 'dokumentationsgrad', function () {
-      return pickFromListe('dokumentationsgrad');
-    })
-  );
+  const provenienzLoc = (function () {
+    const curated = pickCuratedOrFallback(options, variante, 'provenienz', undefined);
+    if (curated !== undefined) {
+      return localizeFromValue(provenienzListen, curated);
+    }
+    return splitLoc(pickRandomOne(filterProvenienz(provenienzListen, bausteine.objekttyp, bausteine.materialhinweis)));
+  })();
+  const herkunftLoc = (function () {
+    const curated = pickCuratedOrFallback(options, variante, 'herkunft', undefined);
+    if (curated !== undefined) {
+      return { de: curated, en: lookupEn(curated) };
+    }
+    return bausteine.ort
+      ? { de: capitalizeFirst(bausteine.ort), en: capitalizeFirst(bausteine.en && bausteine.en.ort ? bausteine.en.ort : lookupEn(bausteine.ort)) }
+      : { de: null, en: null };
+  })();
+  const dokumentationsgradLoc = (function () {
+    const curated = pickCuratedOrFallback(options, variante, 'dokumentationsgrad', undefined);
+    if (curated !== undefined) {
+      return localizeFromValue(getKontrollierteWerte().dokumentationsgrad, normalizeDokumentationsgrad(curated));
+    }
+    return localizeFromValue(getKontrollierteWerte().dokumentationsgrad, pickFromListe('dokumentationsgrad'));
+  })();
   const relevanzBegruendungRaw = pickCuratedOrFallback(options, variante, 'relevanzBegruendung', undefined);
   const legacyRelevanz = pickCuratedOrFallback(options, variante, 'institutionelleRelevanz', undefined);
   const relevanzBegruendung = relevanzBegruendungRaw
     || (legacyRelevanz && !/^(hoch|mittel|gering)$/i.test(String(legacyRelevanz)) ? legacyRelevanz : null);
 
+  const bausteineEn = bausteine.en || {};
+
   return {
     kategorie: kategorie,
     objekttyp: bausteine.objekttyp,
-    herkunft: herkunft,
-    provenienz: provenienz,
+    herkunft: herkunftLoc.de,
+    provenienz: provenienzLoc.de,
     sammlung: bausteine.sammlung,
     erhaltungszustand: bausteine.erhaltungszustand,
-    dokumentationsgrad: dokumentationsgrad,
+    dokumentationsgrad: dokumentationsgradLoc.de,
     motiv: bausteine.motiv,
     ort: bausteine.ort,
     fehlendeInformation: bausteine.fehlendeInformation,
     materialhinweis: bausteine.materialhinweis,
     relevanzBegruendung: relevanzBegruendung || null,
+    en: Object.assign({}, bausteineEn, {
+      herkunft: herkunftLoc.en,
+      provenienz: provenienzLoc.en,
+      dokumentationsgrad: dokumentationsgradLoc.en,
+      relevanzBegruendung: relevanzBegruendung ? lookupEn(relevanzBegruendung) : null,
+    }),
   };
 }
 
@@ -721,7 +989,7 @@ function getAktenartVermerke(art) {
 
 function pickAktenvermerk(aktenart, akteId, stored) {
   if (stored) {
-    return stored;
+    return textDe(stored);
   }
   const canonical = canonicalAktenartKey(aktenart);
   const art = getArchivAktenarten().find(function (entry) {
@@ -731,25 +999,68 @@ function pickAktenvermerk(aktenart, akteId, stored) {
   if (vermerke.length === 0) {
     return null;
   }
-  if (akteId) {
-    return vermerke[hashString(akteId + ':vermerk') % vermerke.length];
+  const item = akteId
+    ? vermerke[hashString(akteId + ':vermerk') % vermerke.length]
+    : pickRandomOne(vermerke);
+  return textDe(item);
+}
+
+function pickAktenvermerkEn(aktenart, akteId, storedDe) {
+  const canonical = canonicalAktenartKey(aktenart);
+  const art = getArchivAktenarten().find(function (entry) {
+    return entry.key === canonical;
+  });
+  const vermerke = getAktenartVermerke(art);
+  if (storedDe) {
+    for (let i = 0; i < vermerke.length; i++) {
+      if (textDe(vermerke[i]) === storedDe) {
+        return textEn(vermerke[i]);
+      }
+    }
+    return lookupEn(storedDe);
   }
-  return pickRandomOne(vermerke);
+  if (vermerke.length === 0) {
+    return null;
+  }
+  const item = akteId
+    ? vermerke[hashString(akteId + ':vermerk') % vermerke.length]
+    : pickRandomOne(vermerke);
+  return textEn(item);
 }
 
 function pickDokumentationsfragment(kategorie, akteId, stored) {
   if (stored) {
-    return stored;
+    return textDe(stored);
   }
   const katalog = getKategorieKatalog(kategorie);
   const pool = katalog.dokumentationsfragmente || [];
   if (pool.length === 0) {
     return null;
   }
-  if (akteId) {
-    return pool[hashString(akteId + ':fragment') % pool.length];
+  const item = akteId
+    ? pool[hashString(akteId + ':fragment') % pool.length]
+    : pickRandomOne(pool);
+  return textDe(item);
+}
+
+function pickDokumentationsfragmentEn(kategorie, akteId, storedDe) {
+  const katalog = getKategorieKatalog(kategorie);
+  const pool = katalog.dokumentationsfragmente || [];
+  if (storedDe) {
+    for (let i = 0; i < pool.length; i++) {
+      if (textDe(pool[i]) === storedDe) {
+        return textEn(pool[i]);
+      }
+    }
+    return lookupEn(storedDe);
   }
-  return pickRandomOne(pool);
+  if (pool.length === 0) {
+    return null;
+  }
+  const item = akteId
+    ? pool[hashString(akteId + ':fragment') % pool.length]
+    : pickRandomOne(pool);
+  return textEn(item);
 }
 
 /**
@@ -879,6 +1190,10 @@ function buildAkte(bild, variante, options) {
   if (!ohneBild) {
     meta.materialhinweis = pickCuratedOrFallback(options, variante, 'materialhinweis', null);
     meta.fehlendeInformation = pickCuratedOrFallback(options, variante, 'fehlendeInformation', null);
+    if (meta.en) {
+      meta.en.materialhinweis = meta.materialhinweis ? lookupEn(meta.materialhinweis) : null;
+      meta.en.fehlendeInformation = meta.fehlendeInformation ? lookupEn(meta.fehlendeInformation) : null;
+    }
   }
   const texte = ohneBild
     ? generateAktenTexte(meta)
@@ -924,7 +1239,7 @@ function buildAkte(bild, variante, options) {
     ? pickAktenvermerk(aktenart, id, options.aktenvermerk)
     : null;
 
-  return {
+  const akte = {
     id: id,
     bildId: bild && bild.id ? bild.id : null,
     varianteId: variante.id || null,
@@ -959,6 +1274,30 @@ function buildAkte(bild, variante, options) {
       erhaltungszustand: meta.erhaltungszustand,
     }),
   };
+
+  const art = aktenart
+    ? getArchivAktenarten().find(function (entry) {
+      return entry.key === aktenart;
+    })
+    : null;
+  const generatedEn = Object.assign({}, meta.en || {}, texte.en || {});
+  generatedEn.aktenartLabel = art ? textEn(art.label) : null;
+  generatedEn.aktenvermerk = aktenvermerk
+    ? pickAktenvermerkEn(aktenart, id, aktenvermerk)
+    : null;
+  generatedEn.fragmentText = fragmentText
+    ? pickDokumentationsfragmentEn(meta.kategorie, id, fragmentText)
+    : null;
+  generatedEn.jahr = translateJahr(jahr);
+
+  akte.translations = {
+    en: buildTranslationsEn(akte, {
+      curatedEn: variante.en || {},
+      generatedEn: generatedEn,
+    }),
+  };
+
+  return akte;
 }
 
 /**
@@ -1104,7 +1443,7 @@ function normalizeAkte(akte) {
     || fallbackMeta.relevanzBegruendung
     || null;
 
-  return {
+  const normalized = {
     id: akteId,
     bildId: src.bildId || akte.bildId || null,
     varianteId: src.varianteId || akte.varianteId || null,
@@ -1122,11 +1461,6 @@ function normalizeAkte(akte) {
     motiv: 'motiv' in akte ? akte.motiv : (src.motiv || fallbackMeta.motiv || null),
     herkunft: herkunft,
     provenienz: provenienz,
-    kurzbeschreibung: src.kurzbeschreibung || akte.kurzbeschreibung || akte.shortText || akte.fragment || null,
-    kontextbeschreibung: src.kontextbeschreibung || akte.kontextbeschreibung || null,
-    objekttyp: 'objekttyp' in akte ? akte.objekttyp : (src.objekttyp || akte.objectType || fallbackMeta.objekttyp),
-    herkunft: 'herkunft' in akte ? akte.herkunft : (src.herkunft != null ? src.herkunft : (akte.origin || fallbackMeta.herkunft)),
-    provenienz: 'provenienz' in akte ? akte.provenienz : (src.provenienz || fallbackMeta.provenienz),
     sammlung: sammlung,
     materialhinweis: zusatz.materialhinweis,
     erhaltungszustand: erhaltungszustand,
@@ -1137,6 +1471,34 @@ function normalizeAkte(akte) {
     relevanzBegruendung: relevanzBegruendung,
     bewertungskriterien: generateBewertungskriterien(bewertungSource),
   };
+
+  const art = aktenart
+    ? getArchivAktenarten().find(function (entry) {
+      return entry.key === aktenart;
+    })
+    : null;
+  const curatedEn = (lookup.variante && lookup.variante.en) || {};
+  const existingEn = (akte.translations && akte.translations.en)
+    || (src.translations && src.translations.en)
+    || {};
+  const generatedEn = Object.assign({}, fallbackMeta.en || {}, existingEn);
+  generatedEn.aktenartLabel = art ? textEn(art.label) : (existingEn.aktenartLabel || null);
+  generatedEn.aktenvermerk = aktenvermerk
+    ? pickAktenvermerkEn(aktenart, akteId, aktenvermerk)
+    : null;
+  generatedEn.fragmentText = fragmentText
+    ? pickDokumentationsfragmentEn(normalized.kategorie, akteId, fragmentText)
+    : null;
+  generatedEn.jahr = existingEn.jahr != null ? existingEn.jahr : translateJahr(jahr);
+
+  normalized.translations = {
+    en: buildTranslationsEn(normalized, {
+      curatedEn: curatedEn,
+      generatedEn: generatedEn,
+    }),
+  };
+
+  return normalized;
 }
 
 /**

@@ -36,7 +36,9 @@
       return [];
     }
     if (Array.isArray(art.vermerke) && art.vermerke.length) {
-      return art.vermerke;
+      return art.vermerke.map(function (item) {
+        return typeof textDe === 'function' ? textDe(item) : item;
+      });
     }
     return art.vermerk ? [art.vermerk] : [];
   }
@@ -105,15 +107,18 @@
         escapeHtml(bodyText) + '</p>';
     }
 
+    var label = (akte && akte.aktenartLabel)
+      || (typeof textDe === 'function' ? textDe(entry.label) : entry.label)
+      || '';
     var inner =
-      '<span class="archiv-fragment__art">' + escapeHtml(entry.label || '') + '</span>' +
+      '<span class="archiv-fragment__art">' + escapeHtml(label) + '</span>' +
       '<div class="archiv-fragment__content">' + bodyHtml + '</div>';
 
     if (usesSheet) {
       inner = '<div class="archiv-fragment__sheet">' + inner + '</div>';
     }
 
-    var aria = (entry.label || 'Archivfragment') +
+    var aria = (label || 'Archivfragment') +
       (bodyText ? ': ' + bodyText : '');
 
     return (

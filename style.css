@@ -801,6 +801,66 @@ body.archive-view {
 
 
 
+.lang-switch {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 0.45rem;
+  z-index: 110;
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: #fff;
+  box-shadow: 0 2px 8px var(--color-shadow);
+  overflow: hidden;
+}
+
+.lang-switch__btn {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 0.55rem 0.85rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-ink-muted);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.lang-switch__btn + .lang-switch__btn {
+  border-left: 1px solid var(--color-border);
+}
+
+.lang-switch__btn:hover {
+  background: var(--color-paper-dark);
+  color: var(--color-ink);
+}
+
+.lang-switch__btn.is-active {
+  background: var(--color-ink);
+  color: #fff;
+}
+
+.lang-switch__btn:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+}
+
+.machine-translation-note {
+  position: fixed;
+  left: 1.25rem;
+  bottom: 0.5rem;
+  z-index: 110;
+  margin: 0;
+  max-width: 16rem;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-style: italic;
+  line-height: 1.4;
+  color: var(--color-ink);
+  opacity: 0.55;
+}
+
 .btn-reset {
   position: fixed;
   right: 1.5rem;
@@ -1376,7 +1436,17 @@ body.projection-view.projection-view--light {
   }
 
   .btn-reset {
-    right: 1rem;
-    bottom: 1rem;
+    right: 0.75rem;
+    bottom: 0.35rem;
+  }
+
+  .lang-switch {
+    right: 0.75rem;
+    bottom: 0.35rem;
+  }
+
+  .machine-translation-note {
+    left: 0.75rem;
+    bottom: 0.4rem;
   }
 }

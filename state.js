@@ -6,6 +6,7 @@
  */
 
 const STORAGE_KEY = 'wez-installation-state';
+const LIGHT_MODE_KEY = 'wez-projection-light';
 const MAX_MEMORY_SLOTS = 6;
 const OFFER_COUNT = 3;
 
@@ -25,6 +26,61 @@ try {
   };
 } catch (err) {
   syncChannel = null;
+}
+
+/** Cross-Tab-Sync für den Hell-/Dunkelmodus der Projektion */
+let themeChannel = null;
+
+try {
+  themeChannel = new BroadcastChannel('wez-projection-theme');
+} catch (err) {
+  themeChannel = null;
+}
+
+/**
+ * Liest den gespeicherten Hellmodus der Projektion.
+ * @returns {boolean}
+ */
+function isProjectionLight() {
+  try {
+    return localStorage.getItem(LIGHT_MODE_KEY) === '1';
+  } catch (err) {
+    return false;
+  }
+}
+
+/**
+ * Schaltet den Hellmodus der Projektion um und synchronisiert andere Tabs.
+ * @returns {boolean} Neuer Zustand (true = hell)
+ */
+function toggleProjectionLight() {
+  const next = !isProjectionLight();
+  try {
+    localStorage.setItem(LIGHT_MODE_KEY, next ? '1' : '0');
+  } catch (err) {
+    // localStorage kann in privaten Kontexten fehlen
+  }
+  if (themeChannel) {
+    themeChannel.postMessage({ light: next });
+  }
+  return next;
+}
+
+/**
+ * Reagiert auf Hell-/Dunkelwechsel aus anderen Tabs.
+ * @param {Function} callback - Wird mit true (hell) oder false (dunkel) aufgerufen
+ */
+function onProjectionLightChange(callback) {
+  window.addEventListener('storage', function (event) {
+    if (event.key === LIGHT_MODE_KEY) {
+      callback(isProjectionLight());
+    }
+  });
+  if (themeChannel) {
+    themeChannel.addEventListener('message', function (event) {
+      callback(!!(event.data && event.data.light));
+    });
+  }
 }
 
 /**

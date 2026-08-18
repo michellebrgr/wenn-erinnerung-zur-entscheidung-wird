@@ -648,6 +648,18 @@
         return;
       }
 
+      if (
+        event.shiftKey &&
+        !event.altKey &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        (event.code === 'KeyL' || event.key === 'L' || event.key === 'l')
+      ) {
+        event.preventDefault();
+        toggleProjectionLight();
+        return;
+      }
+
       if (viewMode !== 'displacement') {
         return;
       }

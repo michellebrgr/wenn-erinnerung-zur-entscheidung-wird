@@ -321,24 +321,43 @@
   }
 
   /**
-   * Schaltet zwischen Dunkel- und Hellmodus um.
+   * Wendet den Hell- oder Dunkelmodus auf die Projektion an.
+   * @param {boolean} isLight
    */
-  function toggleLightMode() {
-    document.body.classList.toggle('projection-view--light');
+  function applyLightMode(isLight) {
+    document.body.classList.toggle('projection-view--light', isLight);
+  }
+
+  /**
+   * Shift+L ohne Cmd/Ctrl/Alt, unabhängig von Caps Lock und Tastaturlayout.
+   * @param {KeyboardEvent} event
+   * @returns {boolean}
+   */
+  function isShiftL(event) {
+    return event.shiftKey &&
+      !event.altKey &&
+      !event.metaKey &&
+      !event.ctrlKey &&
+      (event.code === 'KeyL' || event.key === 'L' || event.key === 'l');
   }
 
   /**
    * Initialisierung: State abonnieren und bei Änderungen neu rendern.
    */
   function init() {
-    subscribe(function (state) {
-      renderMemoryRoom(state.memoryRoom);
-    });
+    applyLightMode(isProjectionLight());
+    onProjectionLightChange(applyLightMode);
 
     document.addEventListener('keydown', function (e) {
-      if (e.shiftKey && e.key === 'L') {
-        toggleLightMode();
+      if (!isShiftL(e)) {
+        return;
       }
+      e.preventDefault();
+      applyLightMode(toggleProjectionLight());
+    });
+
+    subscribe(function (state) {
+      renderMemoryRoom(state.memoryRoom);
     });
   }
 

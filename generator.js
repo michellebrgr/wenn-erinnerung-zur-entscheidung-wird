@@ -177,8 +177,32 @@ function getEnLookup() {
     'Aufnahme empfohlen': 'Admission recommended',
     'Aufnahme prüfenswert': 'Admission worth considering',
     'Aufnahme nicht priorisiert': 'Admission not prioritised',
+    'teilweise': 'partial',
+    'fragmentarisch': 'fragmentary',
+    'weitgehend': 'extensive',
+    'gut': 'good',
+    'altersbedingt': 'age-related wear',
+    'gut bis altersbedingt': 'good with age-related wear',
+    'altersbedingt, gut': 'age-related wear, otherwise good',
+    'nicht eindeutig angegeben': 'not clearly specified',
     'gut erhalten': 'well preserved',
     'Fotografie': 'Photograph',
+    'Fotografiekonvolut': 'Photograph collection',
+    'Fotografischer Abzug': 'Photographic print',
+    'Kolorierte Fotografie': 'Hand-coloured photograph',
+    'Digitale Fotografie': 'Digital photograph',
+    'Manuskript': 'Manuscript',
+    'Dia': 'Slide',
+    'Farbdia': 'Colour slide',
+    'Materialbestand': 'Materials stock',
+    'Schriftgutkonvolut': 'Document collection',
+    'Rundfunkempfänger': 'Radio receiver',
+    'Fotografische Ausrüstung': 'Photographic equipment',
+    'Bestellblatt': 'Order sheet',
+    'Versandhülle': 'Mailing envelope',
+    'Personenkarte': 'Personal card',
+    'Familie und private Fotografie': 'Family and private photography',
+    'Materielle und schriftliche Überlieferung': 'Material and written transmissions',
     'von regionaler Bedeutung': 'of regional significance',
     'von lokaler Bedeutung': 'of local significance',
     'von wissenschaftlicher Bedeutung': 'of scholarly significance',
@@ -568,13 +592,13 @@ function pickKategorieBausteine(kategorie, options) {
     ? localizeFromValue(katalog.orte, options.ort)
     : splitLoc(pickRandomOne(katalog.orte || []));
   const zustandLoc = options.erhaltungszustand !== undefined
-    ? localizeFromValue(katalog.erhaltungszustaende, normalizeErhaltungszustand(options.erhaltungszustand))
+    ? localizeFromValue(katalog.erhaltungszustaende, options.erhaltungszustand)
     : splitLoc(pickRandomOne(filterErhaltungszustaende(katalog.erhaltungszustaende || [], objekttypLoc.de, materialLoc.de)));
   const fehlendLoc = options.fehlendeInformation !== undefined
     ? localizeFromValue(katalog.fehlendeInformationen, options.fehlendeInformation)
     : splitLoc(pickRandomOne(filterFehlendeInformationen(katalog.fehlendeInformationen || [], objekttypLoc.de)));
   const sammlungLoc = options.sammlung !== undefined
-    ? localizeFromValue(katalog.sammlungen, normalizeSammlung(options.sammlung))
+    ? localizeFromValue(katalog.sammlungen, options.sammlung)
     : splitLoc(pickRandomOne(katalog.sammlungen || []));
 
   return {
@@ -719,8 +743,8 @@ function generateAktenMetadaten(variante, options) {
   const curatedZustand = pickCuratedOrFallback(options, variante, 'erhaltungszustand', undefined);
   const curatedOverrides = {
     objekttyp: pickCuratedOrFallback(options, variante, 'objekttyp', undefined),
-    sammlung: curatedSammlung !== undefined ? normalizeSammlung(curatedSammlung) : undefined,
-    erhaltungszustand: curatedZustand !== undefined ? normalizeErhaltungszustand(curatedZustand) : undefined,
+    sammlung: curatedSammlung,
+    erhaltungszustand: curatedZustand,
     materialhinweis: pickCuratedOrFallback(options, variante, 'materialhinweis', undefined),
     fehlendeInformation: pickCuratedOrFallback(options, variante, 'fehlendeInformation', undefined),
   };
@@ -753,7 +777,7 @@ function generateAktenMetadaten(variante, options) {
   const dokumentationsgradLoc = (function () {
     const curated = pickCuratedOrFallback(options, variante, 'dokumentationsgrad', undefined);
     if (curated !== undefined) {
-      return localizeFromValue(getKontrollierteWerte().dokumentationsgrad, normalizeDokumentationsgrad(curated));
+      return localizeFromValue(getKontrollierteWerte().dokumentationsgrad, curated);
     }
     return localizeFromValue(getKontrollierteWerte().dokumentationsgrad, pickFromListe('dokumentationsgrad'));
   })();
@@ -1389,9 +1413,13 @@ function normalizeAkte(akte) {
   const kurzbeschreibung = src.kurzbeschreibung || akte.kurzbeschreibung || akte.shortText || akte.fragment || null;
   const kontextbeschreibung = src.kontextbeschreibung || akte.kontextbeschreibung || null;
   const objekttyp = 'objekttyp' in akte ? akte.objekttyp : (src.objekttyp || akte.objectType || fallbackMeta.objekttyp);
-  const sammlung = normalizeSammlung('sammlung' in akte ? akte.sammlung : (src.sammlung || fallbackMeta.sammlung));
-  const dokumentationsgrad = normalizeDokumentationsgrad(zusatz.dokumentationsgrad);
-  const erhaltungszustand = normalizeErhaltungszustand(zusatz.erhaltungszustand);
+  const sammlung = 'sammlung' in akte ? akte.sammlung : (src.sammlung || fallbackMeta.sammlung);
+  const dokumentationsgrad = 'dokumentationsgrad' in akte
+    ? akte.dokumentationsgrad
+    : (zusatz.dokumentationsgrad || fallbackMeta.dokumentationsgrad);
+  const erhaltungszustand = 'erhaltungszustand' in akte
+    ? akte.erhaltungszustand
+    : (zusatz.erhaltungszustand || fallbackMeta.erhaltungszustand);
   const provenienz = 'provenienz' in akte ? akte.provenienz : (src.provenienz || fallbackMeta.provenienz);
   const herkunft = 'herkunft' in akte ? akte.herkunft : (src.herkunft != null ? src.herkunft : (akte.origin || fallbackMeta.herkunft));
   const aktenartSource = {

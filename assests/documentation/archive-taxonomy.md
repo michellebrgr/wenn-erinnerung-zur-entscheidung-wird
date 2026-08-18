@@ -28,6 +28,9 @@ Die Inhalte der Akten werden auf grundlage der Bildes festgelegt, dies geschieht
 - Kontextbeschreibung innerhalb der Akte (nur im Akteninterface sichtbar)
 - Erhaltungszustand
 - Objekttyp 
+- Sammlung
+- Provenienz
+- Dokumentationsgrad
 - Kurzbeschreibung für die Projektion / Erinnerungsraum
 - Begründung der institutionellen Relevanz
 
@@ -36,9 +39,6 @@ Die Inhalte der Akten werden auf grundlage der Bildes festgelegt, dies geschieht
 Die im folgenden aufgelisteten Daten werden durch das System ergänzt:
 
 - Archivsignatur/Aktennummer
-- Sammlung
-- Provenienz
-- Dokumentationsgrad
 - Institutionelle Relevanz 
 
 ## Akten ohne Bild
@@ -53,10 +53,15 @@ Akten ohen Bild werden vollstänidg durch das System generiert. Grundlage hierf�
 - Objekttyp
 - Kurzbeschreibung für die Projektion / Erinnerungsraum
 - Archivsignatur / Aktennummer
+- Datierung / Jahr
+- Herkunft
 - Sammlung
 - Provenienz
 - Dokumentationsgrad
 - Institutionelle Relevanz
+- Aktenart
+- Materialhinweis
+- fehlende Information
 
 # Kategorien
 
@@ -148,11 +153,7 @@ Die institutionelle Relevanz wird aus mehreren Merkmalen der Akte abgeleitet. Da
 
 Die einzelnen Merkmale werden intern gewichtet und zu einer Gesamtbewertung zusammengeführt. Der daraus entstehende Zahlenwert wird im Interface nicht angezeigt. Sichtbar sind ausschließlich die daraus abgeleitete institutionelle Relevanz sowie der Aufnahmeempfehlung.
 
-# Allgemeine Kataloge
-
-Die folgenden Kataloge werden unabhängig von den Kategorien genutzt.
-
-## Provenienz
+# Provenienz
 
 Die Provenienz beschreibt den Überlieferungsweg der Akte, nicht ihren geografischen Entstehungsort. Der Katalog gilt kategorieübergreifend.
 
@@ -173,7 +174,6 @@ Der Dokumentationsgrad beschreibt, wie vollständig die Akte erschlossen ist. De
 - teilweise dokumentiert
 - spärlich dokumentiert
 - undokumentiert
-
 
 # Textbausteine
 
@@ -352,7 +352,7 @@ Für jede Kategorie stehen folgende Bausteine zur Verfügung:
 - Kontakt zu zurückgelassenen Familienmitgliedern
 - behördliche Erfassung einer Person
 - Suche nach Arbeit und Unterkunft
-- Veränderung persönlicher Zugehörigkeit
+- Ankommen in einem neuen sozialen Umfeld
 - Reise zwischen mehreren Orten
 - transnationale Familienbeziehungen
 - Weitergabe persönlicher Erinnerungen
@@ -425,7 +425,7 @@ Für jede Kategorie stehen folgende Bausteine zur Verfügung:
 - Kontrolle und Beobachtung einer Versammlung
 - Aneignung des öffentlichen Raums
 - Entfernung oder Überdeckung politischer Zeichen
-- gemeinschaftliche Form des Widerstands
+- gemeinsames Auftreten bei einer Protestaktion
 - nicht eindeutig zuordenbare Protestspur
 
 ### Orte und Kontexte
@@ -564,7 +564,7 @@ Für jede Kategorie stehen folgende Bausteine zur Verfügung:
 - Weitergabe kultureller Traditionen
 - wiederkehrende gemeinschaftliche Veranstaltung
 - Veränderung eines überlieferten Brauchs
-- Verbindung materieller Objekte mit Erinnerung
+- Verwendung eines Gegenstands innerhalb eines Rituals
 - symbolische Handlung innerhalb einer Gemeinschaft
 - nicht vollständig dokumentierte kulturelle Praxis
 
@@ -610,6 +610,73 @@ Für jede Kategorie stehen folgende Bausteine zur Verfügung:
 - digitales Dokument
 - gescanntes Original
 
+# Darstellungsarten der bildlosen Akten
+
+Bildlose Akten werden in unterschiedlichen textlichen Formen dargestellt. Die Darstellungsart ergänzt die inhaltlichen Kataloge und macht sichtbar, dass nicht jede Akte in gleicher Form überliefert ist.
+
+## Archivvermerk
+
+Kurzvermerk:
+
+- Bilddokumentation nicht überliefert.
+
+Mögliche Zusatzangaben:
+
+- Signatur
+- Materialhinweis
+
+## Bestandsnotiz
+
+Kurzvermerk:
+
+- Erfasst ohne visuelle Vorlage.
+
+Mögliche Zusatzangaben:
+
+- Jahr
+- Erhaltungszustand
+
+## Dokumentfragment
+
+Kurzvermerk:
+
+- Nur fragmentarisch überliefert.
+
+Mögliche Zusatzangaben:
+
+- Materialhinweis
+- Erhaltungszustand
+
+Mögliche Textfragmente:
+
+- … nur teilweise lesbar …
+- … Rand beschädigt …
+- … Zusammenhang unklar …
+
+## Digitaler Ausdruck
+
+Mögliche Vermerke:
+
+- Digitale Überlieferung ohne vorhandene Bildvorlage.
+- Digitaler Ausdruck; visuelle Vorlage nicht vorhanden.
+
+Mögliche Zusatzangaben:
+
+- Signatur
+- Dokumentationsgrad
+
+## Überlieferungslücke
+
+Mögliche Vermerke:
+
+- Lücke im Bestand; Vorlage nicht vorhanden.
+- Überlieferungslücke; zugehöriges Material fehlt.
+
+Mögliche Zusatzangaben:
+
+- Dokumentationsgrad
+- fehlende Information
+
 # Bildung der Aktentitel
 
 Die Titel der systemgenerierten Akten werden aus dem Objekttyp und einem inhaltlichen oder räumlichen Bezug gebildet.
@@ -618,8 +685,7 @@ Mögliche Strukturen sind:
 
 - `[Objekttyp]: [Motiv oder Inhalt]`
 - `[Objekttyp] aus [Ort oder Kontext]`
-- `[Objekttyp] mit unbekanntem Zusammenhang`
-- `[Objekttyp] aus einem nicht vollständig dokumentierten Bestand`
+- `[Objekttyp] mit nicht dokumentiertem Zusammenhang`
 - `[Objekttyp] aus einem fragmentarisch überlieferten Bestand`
 
 # Bildung der Kontextbeschreibung
@@ -629,9 +695,8 @@ Die Kontextbeschreibung umfasst höchstens zwei kurze Sätze. Der erste Satz bes
 *Grundstruktur:*
 
 - Das überlieferte Material verweist auf [Motiv].
-- Das Dokument verweist auf [Motiv].
-- Die Aufnahme dokumentiert [Motiv].
-- Die Unterlage verweist auf [Motiv].
+- Das Dokument gibt Hinweise auf [Motiv].
+- Die Unterlage dokumentiert [Motiv].
 - Das Objekt steht im Zusammenhang mit [Motiv].
 
 *Optional:*
@@ -646,17 +711,15 @@ Die Kurzbeschreibung reduziert den Inhalt der Akte auf einen kurzen Satz. Sie en
 
 - Dokumentiert `[Motiv oder Inhalt]`.
 - Verweist auf `[Motiv oder Inhalt]`.
-- Überliefert eine Spur von `[Motiv oder Inhalt]`.
-- Bewahrt ein Fragment von `[Motiv oder Inhalt]`.
 - Zeigt `[Motiv oder Inhalt]`.
 - Erinnert an `[Motiv oder Inhalt]`.
 
 ## Beispiele
 
 - Dokumentiert alltägliche Arbeitsabläufe.
-- Bewahrt ein Fragment privaten Alltags.
+- Dokumentiert private Alltagspraktiken.
 - Verweist auf einen biografischen Übergang.
-- Überliefert eine Spur politischen Protests.
+- Verweist auf politischen Protest.
 - Zeigt die Veränderung eines öffentlichen Ortes.
 - Erinnert an eine gemeinschaftliche Tradition.
 
@@ -670,7 +733,7 @@ Allgemeine Angaben wie Provenienz und Dokumentationsgrad werden aus übergeordne
 
 Durch die zufällige Kombination entstehen unterschiedliche Akten. Die Begrenzung auf kategoriespezifische Bausteine soll gleichzeitig verhindern, dass inhaltlich unpassende oder widersprüchliche Verbindungen erzeugt werden.
 
-#  Generierungslogik 
+# Generierungslogik 
 
 Die Auswahl der Metadaten erfolgt abhängig von der gewählten Kategorie.
 
@@ -680,6 +743,4 @@ Dadurch entstehen unterschiedliche, aber in sich konsistente Akten, die einem ar
 
 # Hinweis 
 
-Diese Datei dient nur zur Dokumentation der Konzeotionierung der Generieungslogik. Die technsiche Umsetzung erfolgt innerhalb der Anwendung. 
-
-
+Diese Datei dient nur zur Dokumentation der Konzeption der Generierungslogik. Die technische Umsetzung erfolgt innerhalb der Anwendung.
